@@ -1,7 +1,7 @@
 /**
  * Form Validation Test Suite
  *
- * Ensures every form in Hisaabo has consistent required-field behaviour:
+ * Ensures every form in Rohadas has consistent required-field behaviour:
  *   1. Required fields display exactly one asterisk (*).
  *   2. Submitting with empty required fields shows validation errors.
  *   3. No field has duplicate asterisks (manual label + required prop).

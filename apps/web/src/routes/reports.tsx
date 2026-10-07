@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { DateRangeBar } from "@/components/ui/DateRangeBar";
 import { PartyCombobox } from "@/components/ui/PartyCombobox";
 import { Combobox } from "@/components/ui/Combobox";
+import { SearchInput } from "@/components/ui/SearchInput";
 import { useDateRange } from "@/hooks/useDateRange";
 
 export const Route = createFileRoute("/reports")({
@@ -110,6 +111,39 @@ interface AgingBucket {
     total: string;
   };
 }
+
+/**
+ * Recompute an aging summary from a (possibly filtered) party list so the
+ * table footer total always agrees with the rows shown above it.
+ */
+function sumAgingSummary(parties: OutstandingPartyRow[]): AgingBucket["summary"] {
+  const sum = (f: (p: OutstandingPartyRow) => string) =>
+    parties.reduce((acc, p) => acc + (parseFloat(f(p)) || 0), 0);
+  return {
+    current: sum((p) => p.current).toFixed(2),
+    days31_60: sum((p) => p.days31_60).toFixed(2),
+    days61_90: sum((p) => p.days61_90).toFixed(2),
+    days90Plus: sum((p) => p.days90Plus).toFixed(2),
+    total: sum((p) => p.total).toFixed(2),
+  };
+}
+
+// ── Outstanding report filters ───────────────────────────────────
+
+type PartyTypeFilter = "all" | "customer" | "supplier";
+type AgingFilter = "all" | "overdue" | "90plus";
+
+const PARTY_TYPE_OPTIONS: Array<{ value: PartyTypeFilter; label: string }> = [
+  { value: "all", label: "All Parties" },
+  { value: "customer", label: "Customers" },
+  { value: "supplier", label: "Suppliers" },
+];
+
+const AGING_OPTIONS: Array<{ value: AgingFilter; label: string }> = [
+  { value: "all", label: "All ages" },
+  { value: "overdue", label: "31+ days" },
+  { value: "90plus", label: "90+ days" },
+];
 
 // ── Daybook report ───────────────────────────────────────────────
 
@@ -492,7 +526,9 @@ function OutstandingReport({
   fromDate?: string;
   toDate?: string;
 }) {
-  const [partyType, setPartyType] = useState<"all" | "customer" | "supplier">("all");
+  const [partyType, setPartyType] = useState<PartyTypeFilter>("all");
+  const [search, setSearch] = useState("");
+  const [agingFilter, setAgingFilter] = useState<AgingFilter>("all");
 
   // Map UI partyType → router `type` field
   const routerType =
@@ -509,17 +545,41 @@ function OutstandingReport({
     { enabled: true }
   );
 
+  // Apply the search + aging filters to one aging bucket, recomputing the
+  // summary so the footer totals always match the rows on screen.
+  function applyFilters(bucket: AgingBucket): AgingBucket {
+    const q = search.trim().toLowerCase();
+    const parties = bucket.parties.filter((p) => {
+      if (
+        q &&
+        !p.partyName.toLowerCase().includes(q) &&
+        !(p.partyPhone ?? "").toLowerCase().includes(q)
+      ) {
+        return false;
+      }
+      const d31 = parseFloat(p.days31_60) || 0;
+      const d61 = parseFloat(p.days61_90) || 0;
+      const d90 = parseFloat(p.days90Plus) || 0;
+      if (agingFilter === "overdue" && d31 + d61 + d90 <= 0) return false;
+      if (agingFilter === "90plus" && d90 <= 0) return false;
+      return true;
+    });
+    return { parties, summary: sumAgingSummary(parties) };
+  }
+
   function handleExport() {
     if (!data) return;
     const headers = ["Party", "Phone", "Current", "31-60 days", "61-90 days", "90+ days", "Total", "Section"];
     const rows: (string | number)[][] = [];
-    if (data.receivables) {
-      for (const p of data.receivables.parties) {
+    const rec = data.receivables ? applyFilters(data.receivables) : null;
+    const pay = data.payables ? applyFilters(data.payables) : null;
+    if (rec) {
+      for (const p of rec.parties) {
         rows.push([p.partyName, p.partyPhone ?? "", p.current, p.days31_60, p.days61_90, p.days90Plus, p.total, "Receivable"]);
       }
     }
-    if (data.payables) {
-      for (const p of data.payables.parties) {
+    if (pay) {
+      for (const p of pay.parties) {
         rows.push([p.partyName, p.partyPhone ?? "", p.current, p.days31_60, p.days61_90, p.days90Plus, p.total, "Payable"]);
       }
     }
@@ -550,9 +610,17 @@ function OutstandingReport({
 
   const totalReceivable = data.receivables?.summary.total ?? "0";
   const totalPayable = data.payables?.summary.total ?? "0";
-  const hasAny =
-    (data.receivables?.parties.length ?? 0) > 0 ||
-    (data.payables?.parties.length ?? 0) > 0;
+
+  // Apply the client-side filters to both buckets.
+  const receivables = data.receivables ? applyFilters(data.receivables) : null;
+  const payables = data.payables ? applyFilters(data.payables) : null;
+  const hasAny = (receivables?.parties.length ?? 0) > 0 || (payables?.parties.length ?? 0) > 0;
+
+  // Only the client-side filters narrow the visible set — party type is a
+  // server round-trip, so it isn't counted in the "showing X of Y" hint.
+  const hasFilters = search.trim() !== "" || agingFilter !== "all";
+  const filteredCount = (receivables?.parties.length ?? 0) + (payables?.parties.length ?? 0);
+  const totalCount = (data.receivables?.parties.length ?? 0) + (data.payables?.parties.length ?? 0);
 
   return (
     <div>
@@ -562,34 +630,80 @@ function OutstandingReport({
         <SummaryCard label="Total Payable" value={formatCurrency(totalPayable)} accent="red" />
       </div>
 
-      {/* Filters + Export */}
-      <div className="flex items-center gap-2 mb-4 flex-wrap">
-        {(["all", "customer", "supplier"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setPartyType(t)}
-            className={cn(
-              "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize",
-              partyType === t
-                ? "bg-brand-600/[0.1] text-brand-700 dark:text-brand-400"
-                : "text-text-tertiary hover:text-text-secondary hover:bg-surface-2"
-            )}
-          >
-            {t === "all" ? "All Parties" : t === "customer" ? "Customers" : "Suppliers"}
-          </button>
-        ))}
-        <ExportButton onClick={handleExport} />
+      {/* Search + filters + export */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Search party or phone…"
+          className="w-full sm:w-64"
+        />
+
+        {/* Party type */}
+        <div className="flex items-center gap-0.5 rounded-lg bg-surface-2/60 p-0.5">
+          {PARTY_TYPE_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setPartyType(opt.value)}
+              className={cn(
+                "px-2.5 py-1 rounded-md text-xs font-medium transition-colors",
+                partyType === opt.value
+                  ? "bg-surface-0 text-text-primary shadow-sm"
+                  : "text-text-tertiary hover:text-text-secondary",
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Aging */}
+        <div className="flex items-center gap-0.5 rounded-lg bg-surface-2/60 p-0.5">
+          {AGING_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setAgingFilter(opt.value)}
+              className={cn(
+                "px-2.5 py-1 rounded-md text-xs font-medium transition-colors",
+                agingFilter === opt.value
+                  ? "bg-surface-0 text-text-primary shadow-sm"
+                  : "text-text-tertiary hover:text-text-secondary",
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        {hasFilters && (
+          <span className="text-xs tabular-nums text-text-tertiary">
+            Showing {filteredCount} of {totalCount}
+          </span>
+        )}
+
+        <div className="ml-auto">
+          <ExportButton onClick={handleExport} />
+        </div>
       </div>
 
       {!hasAny ? (
-        <EmptyState title="No outstanding balances" description="All parties are settled as of this date." />
+        hasFilters ? (
+          <EmptyState
+            title="No matching parties"
+            description="No parties match the current search or filter. Try a different name or clear the filters."
+          />
+        ) : (
+          <EmptyState title="No outstanding balances" description="All parties are settled as of this date." />
+        )
       ) : (
         <>
-          {data.receivables && data.receivables.parties.length > 0 && (
-            <AgingTable label="Receivables (Customers)" bucket={data.receivables} />
+          {receivables && receivables.parties.length > 0 && (
+            <AgingTable label="Receivables (Customers)" bucket={receivables} />
           )}
-          {data.payables && data.payables.parties.length > 0 && (
-            <AgingTable label="Payables (Suppliers)" bucket={data.payables} />
+          {payables && payables.parties.length > 0 && (
+            <AgingTable label="Payables (Suppliers)" bucket={payables} />
           )}
         </>
       )}
@@ -1376,6 +1490,7 @@ interface StockSummaryData {
 function StockSummaryReport() {
   const [showZeroStock, setShowZeroStock] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState("");
+  const [search, setSearch] = useState("");
   const [expandedVariants, setExpandedVariants] = useState<Set<string>>(new Set());
 
   const { data, isLoading, error } = (trpc as any).reports.stockSummary.useQuery(
@@ -1399,12 +1514,32 @@ function StockSummaryReport() {
     return Object.values(attrs).join(" / ");
   }
 
+  // Client-side search over the loaded stock rows. Matches item name, category
+  // and HSN, and — for variant items — the variant SKU / attribute values so a
+  // search for a size or colour surfaces the parent item too.
+  function filterItems(d: StockSummaryData) {
+    const q = search.trim().toLowerCase();
+    if (!q) return { simple: d.simpleItems, variant: d.variantItems };
+    const m = (s: string | null | undefined) => !!s && s.toLowerCase().includes(q);
+    return {
+      simple: d.simpleItems.filter((i) => m(i.itemName) || m(i.category) || m(i.hsn)),
+      variant: d.variantItems.filter(
+        (i) =>
+          m(i.itemName) ||
+          m(i.category) ||
+          m(i.hsn) ||
+          i.variantDetails.some((v) => m(v.sku) || Object.values(v.attributes ?? {}).some(m)),
+      ),
+    };
+  }
+
   function handleExport() {
     if (!data) return;
     const headers = ["Name", "Category", "HSN", "Unit", "SKU / Variant", "Stock Qty", "Purchase Price", "Sale Price", "Stock Cost Value", "Low Stock"];
     const rows: (string | number)[][] = [];
+    const filtered = filterItems(data);
 
-    for (const item of data.simpleItems) {
+    for (const item of filtered.simple) {
       rows.push([
         item.itemName,
         item.category ?? "",
@@ -1419,7 +1554,7 @@ function StockSummaryReport() {
       ]);
     }
 
-    for (const item of data.variantItems) {
+    for (const item of filtered.variant) {
       for (const v of item.variantDetails) {
         rows.push([
           item.itemName,
@@ -1469,7 +1604,9 @@ function StockSummaryReport() {
     );
   }
 
-  const totalItems = data.simpleItems.length + data.variantItems.length;
+  const { simple: simpleItems, variant: variantItems } = filterItems(data);
+  const totalItems = simpleItems.length + variantItems.length;
+  const hasSearch = search.trim() !== "";
 
   return (
     <div>
@@ -1489,8 +1626,14 @@ function StockSummaryReport() {
         </div>
       </div>
 
-      {/* Filters + Export */}
-      <div className="flex items-center gap-2 mb-3 flex-wrap">
+      {/* Search + filters + export */}
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Search item, SKU or HSN…"
+          className="w-full sm:w-64"
+        />
         {categories.length > 0 && (
           <div className="w-48">
             <Combobox
@@ -1515,11 +1658,25 @@ function StockSummaryReport() {
         >
           Show Zero Stock
         </button>
-        <ExportButton onClick={handleExport} />
+        {hasSearch && (
+          <span className="text-xs tabular-nums text-text-tertiary">
+            {totalItems} match{totalItems === 1 ? "" : "es"}
+          </span>
+        )}
+        <div className="ml-auto">
+          <ExportButton onClick={handleExport} />
+        </div>
       </div>
 
       {totalItems === 0 ? (
-        <EmptyState title="No items in stock" description="Add items with stock tracking enabled to see them here." />
+        hasSearch ? (
+          <EmptyState
+            title="No matching items"
+            description="No items match your search. Try a different name, SKU or HSN."
+          />
+        ) : (
+          <EmptyState title="No items in stock" description="Add items with stock tracking enabled to see them here." />
+        )
       ) : (
         <div className="bg-surface rounded-2xl border border-border overflow-hidden">
           <div className="max-h-[calc(100vh-280px)] overflow-y-auto">
@@ -1537,7 +1694,7 @@ function StockSummaryReport() {
             </thead>
             <tbody>
               {/* Simple (non-variant) items */}
-              {data.simpleItems.map((item) => (
+              {simpleItems.map((item) => (
                 <tr
                   key={item.itemId}
                   className={cn(
@@ -1589,7 +1746,7 @@ function StockSummaryReport() {
               ))}
 
               {/* Variant items — collapsible parent + child rows */}
-              {data.variantItems.map((item) => {
+              {variantItems.map((item) => {
                 const isExpanded = expandedVariants.has(item.itemId);
                 const hasLowStock = item.variantDetails.some((v) => v.isLowStock);
                 return (
@@ -2193,11 +2350,25 @@ function ItemSalesReport({
 }) {
   const [sortBy, setSortBy] = useState<"revenue" | "quantity" | "invoices" | "margin">("revenue");
   const [compareToPrevious, setCompareToPrevious] = useState(false);
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
 
   const { data, isLoading, error } = (trpc as any).reports.itemSales.useQuery(
     { fromDate: fromDate || new Date().toISOString(), toDate: toDate || new Date().toISOString(), sortBy, compareToPrevious },
     { enabled: true }
   ) as { data: ItemSalesData | undefined; isLoading: boolean; error: unknown };
+
+  // Client-side search (item name / category) + category filter over the rows.
+  function filterRows(d: ItemSalesData) {
+    const q = search.trim().toLowerCase();
+    return d.rows.filter((r) => {
+      if (categoryFilter && r.category !== categoryFilter) return false;
+      if (q && !r.itemName.toLowerCase().includes(q) && !(r.category ?? "").toLowerCase().includes(q)) {
+        return false;
+      }
+      return true;
+    });
+  }
 
   function handleExport() {
     if (!data) return;
@@ -2213,7 +2384,7 @@ function ItemSalesReport({
       "Margin %",
       ...(compareToPrevious ? ["Revenue Change %"] : []),
     ];
-    const rows: (string | number)[][] = data.rows.map((r) => [
+    const rows: (string | number)[][] = filterRows(data).map((r) => [
       r.itemName,
       r.category ?? "",
       r.unit ?? "",
@@ -2231,6 +2402,12 @@ function ItemSalesReport({
   if (isLoading) return <LoadingSpinner />;
   if (error || !data) return <ReportError title="Could not load item-wise sales" />;
 
+  const rows = filterRows(data);
+  const categories = Array.from(
+    new Set(data.rows.map((r) => r.category).filter(Boolean) as string[]),
+  ).sort();
+  const hasFilters = search.trim() !== "" || categoryFilter !== "";
+
   return (
     <div>
       {/* Summary cards */}
@@ -2240,8 +2417,27 @@ function ItemSalesReport({
         {compareToPrevious && <SummaryCard label="Comparison Period" value="Enabled" accent="blue" />}
       </div>
 
-      {/* Controls + Export */}
-      <div className="flex items-center gap-2 mb-3 flex-wrap">
+      {/* Search + filters + export */}
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Search item or category…"
+          className="w-full sm:w-64"
+        />
+        {categories.length > 0 && (
+          <div className="w-44">
+            <Combobox
+              value={categoryFilter}
+              onChange={setCategoryFilter}
+              options={[
+                { value: "", label: "All Categories" },
+                ...categories.map((cat) => ({ value: cat, label: cat })),
+              ]}
+              placeholder="Filter category…"
+            />
+          </div>
+        )}
         <div className="flex items-center gap-1.5">
           <span className="text-[11px] text-text-tertiary font-medium uppercase tracking-wider shrink-0">Sort by</span>
           <select
@@ -2266,11 +2462,25 @@ function ItemSalesReport({
         >
           Compare to previous period
         </button>
-        <ExportButton onClick={handleExport} />
+        {hasFilters && (
+          <span className="text-xs tabular-nums text-text-tertiary">
+            {rows.length} of {data.rows.length}
+          </span>
+        )}
+        <div className="ml-auto">
+          <ExportButton onClick={handleExport} />
+        </div>
       </div>
 
-      {data.rows.length === 0 ? (
-        <EmptyState title="No sales data in this period" description="Try selecting a wider date range." />
+      {rows.length === 0 ? (
+        hasFilters ? (
+          <EmptyState
+            title="No matching items"
+            description="No items match your search or category filter."
+          />
+        ) : (
+          <EmptyState title="No sales data in this period" description="Try selecting a wider date range." />
+        )
       ) : (
         <div className="bg-surface rounded-2xl border border-border overflow-hidden">
           <div className="max-h-[calc(100vh-280px)] overflow-auto">
@@ -2291,7 +2501,7 @@ function ItemSalesReport({
               </tr>
             </thead>
             <tbody>
-              {data.rows.map((row) => {
+              {rows.map((row) => {
                 const change = row.revenueChange !== null ? parseFloat(row.revenueChange) : null;
                 const margin = row.grossMarginPct !== null ? parseFloat(row.grossMarginPct) : null;
                 return (

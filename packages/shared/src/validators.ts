@@ -76,6 +76,9 @@ export const createBusinessSchema = z.object({
   // Document defaults — applied to new documents but always overridable per-doc.
   defaultRoundOff: z.boolean().default(true),
   defaultTermsAndConditions: z.string().max(2000).nullable().optional(),
+  // Invoice PDF template — the visual theme applied to every generated invoice
+  // (download and send). All templates are GST-compliant; only the styling differs.
+  invoiceTemplate: z.enum(["classic", "modern", "minimal", "bold"]).default("classic"),
 });
 
 export const updateBusinessSchema = createBusinessSchema.partial();
@@ -185,6 +188,7 @@ const createItemBaseSchema = z.object({
   itemType: z.enum(itemTypes).default("product"),
   category: z.string().max(100).optional(),
   taxInclusive: z.boolean().default(false),
+  trackingMode: z.enum(["none", "batch", "serial", "expiry"]).default("none"),
   unitVariants: z.array(unitVariantSchema).optional(),
   variantAttributes: z.array(z.string().min(1).max(50)).max(5).optional(),
   variants: z.array(itemVariantSchema).optional(),
@@ -757,3 +761,71 @@ export const maintenanceStatusSchema = z.object({
 });
 
 export type MaintenanceStatus = z.infer<typeof maintenanceStatusSchema>;
+// ── Godowns (stock locations) ───────────────────────────────────────────────
+
+export const godownCreateSchema = z.object({
+  name: z.string().min(1).max(120),
+  code: z.string().max(40).nullish(),
+  address: z.string().max(200).nullish(),
+  city: z.string().max(80).nullish(),
+  state: z.string().max(80).nullish(),
+  stateCode: z.string().max(8).nullish(),
+  pincode: z.string().max(12).nullish(),
+  phone: z.string().max(20).nullish(),
+  isPrimary: z.boolean().optional(),
+});
+
+export const godownUpdateSchema = z.object({
+  id: z.string().uuid(),
+  data: godownCreateSchema.partial(),
+});
+
+export const godownIdSchema = z.object({ id: z.string().uuid() });
+
+export const godownSetPrimarySchema = z.object({ id: z.string().uuid() });
+
+export const godownTransferSchema = z.object({
+  itemId: z.string().uuid(),
+  variantId: z.string().uuid().optional(),
+  quantity: z.string().regex(/^\d+(\.\d{1,3})?$/).refine((v) => parseFloat(v) > 0, { message: "Quantity must be greater than 0" }),
+  fromGodownId: z.string().uuid().optional(),
+  toGodownId: z.string().uuid(),
+  transferDate: z.string().datetime().optional(),
+  referenceNumber: z.string().max(60).optional(),
+  notes: z.string().max(500).optional(),
+});
+
+// ── Stock lots (batch / serial / expiry) ────────────────────────────────────
+
+export const lotCreateSchema = z.object({
+  itemId: z.string().uuid(),
+  variantId: z.string().uuid().optional(),
+  quantity: z.string().regex(/^\d+(\.\d{1,3})?$/).refine((v) => parseFloat(v) > 0, { message: "Quantity must be greater than 0" }),
+  batchNo: z.string().max(60).optional(),
+  serialNo: z.string().max(100).optional(),
+  manufacturingDate: z.string().datetime().optional(),
+  expiryDate: z.string().datetime().optional(),
+  godownId: z.string().uuid().optional(),
+  unitCost: z.string().regex(/^\d{1,13}(\.\d{1,2})?$/).optional(),
+});
+
+export const lotListSchema = z.object({
+  itemId: z.string().uuid().optional(),
+  variantId: z.string().uuid().optional(),
+  godownId: z.string().uuid().optional(),
+  batchNo: z.string().max(60).optional(),
+  /** Only lots whose expiry falls on or before this date. */
+  expiringBefore: z.string().datetime().optional(),
+  /** Only lots with stock on hand. Defaults to true — an empty lot is noise. */
+  inStockOnly: z.boolean().default(true),
+  limit: z.number().int().min(1).max(200).default(50),
+});
+
+export const lotAllocateSchema = z.object({
+  itemId: z.string().uuid(),
+  variantId: z.string().uuid().optional(),
+  quantity: z.string().regex(/^\d+(\.\d{1,3})?$/).refine((v) => parseFloat(v) > 0, { message: "Quantity must be greater than 0" }),
+  godownId: z.string().uuid().optional(),
+  lotId: z.string().uuid().optional(),
+});
+

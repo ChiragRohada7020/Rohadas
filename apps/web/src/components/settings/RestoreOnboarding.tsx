@@ -182,7 +182,7 @@ export function RestoreOnboarding({ tenantId, onBack }: RestoreOnboardingProps) 
                 <div className="text-xs leading-relaxed">
                   <p className="font-semibold mb-1">Best-effort restore</p>
                   <p className="mb-2">
-                    The backup was produced against a different build of Hisaabo. Your data was restored, but spot-check a few invoices and reports before relying on it.
+                    The backup was produced against a different build of Rohadas. Your data was restored, but spot-check a few invoices and reports before relying on it.
                   </p>
                   {!compat.appVersionMatch && (
                     <p className="tabular-nums">
@@ -226,7 +226,7 @@ export function RestoreOnboarding({ tenantId, onBack }: RestoreOnboardingProps) 
           <div className="flex items-start gap-2 text-amber-700 dark:text-amber-400">
             <WarningIcon />
             <div className="text-xs leading-relaxed">
-              <span className="font-semibold">Upload a .tar.gz backup</span> previously exported from Hisaabo.
+              <span className="font-semibold">Upload a .tar.gz backup</span> previously exported from Rohadas.
               All data will be imported preserving original IDs. This action cannot be undone.
             </div>
           </div>

@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, EXIT, success } from "../../output.js";
 
@@ -11,7 +11,7 @@ interface UpdateRoleOpts {
 
 export async function tenantUpdateRoleCommand(userId: string, role: string, opts: UpdateRoleOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   if (!VALID_ROLES.includes(role as TenantRole)) {
     fatalError(`Invalid role "${role}". Must be one of: ${VALID_ROLES.join(", ")}`, EXIT.VALIDATION);
@@ -28,7 +28,7 @@ export async function tenantUpdateRoleCommand(userId: string, role: string, opts
     success(`Updated role for member ${userId} to ${role}`);
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "not_found") fatalError(`Member not found: ${userId}`, EXIT.NOT_FOUND);
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);

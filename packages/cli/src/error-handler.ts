@@ -6,12 +6,12 @@
  * and appropriate exit codes.
  */
 
-import { HisaaboApiError } from "./client.js";
+import { RohadasApiError } from "./client.js";
 import { fatalError, EXIT } from "./output.js";
 import { getConfig } from "./config.js";
 
 /**
- * Handle any error thrown during a CLI command. Recognizes HisaaboApiError
+ * Handle any error thrown during a CLI command. Recognizes RohadasApiError
  * subtypes and exits with the correct code and message.
  *
  * Usage:
@@ -22,7 +22,7 @@ import { getConfig } from "./config.js";
  *   }
  */
 export function handleApiError(e: unknown): never {
-  if (e instanceof HisaaboApiError) {
+  if (e instanceof RohadasApiError) {
     const err = e.hisaaboError;
 
     if (err.code === "unauthorized") {

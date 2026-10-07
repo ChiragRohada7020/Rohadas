@@ -63,7 +63,7 @@ describe("StatusBadge — coloured status pill used on every document list row",
       const { container } = render(<StatusBadge status="paid" />);
 
       const badge = container.firstChild as HTMLElement;
-      // Emerald classes signal "good / complete" in Hisaabo's colour language.
+      // Emerald classes signal "good / complete" in Rohadas's colour language.
       expect(badge.className).toMatch(/bg-emerald-50/);
       expect(badge.className).toMatch(/text-emerald-700/);
     });

@@ -6,15 +6,15 @@
 
 const SCALE = 100; // 2 decimal places
 
-/** Parse a string/number to integer paise */
-function toPaise(value: string | number): number {
-  const num = typeof value === "string" ? parseFloat(value) : value;
+/** Parse a string/number/null/undefined to integer paise */
+export function toPaise(value: string | number | null | undefined): number {
+  const num = typeof value === "string" ? parseFloat(value) : (value ?? 0);
   if (isNaN(num)) return 0;
   return Math.round(num * SCALE);
 }
 
-/** Format paise back to a decimal string */
-function fromPaise(paise: number): string {
+/** Convert paise back to a decimal string */
+export function fromPaise(paise: number): string {
   const sign = paise < 0 ? "-" : "";
   const abs = Math.abs(paise);
   const rupees = Math.floor(abs / SCALE);

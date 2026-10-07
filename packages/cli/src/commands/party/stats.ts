@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, EXIT } from "../../output.js";
 import { formatINR } from "../../format.js";
@@ -9,7 +9,7 @@ interface StatsOpts {
 
 export async function partyStatsCommand(id: string, opts: StatsOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const result = await client.party.getStats({ partyId: id });
@@ -29,7 +29,7 @@ export async function partyStatsCommand(id: string, opts: StatsOpts): Promise<vo
     console.log();
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "not_found") fatalError(`Party not found: ${id}`, EXIT.NOT_FOUND);
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);

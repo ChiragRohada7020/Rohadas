@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError, type RecurringInvoiceExecution } from "../../client.js";
+import { RohadasClient, RohadasApiError, type RecurringInvoiceExecution } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import {
   fatalError, outputJSON, outputTable, outputTSV, outputCSV,
@@ -25,7 +25,7 @@ interface HistoryOpts {
 
 export async function automatedInvoiceHistoryCommand(templateId: string, opts: HistoryOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
   const page = opts.page ?? 1;
   const limit = opts.limit ?? 20;
 
@@ -54,7 +54,7 @@ export async function automatedInvoiceHistoryCommand(templateId: string, opts: H
     }
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "not_found") fatalError(`Recurring invoice template not found: ${templateId}`, EXIT.NOT_FOUND);
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);

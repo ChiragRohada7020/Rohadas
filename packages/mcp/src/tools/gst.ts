@@ -13,12 +13,12 @@
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { HisaaboClient } from "../client.js";
+import type { RohadasClient } from "../client.js";
 import { wrapTool } from "../lib/errors.js";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
-export function registerGstTools(server: McpServer, client: HisaaboClient) {
+export function registerGstTools(server: McpServer, client: RohadasClient) {
 
   server.tool(
     "gst_report_csv",
@@ -103,6 +103,41 @@ export function registerGstTools(server: McpServer, client: HisaaboClient) {
     },
     wrapTool(async (input) => {
       const result = await client.gst.gstr9({ financialYear: input.financial_year });
+      return {
+        content: [{
+          type: "text" as const,
+          text: JSON.stringify(result, null, 2),
+        }],
+      };
+    })
+  );
+
+  server.tool(
+    "gst_gstr4",
+    [
+      "Get the GSTR-4 quarterly return for a composition-scheme dealer.",
+      "GSTR-4 replaced CMP-08 from FY 2019-20 and is the quarterly return composition dealers file.",
+      "Composition dealers charge customers 0% GST and instead pay a flat rate on total TURNOVER,",
+      "and they cannot avail input tax credit. Tax payable is therefore turnover × composition rate,",
+      "and all purchase ITC is reported as reversed.",
+      "Quarter is a CALENDAR quarter: Q1 = Jan-Mar, Q2 = Apr-Jun, Q3 = Jul-Sep, Q4 = Oct-Dec.",
+    ].join(" "),
+    {
+      year: z.number().int().min(2020).max(2099)
+        .describe("Calendar year of the quarter, e.g. 2026."),
+      quarter: z.number().int().min(1).max(4)
+        .describe("Calendar quarter 1-4 (Q1 = Jan-Mar)."),
+      composition_rate: z.number().positive().max(100).optional()
+        .describe("Flat composition rate as a percentage. Defaults to 1. Statutory rates: 1% goods traders, 0.5% non-specified goods manufacturers, 5% restaurants, 6% specified services."),
+    },
+    wrapTool(async (input) => {
+      const result = await client.gst.gstr4({
+        year: input.year,
+        quarter: input.quarter,
+        ...(input.composition_rate !== undefined
+          ? { compositionRate: input.composition_rate }
+          : {}),
+      });
       return {
         content: [{
           type: "text" as const,

@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, EXIT, success } from "../../output.js";
 
@@ -11,7 +11,7 @@ interface PdfOpts {
 
 export async function invoicePdfCommand(id: string, opts: PdfOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   // First fetch the invoice to get the invoice number
   let invoiceNumber = id;
@@ -64,7 +64,7 @@ export async function invoicePdfCommand(id: string, opts: PdfOpts): Promise<void
     }
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "not_found") fatalError(`Invoice not found: ${id}`, EXIT.NOT_FOUND);
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);

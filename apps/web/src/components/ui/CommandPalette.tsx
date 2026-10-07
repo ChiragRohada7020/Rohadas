@@ -3,12 +3,15 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import { KbdShortcut } from "./KbdShortcut";
+import { useShortcutPrefs, formatBinding } from "@/hooks/useShortcutPrefs";
 
 interface CommandItem {
   id: string;
   label: string;
   section: string;
   action: () => void;
+  /** Optional shortcut hint shown on the right of the row. */
+  keys?: string[];
 }
 
 export interface CommandPaletteProps {
@@ -23,20 +26,18 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps): React.JS
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const navigate = useNavigate();
+  const { shortcuts } = useShortcutPrefs();
 
-  // Commands hardcoded per spec
-  const allCommands: CommandItem[] = [
-    { id: "nav-dashboard",    label: "Go to Dashboard",    section: "Navigation", action: () => navigate({ to: "/" }) },
-    { id: "nav-invoices",     label: "Go to Invoices",     section: "Navigation", action: () => navigate({ to: "/invoices" }) },
-    { id: "nav-parties",      label: "Go to Parties",      section: "Navigation", action: () => navigate({ to: "/parties" }) },
-    { id: "nav-items",        label: "Go to Items",        section: "Navigation", action: () => navigate({ to: "/items" }) },
-    { id: "nav-payments",     label: "Go to Payments",     section: "Navigation", action: () => navigate({ to: "/payments" }) },
-    { id: "nav-gst",          label: "Go to GST Reports",  section: "Navigation", action: () => navigate({ to: "/gst" }) },
-    { id: "nav-settings",     label: "Go to Settings",     section: "Navigation", action: () => navigate({ to: "/settings" }) },
-    { id: "nav-quotations",   label: "Go to Quotations",   section: "Navigation", action: () => navigate({ to: "/quotations" }) },
-    { id: "nav-credit-notes", label: "Go to Credit Notes", section: "Navigation", action: () => navigate({ to: "/credit-notes" }) },
-    { id: "nav-cash-bank",    label: "Go to Cash & Bank",  section: "Navigation", action: () => navigate({ to: "/cash-and-bank" }) },
-  ];
+  // Navigation commands are derived from the shared shortcut definitions so the
+  // palette and the keyboard shortcuts always stay in lockstep — every
+  // destination appears here, with its current key binding as a hint.
+  const allCommands: CommandItem[] = shortcuts.map((s) => ({
+    id: s.id,
+    label: `Go to ${s.label}`,
+    section: "Navigation",
+    action: () => navigate({ to: s.route }),
+    keys: s.binding ? formatBinding(s.binding) : undefined,
+  }));
 
   const filtered = query.trim()
     ? allCommands.filter((cmd) =>
@@ -217,9 +218,12 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps): React.JS
                         <span className="text-sm font-medium">
                           {cmd.label}
                         </span>
-                        {isActive && (
-                          <EnterIcon className="w-3.5 h-3.5 shrink-0 opacity-60" />
-                        )}
+                        <span className="flex items-center gap-2 shrink-0">
+                          {cmd.keys && <KbdShortcut keys={cmd.keys} className="opacity-60" />}
+                          {isActive && (
+                            <EnterIcon className="w-3.5 h-3.5 shrink-0 opacity-60" />
+                          )}
+                        </span>
                       </li>
                     );
                   })}

@@ -1,11 +1,11 @@
 ---
 title: Self-Hosting Setup
-description: Install Hisaabo on your own server using Docker Compose. Covers prerequisites, environment variables, first run, and production configuration.
+description: Install Rohadas on your own server using Docker Compose. Covers prerequisites, environment variables, first run, and production configuration.
 sidebar:
   order: 1
 ---
 
-This guide walks you through running Hisaabo on your own server from scratch. You will have a working instance in about 15 minutes.
+This guide walks you through running Rohadas on your own server from scratch. You will have a working instance in about 15 minutes.
 
 ## Prerequisites
 
@@ -15,7 +15,7 @@ This guide walks you through running Hisaabo on your own server from scratch. Yo
 - A domain name or subdomain pointing to your server (for production with HTTPS)
 
 :::note
-You can also run Hisaabo on a local machine for personal use. The steps are identical; just skip the DNS/HTTPS parts.
+You can also run Rohadas on a local machine for personal use. The steps are identical; just skip the DNS/HTTPS parts.
 :::
 
 ## Step 1: Create a project directory
@@ -46,7 +46,7 @@ ENCRYPTION_KEY=
 
 # ── Email (optional — magic links print to console if not set)
 RESEND_API_KEY=
-EMAIL_FROM=Hisaabo <noreply@yourdomain.com>
+EMAIL_FROM=Rohadas <noreply@yourdomain.com>
 
 # ── Multi-tenancy (leave false for personal/single-org use) ───
 MULTI_TENANT=false
@@ -74,11 +74,11 @@ Replace `YOUR_STRONG_PASSWORD` with a randomly generated password. You can gener
 | `PORT` | Yes | Port the API listens on inside the container. Keep this as `3000`. |
 | `CORS_ORIGINS` | Yes | Comma-separated list of allowed origins. Set to your frontend domain. |
 | `NODE_ENV` | Yes | Set to `production` for a live server. |
-| `APP_URL` | Yes | Full URL of your Hisaabo web frontend, including `https://`. Used in magic link emails. |
+| `APP_URL` | Yes | Full URL of your Rohadas web frontend, including `https://`. Used in magic link emails. |
 | `ENCRYPTION_KEY` | Yes | AES-256-GCM key for encrypting sensitive data at rest. Generate with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`. |
 | `ENCRYPTION_KEY_PREVIOUS` | No | Set only during key rotation. Allows decryption with the old key while re-encrypting with the new one. Remove after rotation completes. |
 | `RESEND_API_KEY` | No | If set, magic link emails are sent via [Resend](https://resend.com). If not set, magic links are printed to the API container log. |
-| `EMAIL_FROM` | No | Sender name and address for email, for example `Hisaabo <noreply@yourdomain.com>`. |
+| `EMAIL_FROM` | No | Sender name and address for email, for example `Rohadas <noreply@yourdomain.com>`. |
 | `MULTI_TENANT` | No | Set to `true` only for a cloud SaaS deployment serving multiple unrelated organisations. Leave `false` for personal or single-business use. |
 | `TURNSTILE_SECRET_KEY` / `VITE_TURNSTILE_SITE_KEY` | No | Cloudflare Turnstile keys for bot protection on the online store. Get keys from the [Cloudflare dashboard](https://dash.cloudflare.com/). Leave blank to disable bot protection (fine for private installs). |
 
@@ -213,10 +213,10 @@ Open your web frontend URL in your browser. The first time you visit, you will s
 After signing in, you will be prompted to [create your first business](/getting-started/create-business).
 
 :::tip[All-in-one deployment with ONCE]
-If you prefer a single-container deployment, Hisaabo supports [Basecamp ONCE](https://once.com/) which bundles PostgreSQL and the API into one container. See [Self-Hosting Reference](/self-hosting) for details.
+If you prefer a single-container deployment, Rohadas supports [Basecamp ONCE](https://once.com/) which bundles PostgreSQL and the API into one container. See [Self-Hosting Reference](/self-hosting) for details.
 :::
 
-## Updating Hisaabo
+## Updating Rohadas
 
 To update to the latest version:
 
@@ -254,8 +254,8 @@ Check that `DATABASE_URL` in your `.env` uses `postgres` (the service name) as t
 **Magic links are not arriving in email.**
 If `RESEND_API_KEY` is not set, magic links are printed to the API container log. Run `docker compose logs api | grep "magic"` to find the link. To send real emails, create a free account at [Resend](https://resend.com), add your sending domain, and set `RESEND_API_KEY` in your `.env`.
 
-**How do I run Hisaabo on a local machine for testing?**
+**How do I run Rohadas on a local machine for testing?**
 Use the development `docker-compose.yml` that ships with the source code, which exposes PostgreSQL on port 5432 and does not require HTTPS. Run `docker compose up -d` from the repository root to start only PostgreSQL, then run `pnpm dev` to start the API and web servers locally.
 
-**Can I run multiple Hisaabo instances on the same server?**
+**Can I run multiple Rohadas instances on the same server?**
 Yes, use different ports and different `pgdata` volume names for each instance.

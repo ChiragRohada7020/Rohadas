@@ -1,5 +1,5 @@
 import * as readline from "readline";
-import { HisaaboClient, HisaaboApiError, type InvoiceLineItemInput } from "../../client.js";
+import { RohadasClient, RohadasApiError, type InvoiceLineItemInput } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, EXIT, success } from "../../output.js";
 import { formatAmount, formatINR, todayISO } from "../../format.js";
@@ -24,7 +24,7 @@ async function prompt(rl: readline.Interface, question: string): Promise<string>
 
 export async function invoiceCreateCommand(opts: CreateOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   const isNonInteractive = !process.stdin.isTTY || opts.yes;
 
@@ -251,7 +251,7 @@ export async function invoiceCreateCommand(opts: CreateOpts): Promise<void> {
     console.log(`  PDF:     hisaabo invoice pdf ${invoice.invoiceNumber}\n`);
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "validation_failed") fatalError(e.message, EXIT.VALIDATION);

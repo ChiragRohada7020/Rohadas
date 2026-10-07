@@ -1,6 +1,6 @@
 ---
 title: GST Compliance Overview
-description: How Hisaabo handles GST compliance — GSTIN storage, automatic CGST/SGST/IGST calculation, GSTR-1 and GSTR-3B report generation, and CSV export for filing.
+description: How Rohadas handles GST compliance — GSTIN storage, automatic CGST/SGST/IGST calculation, GSTR-1 and GSTR-3B report generation, and CSV export for filing.
 sidebar:
   order: 1
 ---
@@ -8,7 +8,7 @@ sidebar:
 import ForCA from '../../../components/ForCA.astro';
 import ForBusiness from '../../../components/ForBusiness.astro';
 
-Hisaabo is designed to make GST compliance as automatic as possible. This page gives you an overview of how GST flows through the system from invoice creation to report generation.
+Rohadas is designed to make GST compliance as automatic as possible. This page gives you an overview of how GST flows through the system from invoice creation to report generation.
 
 ## How GST is calculated on invoices
 
@@ -17,11 +17,11 @@ See [GST on Invoices](/invoicing/gst-on-invoices) for the full explanation. In s
 1. You set a tax rate (0%, 5%, 12%, 18%, or 28%) on each item.
 2. You set your business's 2-digit state code in Settings.
 3. You set each party's 2-digit state code on their party record.
-4. When you create an invoice, Hisaabo compares state codes to determine CGST+SGST (same state) or IGST (different states).
+4. When you create an invoice, Rohadas compares state codes to determine CGST+SGST (same state) or IGST (different states).
 
 ## GST report generation
 
-Hisaabo generates two key GST reports: **GSTR-1** and **GSTR-3B**. Both are computed from your invoice and payment data — there is no manual data entry into the reports.
+Rohadas generates two key GST reports: **GSTR-1** and **GSTR-3B**. Both are computed from your invoice and payment data — there is no manual data entry into the reports.
 
 Reports cover outward supplies (sales) for GSTR-1 and both outward (sales) and inward (purchases) supplies for the ITC calculation in GSTR-3B.
 
@@ -31,7 +31,7 @@ GST reports are available for **all** businesses — both GST-registered and unr
 
 ## GSTR-1
 
-**GSTR-1** is the monthly return for outward supplies (sales). Hisaabo generates it with the following sections:
+**GSTR-1** is the monthly return for outward supplies (sales). Rohadas generates it with the following sections:
 
 | Section | What it contains |
 |---|---|
@@ -46,7 +46,7 @@ See [GSTR-1](/gst/gstr1) for detailed instructions.
 
 ## GSTR-3B
 
-**GSTR-3B** is the monthly summary return. Hisaabo generates:
+**GSTR-3B** is the monthly summary return. Rohadas generates:
 
 | Section | What it contains |
 |---|---|
@@ -66,7 +66,7 @@ To export: open the GSTR-1 report for the desired month and click **Export CSV**
 
 - Exports are in a generic CSV format. The official GST portal requires JSON upload or the offline utility. You may need to reformat the CSV before uploading.
 - Zero-rated supplies (SEZ, export of goods) are not separately tracked — they appear as regular inter-state supplies.
-- Composition scheme dealers do not have GSTR-4 generation. Composition businesses can use Hisaabo for record-keeping but must prepare their GSTR-4 manually.
+- Composition scheme dealers do not have GSTR-4 generation. Composition businesses can use Rohadas for record-keeping but must prepare their GSTR-4 manually.
 - The HSN summary uses HSN code `0000` for line items where the item does not have an HSN code set.
 
 ## Filing workflow (recommended)
@@ -86,7 +86,7 @@ At the end of each month:
 2. Verify B2B invoice count and aggregate tax against the client's books. Cancelled invoices are excluded; draft invoices are **included** if dated in the period — flag drafts before filing.
 3. Export the CSV. Re-format into the GST Offline Utility's template (or use your firm's conversion macro) and generate the JSON.
 4. Upload JSON to the GST portal by the **11th**. File GSTR-3B by the **20th** after reviewing ITC in the 3B tab.
-5. For amendments, correct the invoice in Hisaabo, re-generate GSTR-1, and report the delta in the next month's amendment tables on the portal.
+5. For amendments, correct the invoice in Rohadas, re-generate GSTR-1, and report the delta in the next month's amendment tables on the portal.
 :::
 </ForCA>
 

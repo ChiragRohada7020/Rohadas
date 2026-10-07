@@ -26,7 +26,7 @@ export const authEndpoints: EndpointGroup = {
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/auth.register \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/auth.register \\
   -H "Content-Type: application/json" \\
   -d '{"json":{"email":"rahul@myshop.in","name":"Rahul Sharma","password":"strongpass123","confirmPassword":"strongpass123"}}'`,
         javascript: `const result = await trpc.auth.register.mutate({
@@ -40,7 +40,7 @@ export const authEndpoints: EndpointGroup = {
         python: `import httpx, json
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/auth.register",
+    "https://api.rohadas.app/api/trpc/auth.register",
     json={"json": {
         "email": "rahul@myshop.in",
         "name": "Rahul Sharma",
@@ -76,7 +76,7 @@ session_token = data["sessionToken"]`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/auth.login \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/auth.login \\
   -H "Content-Type: application/json" \\
   -d '{"json":{"email":"rahul@myshop.in","password":"strongpass123"}}'`,
         javascript: `const result = await trpc.auth.login.mutate({
@@ -88,7 +88,7 @@ session_token = data["sessionToken"]`,
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/auth.login",
+    "https://api.rohadas.app/api/trpc/auth.login",
     json={"json": {"email": "rahul@myshop.in", "password": "strongpass123"}},
 )
 data = resp.json()["result"]["data"]["json"]
@@ -115,7 +115,7 @@ session_token = data["sessionToken"]`,
         example: { success: true },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/auth.sendMagicLink \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/auth.sendMagicLink \\
   -H "Content-Type: application/json" \\
   -d '{"json":{"email":"rahul@myshop.in"}}'`,
         javascript: `await trpc.auth.sendMagicLink.mutate({
@@ -125,7 +125,7 @@ session_token = data["sessionToken"]`,
         python: `import httpx
 
 httpx.post(
-    "https://api.hisaabo.in/api/trpc/auth.sendMagicLink",
+    "https://api.rohadas.app/api/trpc/auth.sendMagicLink",
     json={"json": {"email": "rahul@myshop.in"}},
 )`,
       },
@@ -157,7 +157,7 @@ httpx.post(
       },
       codeExamples: {
         curl: `# Token comes from the ?token= param of the magic link URL
-curl -X POST https://api.hisaabo.in/api/trpc/auth.verifyMagicLink \\
+curl -X POST https://api.rohadas.app/api/trpc/auth.verifyMagicLink \\
   -H "Content-Type: application/json" \\
   -d '{"json":{"token":"<token-from-email-link>"}}'`,
         javascript: `// Extract token from URL: /auth/verify?token=abc123...
@@ -173,7 +173,7 @@ if (result.needsProfile) {
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/auth.verifyMagicLink",
+    "https://api.rohadas.app/api/trpc/auth.verifyMagicLink",
     json={"json": {"token": token_from_email}},
 )
 data = resp.json()["result"]["data"]["json"]`,
@@ -200,7 +200,7 @@ data = resp.json()["result"]["data"]["json"]`,
         example: { success: true },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/auth.completeProfile \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/auth.completeProfile \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -d '{"json":{"name":"Rahul Sharma"}}'`,
@@ -209,7 +209,7 @@ data = resp.json()["result"]["data"]["json"]`,
         python: `import httpx
 
 httpx.post(
-    "https://api.hisaabo.in/api/trpc/auth.completeProfile",
+    "https://api.rohadas.app/api/trpc/auth.completeProfile",
     headers={"Authorization": f"Bearer {session_token}"},
     json={"json": {"name": "Rahul Sharma"}},
 )`,
@@ -234,7 +234,7 @@ httpx.post(
         },
       },
       codeExamples: {
-        curl: `curl https://api.hisaabo.in/api/trpc/auth.me \\
+        curl: `curl https://api.rohadas.app/api/trpc/auth.me \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN"`,
         javascript: `const session = await trpc.auth.me.query();
 
@@ -246,7 +246,7 @@ if (session.user) {
         python: `import httpx
 
 resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/auth.me",
+    "https://api.rohadas.app/api/trpc/auth.me",
     headers={"Authorization": f"Bearer {session_token}"},
 )
 session = resp.json()["result"]["data"]["json"]
@@ -271,7 +271,7 @@ if session["user"]:
         example: { success: true },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/auth.logout \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/auth.logout \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -d '{}'`,
@@ -279,7 +279,7 @@ if session["user"]:
 // Cookie is cleared automatically
 // Redirect to login page`,
         python: `httpx.post(
-    "https://api.hisaabo.in/api/trpc/auth.logout",
+    "https://api.rohadas.app/api/trpc/auth.logout",
     headers={"Authorization": f"Bearer {session_token}"},
     json={},
 )`,
@@ -299,14 +299,14 @@ if session["user"]:
         example: { success: true },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/auth.logoutAll \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/auth.logoutAll \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -d '{}'`,
         javascript: `await trpc.auth.logoutAll.mutate();
 // All sessions across all devices are now invalid`,
         python: `httpx.post(
-    "https://api.hisaabo.in/api/trpc/auth.logoutAll",
+    "https://api.rohadas.app/api/trpc/auth.logoutAll",
     headers={"Authorization": f"Bearer {session_token}"},
     json={},
 )`,
@@ -327,7 +327,7 @@ if session["user"]:
         example: { success: true },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/auth.updateName \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/auth.updateName \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -d '{"json":{"name":"Rahul Kumar Sharma"}}'`,
@@ -336,7 +336,7 @@ if session["user"]:
         python: `import httpx
 
 httpx.post(
-    "https://api.hisaabo.in/api/trpc/auth.updateName",
+    "https://api.rohadas.app/api/trpc/auth.updateName",
     headers={"Authorization": f"Bearer {session_token}"},
     json={"json": {"name": "Rahul Kumar Sharma"}},
 )`,
@@ -358,7 +358,7 @@ httpx.post(
         example: { success: true },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/auth.requestEmailChange \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/auth.requestEmailChange \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -d '{"json":{"newEmail":"rahul.new@myshop.in"}}'`,
@@ -369,7 +369,7 @@ httpx.post(
         python: `import httpx
 
 httpx.post(
-    "https://api.hisaabo.in/api/trpc/auth.requestEmailChange",
+    "https://api.rohadas.app/api/trpc/auth.requestEmailChange",
     headers={"Authorization": f"Bearer {session_token}"},
     json={"json": {"newEmail": "rahul.new@myshop.in"}},
 )`,
@@ -396,7 +396,7 @@ httpx.post(
         example: { success: true, newEmail: "rahul.new@myshop.in" },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/auth.confirmEmailChange \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/auth.confirmEmailChange \\
   -H "Content-Type: application/json" \\
   -d '{"json":{"token":"<token-from-verification-link>"}}'`,
         javascript: `const url = new URL(window.location.href);
@@ -407,7 +407,7 @@ console.log("Email changed to:", result.newEmail);`,
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/auth.confirmEmailChange",
+    "https://api.rohadas.app/api/trpc/auth.confirmEmailChange",
     json={"json": {"token": token_from_email}},
 )
 data = resp.json()["result"]["data"]["json"]
@@ -445,7 +445,7 @@ print("New email:", data["newEmail"])`,
           {
             id: "sess_def456...",
             ipAddress: "49.36.128.42",
-            userAgent: "Hisaabo-Mobile/1.0",
+            userAgent: "Rohadas-Mobile/1.0",
             createdAt: "2026-04-01T12:00:00.000Z",
             lastUsedAt: "2026-04-07T18:00:00.000Z",
             expiresAt: "2026-05-01T12:00:00.000Z",
@@ -454,7 +454,7 @@ print("New email:", data["newEmail"])`,
         ],
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/auth.listSessions?input=%7B%22json%22%3A%7B%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/auth.listSessions?input=%7B%22json%22%3A%7B%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN"`,
         javascript: `const sessions = await trpc.auth.listSessions.query();
 const current = sessions.find(s => s.isCurrent);
@@ -464,7 +464,7 @@ console.log("Active sessions:", sessions.length);`,
 
 params = urllib.parse.quote(json.dumps({"json": {}}))
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/auth.listSessions?input={params}",
+    f"https://api.rohadas.app/api/trpc/auth.listSessions?input={params}",
     headers={"Authorization": f"Bearer {session_token}"},
 )
 sessions = resp.json()["result"]["data"]["json"]`,
@@ -491,7 +491,7 @@ sessions = resp.json()["result"]["data"]["json"]`,
         example: { success: true },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/auth.revokeSession \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/auth.revokeSession \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -d '{"json":{"sessionId":"sess_def456..."}}'`,
@@ -502,7 +502,7 @@ sessions = resp.json()["result"]["data"]["json"]`,
         python: `import httpx
 
 httpx.post(
-    "https://api.hisaabo.in/api/trpc/auth.revokeSession",
+    "https://api.rohadas.app/api/trpc/auth.revokeSession",
     headers={"Authorization": f"Bearer {session_token}"},
     json={"json": {"sessionId": "sess_def456..."}},
 )`,

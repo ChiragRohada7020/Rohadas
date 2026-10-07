@@ -1,7 +1,7 @@
 /**
  * Modal — dialog overlay component
  *
- * The Modal is used throughout Hisaabo for confirmations, quick-entry forms,
+ * The Modal is used throughout Rohadas for confirmations, quick-entry forms,
  * and detail views that don't warrant a full page navigation.  Accessibility
  * correctness is critical here: a poorly implemented modal will leave
  * keyboard-only and screen-reader users unable to dismiss it or interact

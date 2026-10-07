@@ -22,11 +22,11 @@
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { HisaaboClient } from "../client.js";
+import type { RohadasClient } from "../client.js";
 import { wrapTool } from "../lib/errors.js";
 import { MAX_PAGE_SIZE, withPaginationMeta } from "../lib/pagination.js";
 
-export function registerItemTools(server: McpServer, client: HisaaboClient) {
+export function registerItemTools(server: McpServer, client: RohadasClient) {
 
   server.tool(
     "item_list",

@@ -280,7 +280,7 @@ export default function ApiKeysScreen() {
               <Ionicons name="key-outline" size={36} color={colors.textMuted} />
               <Text style={styles.emptyTitle}>No API keys</Text>
               <Text style={styles.emptyDescription}>
-                Create an API key to access Hisaabo programmatically via the CLI or MCP server.
+                Create an API key to access Rohadas programmatically via the CLI or MCP server.
               </Text>
             </View>
           </Card>

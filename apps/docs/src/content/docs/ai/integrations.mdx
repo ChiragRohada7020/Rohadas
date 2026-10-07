@@ -1,13 +1,13 @@
 ---
 title: Integrations
-description: Connect Hisaabo to WhatsApp, Slack, Google Sheets, Shiprocket, Tally, and custom AI agents. Implementation guides for every major integration pattern.
+description: Connect Rohadas to WhatsApp, Slack, Google Sheets, Shiprocket, Tally, and custom AI agents. Implementation guides for every major integration pattern.
 sidebar:
   order: 4
 ---
 
 import { Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
 
-Hisaabo's API-first design means every piece of business data is accessible to any system that can make an HTTP request. This page covers the most common integration patterns — from a WhatsApp bot that creates invoices from voice notes to a Bengaluru CA managing 12 clients through a single OpenClaw agent.
+Rohadas's API-first design means every piece of business data is accessible to any system that can make an HTTP request. This page covers the most common integration patterns — from a WhatsApp bot that creates invoices from voice notes to a Bengaluru CA managing 12 clients through a single OpenClaw agent.
 
 All integrations use the [MCP server](/ai/mcp-server/) or the [CLI tool](/ai/cli/). No undocumented hooks, no screen-scraping, no fragile browser automation.
 
@@ -17,7 +17,7 @@ All integrations use the [MCP server](/ai/mcp-server/) or the [CLI tool](/ai/cli
 
 **Use case:** A shop owner in Jaipur forwards a voice note on WhatsApp — "Bhai, 50 meters of georgette at 180 per meter for Sharma Fabrics, due 15th." An invoice is created and the PDF link is sent back in under 30 seconds. No browser, no form, no manual entry.
 
-This integration sits between WhatsApp Business API and Hisaabo's MCP server. The bot layer handles message receipt and transcription; Hisaabo handles the invoice creation.
+This integration sits between WhatsApp Business API and Rohadas's MCP server. The bot layer handles message receipt and transcription; Rohadas handles the invoice creation.
 
 ### Architecture
 
@@ -31,7 +31,7 @@ WhatsApp Business API
   - Passes text to Claude via MCP
        |
        v
-  Claude (with Hisaabo MCP)
+  Claude (with Rohadas MCP)
   - Parses invoice details from natural language
   - Resolves party names to IDs
   - Calls invoice_create
@@ -57,16 +57,16 @@ export async function handleIncomingMessage(message: WhatsAppMessage) {
     text = await transcribeAudio(message.audioUrl);
   }
 
-  // Pass to Claude with Hisaabo MCP connected
+  // Pass to Claude with Rohadas MCP connected
   const response = await client.messages.create({
     model: "claude-opus-4-5",
     max_tokens: 1024,
-    system: `You are a billing assistant for an Indian business using Hisaabo.
+    system: `You are a billing assistant for an Indian business using Rohadas.
              When the user describes a sale, create the invoice immediately.
              Always confirm the invoice number and total in your response.
              Respond in the same language the user used (Hindi or English).`,
     messages: [{ role: "user", content: text }],
-    // Claude uses the connected Hisaabo MCP server automatically
+    // Claude uses the connected Rohadas MCP server automatically
   });
 
   return response.content[0].text;
@@ -90,7 +90,7 @@ Bot replies: "Invoice BB-15042 ready!
 
 - Use the [WhatsApp Business Cloud API](https://developers.facebook.com/docs/whatsapp/cloud-api) for message webhooks
 - Audio transcription via OpenAI Whisper handles Hindi, English, and regional languages well
-- Use a dedicated Hisaabo user account with the `seller` role for the write MCP instance to limit blast radius; use an `accountant`-role account for any read-only agent
+- Use a dedicated Rohadas user account with the `seller` role for the write MCP instance to limit blast radius; use an `accountant`-role account for any read-only agent
 - Keep an audit log of every voice note + transcript + invoice created for dispute resolution
 
 ---
@@ -148,7 +148,7 @@ curl -s -X POST -H 'Content-type: application/json' \
 
 ### Interactive Slack bot (with Bolt)
 
-For a bot that responds to questions in Slack, use the Hisaabo MCP server via Claude:
+For a bot that responds to questions in Slack, use the Rohadas MCP server via Claude:
 
 ```typescript
 // slack-bot/src/app.ts
@@ -164,7 +164,7 @@ app.message(/hisaabo/i, async ({ message, say }) => {
   const response = await claude.messages.create({
     model: "claude-opus-4-5",
     max_tokens: 512,
-    system: "You are a business assistant with access to Hisaabo invoicing data. " +
+    system: "You are a business assistant with access to Rohadas invoicing data. " +
             "Answer questions about invoices, parties, GST, and inventory. " +
             "Keep responses concise for Slack — use bullet points, not paragraphs.",
     messages: [{ role: "user", content: userMessage }],
@@ -185,7 +185,7 @@ Usage in Slack:
 
 ## Google Sheets
 
-**Use case:** Your accountant maintains a master Google Sheet for financial reporting. Instead of manually exporting and pasting data, a scheduled script syncs Hisaabo invoice data directly into the sheet every night.
+**Use case:** Your accountant maintains a master Google Sheet for financial reporting. Instead of manually exporting and pasting data, a scheduled script syncs Rohadas invoice data directly into the sheet every night.
 
 ### Sync invoice data to Sheets
 
@@ -198,7 +198,7 @@ import { promisify } from "util";
 const execAsync = promisify(exec);
 
 async function syncInvoicesToSheets() {
-  // Pull invoice data from Hisaabo CLI
+  // Pull invoice data from Rohadas CLI
   const { stdout } = await execAsync(
     "hisaabo invoice list --from 2026-04-01 --to 2026-03-31 --json"
   );
@@ -236,7 +236,7 @@ async function syncInvoicesToSheets() {
 
 ### What to sync
 
-| Sheet | Hisaabo CLI command | Refresh frequency |
+| Sheet | Rohadas CLI command | Refresh frequency |
 |---|---|---|
 | Invoices | `hisaabo invoice list --json` | Daily |
 | Payments | `hisaabo payment list --json` | Daily |
@@ -249,9 +249,9 @@ async function syncInvoicesToSheets() {
 
 ## Shiprocket
 
-**Use case:** A Pune-based electronics retailer receives an order in their Hisaabo online store. The moment they confirm the invoice, Shiprocket gets the shipment details, generates the label, and Hisaabo records the tracking number. The customer gets a WhatsApp update. No one touches the Shiprocket dashboard.
+**Use case:** A Pune-based electronics retailer receives an order in their Rohadas online store. The moment they confirm the invoice, Shiprocket gets the shipment details, generates the label, and Rohadas records the tracking number. The customer gets a WhatsApp update. No one touches the Shiprocket dashboard.
 
-This integration is on the [Hisaabo roadmap](/ai/#shiprocket-integration) as a built-in feature. Until then, you can wire it up yourself using the following pattern.
+This integration is on the [Rohadas roadmap](/ai/#shiprocket-integration) as a built-in feature. Until then, you can wire it up yourself using the following pattern.
 
 ### Webhook-based automation
 
@@ -259,7 +259,7 @@ This integration is on the [Hisaabo roadmap](/ai/#shiprocket-integration) as a b
 // shiprocket-sync/src/handler.ts
 
 export async function onInvoiceConfirmed(invoiceId: string) {
-  // Fetch invoice details from Hisaabo
+  // Fetch invoice details from Rohadas
   const { stdout } = await execAsync(`hisaabo invoice get ${invoiceId} --json`);
   const invoice = JSON.parse(stdout);
 
@@ -291,7 +291,7 @@ export async function onInvoiceConfirmed(invoiceId: string) {
     weight: 1.5, // kg
   });
 
-  // Create a shipment record in Hisaabo via CLI
+  // Create a shipment record in Rohadas via CLI
   await execAsync(
     `hisaabo shipment create \
       --invoice ${invoiceId} \
@@ -305,20 +305,20 @@ export async function onInvoiceConfirmed(invoiceId: string) {
 
 ### What gets automated
 
-1. Order confirmed in Hisaabo online store
+1. Order confirmed in Rohadas online store
 2. Invoice created (type: sale)
 3. Webhook fires `onInvoiceConfirmed`
 4. Shiprocket order created with full item and address details
-5. AWB number recorded back on the Hisaabo invoice as a note
+5. AWB number recorded back on the Rohadas invoice as a note
 6. Customer receives Shiprocket tracking link via WhatsApp (via Shiprocket's built-in notification)
 
 ---
 
 ## Tally
 
-**Use case:** Your accountant works in Tally for statutory filings. Instead of re-entering every transaction, export Hisaabo party and invoice data in Tally XML format and import it directly.
+**Use case:** Your accountant works in Tally for statutory filings. Instead of re-entering every transaction, export Rohadas party and invoice data in Tally XML format and import it directly.
 
-Hisaabo already includes Tally XML export for party data. Here is how to use it and extend it for invoices.
+Rohadas already includes Tally XML export for party data. Here is how to use it and extend it for invoices.
 
 ### Party export (built-in)
 
@@ -389,14 +389,14 @@ echo "Tally export complete. Files saved to $OUTPUT_DIR"
 
 **Use case:** An online electronics store in Bengaluru deploys a customer-facing agent that handles order status, payment confirmations, and product availability questions — without routing any of it through the owner. The owner only sees escalations.
 
-OpenClaw agents connect to Hisaabo via the [MCP server](/ai/mcp-server/). Once connected, the agent has access to all of your live business data.
+OpenClaw agents connect to Rohadas via the [MCP server](/ai/mcp-server/). Once connected, the agent has access to all of your live business data.
 
 ### Customer service agent
 
 ```yaml
 # customer-service-agent.yaml
 name: store-support-agent
-description: "Customer service agent for Hisaabo online store"
+description: "Customer service agent for Rohadas online store"
 
 mcp_servers:
   - name: hisaabo
@@ -519,7 +519,7 @@ The CA can now ask: "What's the combined GST liability for all three clients thi
 
 ## Building Your Own Integration
 
-If you have a use case not covered here, the [API for AI agents](/ai/#api-for-ai-agents) section of the overview shows how to call the Hisaabo tRPC API directly from any language.
+If you have a use case not covered here, the [API for AI agents](/ai/#api-for-ai-agents) section of the overview shows how to call the Rohadas tRPC API directly from any language.
 
 For TypeScript integrations, import `AppRouter` from `@hisaabo/api` as a devDependency for full end-to-end type safety — your editor will autocomplete every field, every filter, every response shape.
 
@@ -529,9 +529,9 @@ For read-heavy integrations (reporting, dashboards, syncs), use the CLI's `--jso
 
 ## Related Documentation
 
-- [AI & Automation overview](/ai/) — Start here if you're new to Hisaabo's AI capabilities
+- [AI & Automation overview](/ai/) — Start here if you're new to Rohadas's AI capabilities
 - [MCP Server](/ai/mcp-server/) — Full tool reference and Claude Desktop setup
 - [CLI Tool](/ai/cli/) — Full command reference and automation scripts
 - [API Reference](https://api-docs.hisaabo.in) — Direct tRPC API access
 - [Online Store](/online-store/) — Store setup for WhatsApp and customer service integrations
-- [Self-Hosting](/self-hosting/) — Running Hisaabo on your own infrastructure
+- [Self-Hosting](/self-hosting/) — Running Rohadas on your own infrastructure

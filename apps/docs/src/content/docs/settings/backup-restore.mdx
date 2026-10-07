@@ -1,13 +1,13 @@
 ---
 title: Backup & Restore
-description: Export a full backup of your Hisaabo data and restore it into a new organization.
+description: Export a full backup of your Rohadas data and restore it into a new organization.
 ---
 
 import ForDesktop from '../../../components/ForDesktop.astro';
 
 <ForDesktop>
 
-Hisaabo lets you export a complete snapshot of your organization's data and restore it into a new, empty organization. This is useful for migrating between instances (e.g. cloud to self-hosted), creating a test copy of your data, or disaster recovery.
+Rohadas lets you export a complete snapshot of your organization's data and restore it into a new, empty organization. This is useful for migrating between instances (e.g. cloud to self-hosted), creating a test copy of your data, or disaster recovery.
 
 ## Exporting a backup
 
@@ -91,7 +91,7 @@ User accounts and organization membership are **not** included — the backup co
 No. Restore requires a completely empty organization (zero businesses). This prevents ID conflicts and ensures data integrity.
 
 **Can I export from cloud and restore to self-hosted (or vice versa)?**
-Yes, as long as the Hisaabo versions are compatible. The archive includes a schema checksum that the import engine validates.
+Yes, as long as the Rohadas versions are compatible. The archive includes a schema checksum that the import engine validates.
 
 **How large are backup files?**
 It depends on your data volume. The archive is gzip-compressed, so a business with a few thousand invoices typically produces a file under 10 MB.

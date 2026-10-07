@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, ilike, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { items, itemVariants } from "@hisaabo/db";
 import { router, viewerProcedure } from "../trpc.js";
@@ -51,6 +51,10 @@ export interface POSCatalogTile {
   itemMode: "simple" | "alt_units" | "variants";
   /** Optional — shown as a subtitle; useful for barcode match hinting. */
   sku: string | null;
+  /** True when the item has an image (served at GET /api/items/:id/image). */
+  hasImage: boolean;
+  /** Cache-bust token (ISO string) for the image URL; null when no image. */
+  imageUpdatedAt: string | null;
 }
 
 interface UnitVariantEntry {
@@ -75,6 +79,9 @@ export interface POSItemRow {
   taxPercent: string | null;
   sku: string | null;
   unitVariants: unknown;
+  /** Present when the item has an uploaded image; optional so pure tests can omit it. */
+  imageMimeType?: string | null;
+  imageUpdatedAt?: Date | null;
 }
 
 /**
@@ -123,6 +130,8 @@ export function expandItemsToTiles(
           conversionFactor: "1",
           itemMode: "variants",
           sku: v.sku ?? item.sku,
+          hasImage: !!item.imageMimeType,
+          imageUpdatedAt: item.imageUpdatedAt ? new Date(item.imageUpdatedAt).toISOString() : null,
         });
       }
     } else if (item.itemMode === "alt_units") {
@@ -152,6 +161,8 @@ export function expandItemsToTiles(
             conversionFactor: String(alt.conversionFactor),
             itemMode: "alt_units",
             sku: item.sku,
+            hasImage: !!item.imageMimeType,
+            imageUpdatedAt: item.imageUpdatedAt ? new Date(item.imageUpdatedAt).toISOString() : null,
           });
         }
       }
@@ -175,6 +186,8 @@ function buildSimpleTile(item: POSItemRow): POSCatalogTile {
     conversionFactor: "1",
     itemMode: item.itemMode,
     sku: item.sku,
+    hasImage: !!item.imageMimeType,
+    imageUpdatedAt: item.imageUpdatedAt ? new Date(item.imageUpdatedAt).toISOString() : null,
   };
 }
 
@@ -213,8 +226,11 @@ export const posRouter = router({
       }
 
       const offset = (input.page - 1) * input.limit;
+      // Exclude the raw image bytes — tiles only need imageMimeType/imageUpdatedAt
+      // to know whether an image exists and how to cache-bust its URL.
+      const { imageData: _imageData, ...itemCols } = getTableColumns(items);
       const rows = await ctx.db
-        .select()
+        .select(itemCols)
         .from(items)
         .where(and(...conditions))
         .orderBy(desc(items.updatedAt))

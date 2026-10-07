@@ -31,7 +31,7 @@ export const itcEndpoints: EndpointGroup = {
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/itc.dashboard?input=%7B%22json%22%3A%7B%22returnPeriod%22%3A%222026-01%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/itc.dashboard?input=%7B%22json%22%3A%7B%22returnPeriod%22%3A%222026-01%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const dashboard = await trpc.itc.dashboard.query({
@@ -43,7 +43,7 @@ console.log("Utilization recorded:", dashboard.utilization !== null);`,
         python: `import httpx
 
 resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/itc.dashboard",
+    "https://api.rohadas.app/api/trpc/itc.dashboard",
     params={"input": '{"json":{"returnPeriod":"2026-01"}}'},
     headers={
         "Authorization": f"Bearer {session_token}",
@@ -104,7 +104,7 @@ print("Available ITC:", data["summary"]["available"]["total"])`,
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/itc.ledger?input=%7B%22json%22%3A%7B%22returnPeriod%22%3A%222026-01%22%2C%22status%22%3A%22available%22%2C%22page%22%3A1%2C%22limit%22%3A25%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/itc.ledger?input=%7B%22json%22%3A%7B%22returnPeriod%22%3A%222026-01%22%2C%22status%22%3A%22available%22%2C%22page%22%3A1%2C%22limit%22%3A25%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const ledger = await trpc.itc.ledger.query({
@@ -120,7 +120,7 @@ for (const entry of ledger.entries) {
         python: `import httpx
 
 resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/itc.ledger",
+    "https://api.rohadas.app/api/trpc/itc.ledger",
     params={"input": '{"json":{"returnPeriod":"2026-01","status":"available","page":1,"limit":25}}'},
     headers={
         "Authorization": f"Bearer {session_token}",
@@ -167,7 +167,7 @@ for entry in data["entries"]:
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/itc.markBlocked \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/itc.markBlocked \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -181,7 +181,7 @@ console.log("ITC blocked:", blocked.status); // "blocked"`,
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/itc.markBlocked",
+    "https://api.rohadas.app/api/trpc/itc.markBlocked",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -228,7 +228,7 @@ print("Blocked:", blocked["status"])`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/itc.markEligible \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/itc.markEligible \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -240,7 +240,7 @@ console.log("ITC unblocked:", eligible.status); // "available"`,
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/itc.markEligible",
+    "https://api.rohadas.app/api/trpc/itc.markEligible",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -302,7 +302,7 @@ print("Unblocked:", eligible["status"])`,
         ],
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/itc.agingAlerts" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/itc.agingAlerts" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const alerts = await trpc.itc.agingAlerts.query();
@@ -316,7 +316,7 @@ for (const alert of critical) {
         python: `import httpx
 
 resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/itc.agingAlerts",
+    "https://api.rohadas.app/api/trpc/itc.agingAlerts",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -377,7 +377,7 @@ for alert in alerts:
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/itc.recordUtilization \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/itc.recordUtilization \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -395,7 +395,7 @@ console.log("Journal entry:", result.journalEntry.entryNumber);`,
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/itc.recordUtilization",
+    "https://api.rohadas.app/api/trpc/itc.recordUtilization",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -457,7 +457,7 @@ print("Journal:", result["journalEntry"]["entryNumber"])`,
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/itc.gstr3bTable4?input=%7B%22json%22%3A%7B%22year%22%3A2026%2C%22month%22%3A1%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/itc.gstr3bTable4?input=%7B%22json%22%3A%7B%22year%22%3A2026%2C%22month%22%3A1%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const table4 = await trpc.itc.gstr3bTable4.query({
@@ -470,7 +470,7 @@ console.log("Ineligible (Sec 17(5)):", table4.ineligible.section17_5.centralTax)
         python: `import httpx
 
 resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/itc.gstr3bTable4",
+    "https://api.rohadas.app/api/trpc/itc.gstr3bTable4",
     params={"input": '{"json":{"year":2026,"month":1}}'},
     headers={
         "Authorization": f"Bearer {session_token}",

@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import {
   fatalError, outputJSON, outputTable, outputTSV, outputCSV,
@@ -23,7 +23,7 @@ interface StockAdjustmentRow {
 
 export async function itemStockHistoryCommand(id: string, opts: StockHistoryOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   const page = opts.page ?? 1;
   const limit = opts.limit ?? 20;
@@ -59,7 +59,7 @@ export async function itemStockHistoryCommand(id: string, opts: StockHistoryOpts
     console.log();
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "not_found") fatalError(`Item not found: ${id}`, EXIT.NOT_FOUND);
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);

@@ -28,9 +28,9 @@
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { HisaaboClient } from "../client.js";
+import type { RohadasClient } from "../client.js";
 
-export function registerResources(server: McpServer, client: HisaaboClient) {
+export function registerResources(server: McpServer, client: RohadasClient) {
 
   // ── business://current ──────────────────────────────────────────────────
   // Active business profile. Load this to understand the business context:

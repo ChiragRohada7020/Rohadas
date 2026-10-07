@@ -58,20 +58,53 @@ export function todayISODate(): string {
 // Convert a `YYYY-MM-DD` input value (or a Date) to a full ISO string suitable
 // for tRPC mutation inputs guarded by `z.string().datetime()`. Returns undefined
 // for absent / invalid input so callers can pass it straight to an optional field.
+// ─────────────────────────────────────────────────────────────────────────────
+// Calendar-date serialisation — TIMEZONE CONTRACT
+//
+// Date-only business fields (invoice_date, payment_date, due_date, expense
+// dates …) are CALENDAR dates. They are stored canonically at 00:00:00 UTC of
+// the intended day, because every period preset (getDatePreset in
+// hooks/useDateRange.ts) builds UTC-anchored windows, e.g.
+// "[today 00:00Z … today 23:59:59.999Z]".
+//
+// These helpers previously parsed "YYYY-MM-DD" as LOCAL midnight. In IST
+// (UTC+5:30) that is "yesterday 18:30Z" — outside today's UTC window — so an
+// invoice dated today was invisible on the dashboard's default "Today" view
+// after ~05:30 IST, and documents dated the 1st of a month fell out of "This
+// Month". Every date-only input is now re-anchored to UTC midnight of its
+// wall-clock day, which lines up with the preset windows in ANY runtime tz.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Fast, timezone-independent path for the common case: a raw `YYYY-MM-DD`
+// string straight off an <input type="date"> or a date picker.
+const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+// Canonical calendar-date instant: UTC midnight of the wall-clock day `d`
+// falls on locally (for Date objects / full-ISO strings).
+function utcMidnightOfWallDay(d: dayjs.Dayjs): string {
+  return new Date(Date.UTC(d.year(), d.month(), d.date())).toISOString();
+}
+
 export function toISOString(date: string | Date | null | undefined): string | undefined {
   if (date === null || date === undefined || date === "") return undefined;
+  if (typeof date === "string" && DATE_ONLY_RE.test(date.trim())) {
+    return `${date.trim()}T00:00:00.000Z`;
+  }
   const d = dayjs(date);
   if (!d.isValid()) return undefined;
-  return d.toISOString();
+  return utcMidnightOfWallDay(d);
 }
 
 // End-of-day variant for range filters: upper-bound "to" inputs should include
 // the whole day, so we push to 23:59:59.999 before emitting ISO.
 export function toISOStringEndOfDay(date: string | Date | null | undefined): string | undefined {
   if (date === null || date === undefined || date === "") return undefined;
+  if (typeof date === "string" && DATE_ONLY_RE.test(date.trim())) {
+    return `${date.trim()}T23:59:59.999Z`;
+  }
   const d = dayjs(date);
   if (!d.isValid()) return undefined;
-  return d.endOf("day").toISOString();
+  return new Date(Date.UTC(d.year(), d.month(), d.date(), 23, 59, 59, 999)).toISOString();
 }
 
 export function cn(...classes: (string | false | null | undefined)[]): string {

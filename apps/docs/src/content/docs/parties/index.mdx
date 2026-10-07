@@ -1,6 +1,6 @@
 ---
 title: Parties — Customers & Suppliers
-description: Manage customers and suppliers in Hisaabo. Add parties, track GSTIN, set credit limits, and view running balance statements.
+description: Manage customers and suppliers in Rohadas. Add parties, track GSTIN, set credit limits, and view running balance statements.
 sidebar:
   order: 1
 ---
@@ -8,7 +8,7 @@ sidebar:
 import ForDesktop from '../../../components/ForDesktop.astro';
 import ForMobile from '../../../components/ForMobile.astro';
 
-A **party** in Hisaabo is any person or company you do business with — either a customer (you sell to them) or a supplier (you buy from them). All invoices and payments are linked to a party.
+A **party** in Rohadas is any person or company you do business with — either a customer (you sell to them) or a supplier (you buy from them). All invoices and payments are linked to a party.
 
 ## Adding a party
 
@@ -40,7 +40,7 @@ Tap **Parties** in the bottom tab bar, then tap the floating **+** button. A ful
 | Billing Address | Invoice billing address |
 | Shipping Address | Delivery address (if different from billing) |
 | City, Pincode | Address details |
-| Opening Balance | Amount the party owes you (positive) or you owe them (negative) as of the day you start using Hisaabo |
+| Opening Balance | Amount the party owes you (positive) or you owe them (negative) as of the day you start using Rohadas |
 | Credit Period (days) | Number of days before invoices become overdue. Used to auto-set due dates. |
 | Credit Limit | Maximum outstanding amount allowed. Shown as a warning (not a hard block). |
 | Category | Free-text category for grouping parties |
@@ -54,9 +54,9 @@ A party is either a **customer** or a **supplier**, but the same entity can be b
 
 ## Opening balance
 
-The opening balance represents the amount outstanding before you started using Hisaabo.
+The opening balance represents the amount outstanding before you started using Rohadas.
 
-- **Positive opening balance**: The party owes you money (receivable). For example, if a customer had an unpaid invoice of ₹5,000 when you migrated to Hisaabo, enter `5000`.
+- **Positive opening balance**: The party owes you money (receivable). For example, if a customer had an unpaid invoice of ₹5,000 when you migrated to Rohadas, enter `5000`.
 - **Negative opening balance**: You owe the party money (payable). For example, if you had an outstanding bill to a supplier of ₹12,000, enter `-12000`.
 
 The opening balance is included in the party's running balance calculation.
@@ -142,8 +142,8 @@ Create two separate party records — one with type "Customer" and one with type
 **Can I bulk import parties from a spreadsheet?**
 Yes. See [Import Data](/getting-started/import-data) for CSV import instructions. Duplicate names (case-insensitive) are skipped automatically.
 
-**Does Hisaabo validate GSTIN format?**
-Yes. Hisaabo validates the 15-character GSTIN format using a regex pattern (2-digit state code, PAN structure, entity code, and check character position). However, it does not validate the checksum digit. Enter the GSTIN exactly as it appears on the party's registration certificate.
+**Does Rohadas validate GSTIN format?**
+Yes. Rohadas validates the 15-character GSTIN format using a regex pattern (2-digit state code, PAN structure, entity code, and check character position). However, it does not validate the checksum digit. Enter the GSTIN exactly as it appears on the party's registration certificate.
 
 **What is the difference between billing address and shipping address?**
 The billing address is the legal registered address printed on the invoice. The shipping address is where goods are physically delivered. If both are the same, you only need to fill in the billing address.

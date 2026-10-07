@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, EXIT, hasColor } from "../../output.js";
 import chalk from "chalk";
@@ -8,7 +8,7 @@ export async function storeCheckSlugCommand(
   opts: { json?: boolean },
 ): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const result = await client.store.checkSlug({ slug });
@@ -37,7 +37,7 @@ export async function storeCheckSlugCommand(
       }
     }
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "validation_failed") fatalError(e.message, EXIT.VALIDATION);

@@ -10,7 +10,7 @@ import { FAQSection } from "./components/FAQ";
 import { allEndpointGroups, allSections } from "./content";
 import { Link } from "react-router-dom";
 
-const BASE_URL = "https://api.hisaabo.in";
+const BASE_URL = "https://api.rohadas.app";
 
 const QUICK_START_CODE = `import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import superjson from "superjson";
@@ -19,7 +19,7 @@ import type { AppRouter } from "@hisaabo/api";
 const trpc = createTRPCClient<AppRouter>({
   links: [
     httpBatchLink({
-      url: "https://api.hisaabo.in/api/trpc",
+      url: "https://api.rohadas.app/api/trpc",
       transformer: superjson,
       headers() {
         return {
@@ -232,13 +232,13 @@ function OverviewPage() {
               className="text-[32px] lg:text-[36px] font-bold mb-4 leading-tight relative"
               style={{ color: "var(--text-primary)", letterSpacing: "-0.03em" }}
             >
-              Hisaabo API Reference
+              Rohadas API Reference
             </h1>
             <p
               className="text-[15px] lg:text-[16px] leading-[1.7] max-w-[560px] relative"
               style={{ color: "var(--text-secondary)" }}
             >
-              Complete reference for the Hisaabo tRPC API. Every capability available to
+              Complete reference for the Rohadas tRPC API. Every capability available to
               the web dashboard, mobile app, and AI agents — documented with code examples in
               JavaScript, cURL, and Python.
             </p>
@@ -494,7 +494,7 @@ function OverviewPage() {
                   </thead>
                   <tbody>
                     {[
-                      { origin: "Same origin (*.hisaabo.in)", auth: "Authenticated", limit: "120" },
+                      { origin: "Same origin (*.rohadas.app)", auth: "Authenticated", limit: "120" },
                       { origin: "Same origin", auth: "Unauthenticated", limit: "60" },
                       { origin: "External", auth: "Authenticated", limit: "60" },
                       { origin: "External", auth: "Unauthenticated", limit: "10" },
@@ -508,7 +508,7 @@ function OverviewPage() {
                   </tbody>
                 </table>
                 <p className="mt-3" style={{ color: "var(--text-muted)" }}>
-                  Same-origin is determined by the <InlineCode>Origin</InlineCode> header matching configured CORS origins or <InlineCode>*.hisaabo.in</InlineCode> subdomains. Server-side calls without an Origin header are treated as same-origin.
+                  Same-origin is determined by the <InlineCode>Origin</InlineCode> header matching configured CORS origins or <InlineCode>*.rohadas.app</InlineCode> subdomains. Server-side calls without an Origin header are treated as same-origin.
                 </p>
               </div>
             </div>

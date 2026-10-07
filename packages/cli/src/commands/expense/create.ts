@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, EXIT, success } from "../../output.js";
 import { formatINR, todayISO } from "../../format.js";
@@ -15,7 +15,7 @@ interface CreateOpts {
 
 export async function expenseCreateCommand(opts: CreateOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   if (!opts.category) fatalError("--category is required", EXIT.USAGE);
   if (!opts.amount) fatalError("--amount is required", EXIT.USAGE);
@@ -40,7 +40,7 @@ export async function expenseCreateCommand(opts: CreateOpts): Promise<void> {
     success(`Created: ${expense.category} ${formatINR(expense.amount)}`);
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "validation_failed") fatalError(e.message, EXIT.VALIDATION);

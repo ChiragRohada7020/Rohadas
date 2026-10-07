@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError, type PaymentUpdateInput } from "../../client.js";
+import { RohadasClient, RohadasApiError, type PaymentUpdateInput } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, EXIT, success } from "../../output.js";
 import { formatINR } from "../../format.js";
@@ -14,7 +14,7 @@ interface UpdateOpts {
 
 export async function paymentUpdateCommand(id: string, opts: UpdateOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   // Build update payload — only send fields explicitly provided
   const input: PaymentUpdateInput = { id };
@@ -41,7 +41,7 @@ export async function paymentUpdateCommand(id: string, opts: UpdateOpts): Promis
     success(`Updated: ${payment.paymentNumber} — ${formatINR(payment.amount)}`);
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "not_found") fatalError(`Payment not found: ${id}`, EXIT.NOT_FOUND);
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);

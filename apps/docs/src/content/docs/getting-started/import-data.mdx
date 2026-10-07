@@ -1,11 +1,11 @@
 ---
 title: Import Data
-description: Import your existing parties, items, invoices, and payments into Hisaabo from MyBillBook or a CSV file. Covers the import process, field mapping, and what to expect.
+description: Import your existing parties, items, invoices, and payments into Rohadas from MyBillBook or a CSV file. Covers the import process, field mapping, and what to expect.
 sidebar:
   order: 3
 ---
 
-If you are migrating from MyBillBook or another app, you can import your existing data into Hisaabo rather than starting from scratch. The import system supports parties (customers and suppliers), items, invoices, and payments.
+If you are migrating from MyBillBook or another app, you can import your existing data into Rohadas rather than starting from scratch. The import system supports parties (customers and suppliers), items, invoices, and payments.
 
 :::note
 Import requires the Superadmin or Admin role. Seller Manager, Seller, and Accountant roles cannot run imports.
@@ -160,7 +160,7 @@ Follow this sequence to avoid dependency errors:
 **What happens if I import the same CSV twice?**
 Duplicate detection is name-based for parties and items. Re-importing the same file creates no duplicate parties or items. For invoices, if an invoice number already exists in your business, the import skips it.
 
-**My party names in the CSV have slightly different spelling from what I have in Hisaabo. What do I do?**
+**My party names in the CSV have slightly different spelling from what I have in Rohadas. What do I do?**
 The import matches by exact name (case-insensitive). "Raj Traders" and "RAJ TRADERS" are treated as the same party, but "Raj Trader" (missing the s) would create a new record. Normalise your CSV before importing.
 
 **Can I import opening balances for parties?**

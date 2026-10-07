@@ -55,7 +55,7 @@ export const journalEndpoints: EndpointGroup = {
         ],
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/journal.list?input=%7B%22json%22%3A%7B%22fromDate%22%3A%222026-04-01T00%3A00%3A00.000Z%22%2C%22toDate%22%3A%222026-04-30T23%3A59%3A59.000Z%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/journal.list?input=%7B%22json%22%3A%7B%22fromDate%22%3A%222026-04-01T00%3A00%3A00.000Z%22%2C%22toDate%22%3A%222026-04-30T23%3A59%3A59.000Z%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const entries = await trpc.journal.list.query({
@@ -74,7 +74,7 @@ params = urllib.parse.quote(json.dumps({"json": {
     "toDate": "2026-04-30T23:59:59.000Z",
 }}))
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/journal.list?input={params}",
+    f"https://api.rohadas.app/api/trpc/journal.list?input={params}",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -139,7 +139,7 @@ entries = resp.json()["result"]["data"]["json"]`,
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/journal.getById?input=%7B%22json%22%3A%7B%22id%22%3A%22je-uuid-1%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/journal.getById?input=%7B%22json%22%3A%7B%22id%22%3A%22je-uuid-1%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const entry = await trpc.journal.getById.query({ id: "je-uuid-1" });
@@ -154,7 +154,7 @@ entry.lines.forEach(line => {
 
 params = urllib.parse.quote(json.dumps({"json": {"id": "je-uuid-1"}}))
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/journal.getById?input={params}",
+    f"https://api.rohadas.app/api/trpc/journal.getById?input={params}",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -202,7 +202,7 @@ entry = resp.json()["result"]["data"]["json"]`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/journal.create \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/journal.create \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -245,7 +245,7 @@ entry = resp.json()["result"]["data"]["json"]`,
 
 console.log("Created:", entry.entryNumber); // "JE-00013"`,
         python: `resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/journal.create",
+    "https://api.rohadas.app/api/trpc/journal.create",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -302,7 +302,7 @@ print("Created:", entry["entryNumber"])`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/journal.update \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/journal.update \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -325,7 +325,7 @@ print("Created:", entry["entryNumber"])`,
   ],
 });`,
         python: `httpx.post(
-    "https://api.hisaabo.in/api/trpc/journal.update",
+    "https://api.rohadas.app/api/trpc/journal.update",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
     json={"json": {
         "id": "je-uuid-1",
@@ -378,7 +378,7 @@ print("Created:", entry["entryNumber"])`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/journal.void \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/journal.void \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -390,7 +390,7 @@ print("Created:", entry["entryNumber"])`,
 console.log(\`Voided \${voidedEntry.entryNumber}\`);
 console.log(\`Reversal: \${reversingEntry.entryNumber} - \${reversingEntry.narration}\`);`,
         python: `resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/journal.void",
+    "https://api.rohadas.app/api/trpc/journal.void",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
     json={"json": {"id": "je-uuid-1"}},
 )
@@ -423,14 +423,14 @@ print(f"Reversal: {result['reversingEntry']['entryNumber']}")`,
         example: { success: true },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/journal.delete \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/journal.delete \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
   -d '{"json":{"id":"je-uuid-1"}}'`,
         javascript: `await trpc.journal.delete.mutate({ id: "je-uuid-1" });`,
         python: `httpx.post(
-    "https://api.hisaabo.in/api/trpc/journal.delete",
+    "https://api.rohadas.app/api/trpc/journal.delete",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
     json={"json": {"id": "je-uuid-1"}},
 )`,
@@ -485,7 +485,7 @@ print(f"Reversal: {result['reversingEntry']['entryNumber']}")`,
         ],
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/journal.templateList" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/journal.templateList" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const templates = await trpc.journal.templateList.query();
@@ -495,7 +495,7 @@ templates.forEach(t => {
   console.log(\`\${t.name}: \u20B9\${total}\`);
 });`,
         python: `resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/journal.templateList",
+    "https://api.rohadas.app/api/trpc/journal.templateList",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -541,7 +541,7 @@ templates = resp.json()["result"]["data"]["json"]`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/journal.templateCreate \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/journal.templateCreate \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -566,7 +566,7 @@ templates = resp.json()["result"]["data"]["json"]`,
 
 console.log("Template created:", template.id);`,
         python: `resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/journal.templateCreate",
+    "https://api.rohadas.app/api/trpc/journal.templateCreate",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -603,14 +603,14 @@ console.log("Template created:", template.id);`,
         example: { success: true },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/journal.templateDelete \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/journal.templateDelete \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
   -d '{"json":{"id":"jt-uuid-1"}}'`,
         javascript: `await trpc.journal.templateDelete.mutate({ id: "jt-uuid-1" });`,
         python: `httpx.post(
-    "https://api.hisaabo.in/api/trpc/journal.templateDelete",
+    "https://api.rohadas.app/api/trpc/journal.templateDelete",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
     json={"json": {"id": "jt-uuid-1"}},
 )`,
@@ -654,7 +654,7 @@ console.log("Template created:", template.id);`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/journal.createFromTemplate \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/journal.createFromTemplate \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -682,7 +682,7 @@ const adjustedEntry = await trpc.journal.createFromTemplate.mutate({
   ],
 });`,
         python: `resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/journal.createFromTemplate",
+    "https://api.rohadas.app/api/trpc/journal.createFromTemplate",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,

@@ -38,7 +38,7 @@ export default function AppearanceScreen() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionHint}>
-          Choose how Hisaabo looks on this device.
+          Choose how Rohadas looks on this device.
         </Text>
 
         <View style={styles.list}>

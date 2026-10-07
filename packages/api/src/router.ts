@@ -39,6 +39,11 @@ import { systemRouter } from "./routers/system.js";
 import { selfExportRouter } from "./routers/selfExport.js";
 import { selfImportRouter } from "./routers/selfImport.js";
 import { posRouter } from "./routers/pos.js";
+import { inventoryRouter } from "./routers/inventory.js";
+import { caHandoverRouter } from "./routers/caHandover.js";
+import { whatsAppRouter } from "./routers/whatsapp.js";
+
+import { aiRouter } from "./routers/ai.js";
 
 export const appRouter = router({
   auth: authRouter,
@@ -79,6 +84,10 @@ export const appRouter = router({
   selfExport: selfExportRouter,
   selfImport: selfImportRouter,
   pos: posRouter,
+  inventory: inventoryRouter,
+  caHandover: caHandoverRouter,
+  whatsApp: whatsAppRouter,
+  ai: aiRouter,
 });
 
 export type AppRouter = typeof appRouter;

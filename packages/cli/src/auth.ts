@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError } from "./client.js";
+import { RohadasClient, RohadasApiError } from "./client.js";
 import { getConfig, setConfig, clearConfig, requireAuth, getConfigPath } from "./config.js";
 import { fatalError, EXIT, outputJSON, success } from "./output.js";
 
@@ -18,7 +18,7 @@ export async function loginWithToken(apiUrl: string, token: string): Promise<voi
   const base = validateApiUrl(apiUrl);
 
   // Use a temporary client with the token but no business/tenant yet
-  const client = new HisaaboClient({
+  const client = new RohadasClient({
     apiUrl: base,
     token,
     tenantId: "",
@@ -29,7 +29,7 @@ export async function loginWithToken(apiUrl: string, token: string): Promise<voi
   try {
     user = await client.auth.me();
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Invalid or expired API key.", EXIT.AUTH);
       if (err.code === "network_error") fatalError("Cannot reach server: " + err.message, EXIT.NETWORK);
@@ -41,7 +41,7 @@ export async function loginWithToken(apiUrl: string, token: string): Promise<voi
   // Temporarily store the token so business.list() can authenticate
   setConfig({ apiUrl: base, token });
 
-  const authedClient = new HisaaboClient({
+  const authedClient = new RohadasClient({
     apiUrl: base,
     token,
     tenantId: "",
@@ -105,7 +105,7 @@ export async function login(apiUrl: string, email: string, password: string): Pr
   const base = validateApiUrl(apiUrl);
 
   // Use a temporary client without auth for login
-  const client = new HisaaboClient({
+  const client = new RohadasClient({
     apiUrl: base,
     token: "",
     tenantId: "",
@@ -115,7 +115,7 @@ export async function login(apiUrl: string, email: string, password: string): Pr
   try {
     const result = await client.auth.login({ email, password });
     // After login, fetch businesses
-    const authedClient = new HisaaboClient({
+    const authedClient = new RohadasClient({
       apiUrl: base,
       token: result.sessionId,
       tenantId: "",
@@ -172,7 +172,7 @@ export async function login(apiUrl: string, email: string, password: string): Pr
     console.log("\n  You can switch businesses anytime with:");
     console.log("    hisaabo business switch\n");
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Invalid email or password.", EXIT.AUTH);
       if (err.code === "network_error") fatalError("Cannot reach server: " + err.message, EXIT.NETWORK);
@@ -188,7 +188,7 @@ export async function logout(): Promise<void> {
   }
   try {
     const cfg = requireAuth();
-    const client = new HisaaboClient(cfg);
+    const client = new RohadasClient(cfg);
     await client.auth.logout();
   } catch {
     // ignore errors on logout
@@ -199,7 +199,7 @@ export async function logout(): Promise<void> {
 
 export async function whoami(jsonMode: boolean): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
   try {
     const user = await client.auth.me();
     if (jsonMode) {
@@ -211,7 +211,7 @@ export async function whoami(jsonMode: boolean): Promise<void> {
     console.log(`  Business: ${cfg.businessName} (${cfg.businessId})`);
     console.log(`  API:      ${cfg.apiUrl}`);
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       fatalError(e.message, EXIT.GENERAL);

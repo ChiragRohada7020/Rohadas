@@ -155,7 +155,7 @@ export const useBiometricStore = create<BiometricState>((set, get) => ({
   authenticate: async () => {
     try {
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: "Unlock Hisaabo",
+        promptMessage: "Unlock Rohadas",
         cancelLabel: "Use PIN",
         disableDeviceFallback: true,
         fallbackLabel: "Use PIN",

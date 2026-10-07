@@ -129,7 +129,7 @@ function CsvExportSection() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `hisaabo-export-${todayISODate()}.zip`;
+      a.download = `rohadas-export-${todayISODate()}.zip`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success("Data exported successfully");

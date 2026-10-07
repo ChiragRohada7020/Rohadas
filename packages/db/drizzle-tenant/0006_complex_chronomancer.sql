@@ -1,0 +1,1 @@
+ALTER TABLE "lot_consumptions" ALTER COLUMN "lot_id" DROP NOT NULL;

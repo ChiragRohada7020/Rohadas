@@ -26,7 +26,7 @@ export const hsnEndpoints: EndpointGroup = {
         ],
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/hsn.search?input=%7B%22json%22%3A%7B%22query%22%3A%22cotton%20t-shirt%22%2C%22type%22%3A%22goods%22%2C%22limit%22%3A5%7D%7D"`,
+        curl: `curl "https://api.rohadas.app/api/trpc/hsn.search?input=%7B%22json%22%3A%7B%22query%22%3A%22cotton%20t-shirt%22%2C%22type%22%3A%22goods%22%2C%22limit%22%3A5%7D%7D"`,
         javascript: `const results = await trpc.hsn.search.query({
   query: "cotton t-shirt",
   type: "goods",
@@ -36,7 +36,7 @@ export const hsnEndpoints: EndpointGroup = {
         python: `import httpx
 
 resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/hsn.search",
+    "https://api.rohadas.app/api/trpc/hsn.search",
     params={"input": '{"json":{"query":"cotton t-shirt","type":"goods","limit":5}}'},
 )
 results = resp.json()["result"]["data"]["json"]
@@ -66,7 +66,7 @@ for item in results:
         example: { valid: true },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/hsn.validate?input=%7B%22json%22%3A%7B%22hsn%22%3A%2261091000%22%7D%7D"`,
+        curl: `curl "https://api.rohadas.app/api/trpc/hsn.validate?input=%7B%22json%22%3A%7B%22hsn%22%3A%2261091000%22%7D%7D"`,
         javascript: `const { valid } = await trpc.hsn.validate.query({
   hsn: "61091000",
 });
@@ -76,7 +76,7 @@ if (!valid) {
         python: `import httpx
 
 resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/hsn.validate",
+    "https://api.rohadas.app/api/trpc/hsn.validate",
     params={"input": '{"json":{"hsn":"61091000"}}'},
 )
 result = resp.json()["result"]["data"]["json"]
@@ -112,7 +112,7 @@ print("Valid:", result["valid"])`,
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/hsn.validateForTurnover?input=%7B%22json%22%3A%7B%22hsn%22%3A%2261%22%2C%22annualTurnover%22%3A%2275000000.00%22%7D%7D"`,
+        curl: `curl "https://api.rohadas.app/api/trpc/hsn.validateForTurnover?input=%7B%22json%22%3A%7B%22hsn%22%3A%2261%22%2C%22annualTurnover%22%3A%2275000000.00%22%7D%7D"`,
         javascript: `const result = await trpc.hsn.validateForTurnover.query({
   hsn: "61",
   annualTurnover: "75000000.00", // Rs. 7.5 crore
@@ -123,7 +123,7 @@ if (!result.sufficient) {
         python: `import httpx
 
 resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/hsn.validateForTurnover",
+    "https://api.rohadas.app/api/trpc/hsn.validateForTurnover",
     params={"input": '{"json":{"hsn":"61","annualTurnover":"75000000.00"}}'},
 )
 result = resp.json()["result"]["data"]["json"]

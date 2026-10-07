@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, outputTable, EXIT, hasColor } from "../../output.js";
 import type { ColumnDef } from "../../output.js";
@@ -11,7 +11,7 @@ interface ListSessionsOpts {
 
 export async function listSessionsCommand(opts: ListSessionsOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const sessions = await client.auth.listSessions({ expired: opts.expired ?? false });
@@ -54,7 +54,7 @@ export async function listSessionsCommand(opts: ListSessionsOpts): Promise<void>
     outputTable(rows, columns);
     process.stdout.write("\n");
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "network_error") fatalError(err.message, EXIT.NETWORK);

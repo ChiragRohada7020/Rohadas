@@ -11,7 +11,7 @@
 import { createWriteStream } from "node:fs";
 import { stat, unlink } from "node:fs/promises";
 import { createHash } from "node:crypto";
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireTenantAuth } from "../../config.js";
 import { fatalError, success, hasColor, isInteractive, EXIT } from "../../output.js";
 import chalk from "chalk";
@@ -44,7 +44,7 @@ interface TenantEntry {
  * If the input is already a UUID, return it as-is.
  * Otherwise look it up via tenant.list and match by slug.
  */
-async function resolveTenantId(client: HisaaboClient, slugOrId: string): Promise<string> {
+async function resolveTenantId(client: RohadasClient, slugOrId: string): Promise<string> {
   if (isUuid(slugOrId)) {
     return slugOrId;
   }
@@ -92,14 +92,14 @@ export interface ExportOpts {
 
 export async function exportCommand(opts: ExportOpts): Promise<void> {
   const cfg = requireTenantAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   // 1. Resolve tenant
   let tenantId: string;
   try {
     tenantId = await resolveTenantId(client, opts.tenant);
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") {
         fatalError("Not authenticated. Run `hisaabo login` first.", EXIT_AUTH);
@@ -122,7 +122,7 @@ export async function exportCommand(opts: ExportOpts): Promise<void> {
       ? `${cfg.apiUrl}${result.url}`
       : result.url;
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") {
         fatalError("Not authenticated. Run `hisaabo login` first.", EXIT_AUTH);
@@ -213,7 +213,7 @@ export async function exportCommand(opts: ExportOpts): Promise<void> {
     // Clean up partial file
     writeStream.destroy();
     await unlink(outPath).catch(() => undefined);
-    if (e instanceof HisaaboApiError && e.hisaaboError.code === "network_error") {
+    if (e instanceof RohadasApiError && e.hisaaboError.code === "network_error") {
       fatalError(`Download failed: ${e.hisaaboError.message}`, EXIT_SERVER_ERROR);
     }
     fatalError(`Download failed: ${String(e instanceof Error ? e.message : e)}`, EXIT_SERVER_ERROR);

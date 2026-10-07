@@ -1,4 +1,4 @@
-import { eq, and, sql, desc, isNull } from "drizzle-orm";
+import { eq, and, sql, desc, isNull, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import {
@@ -720,4 +720,76 @@ export const itcRouter = router({
         },
       };
     }),
+
+  gstr3bTable4Annual: viewerProcedure
+    .input(z.object({ financialYear: z.number().int().min(2017).max(2099) }))
+    .query(async ({ input, ctx }) => {
+      requireCan(ctx.ability, "read", "ITC");
+
+      // Indian FY runs April → March. Build the twelve return periods.
+      const periods: string[] = [];
+      for (let m = 0; m < 12; m++) {
+        const d = new Date(input.financialYear, 3 + m, 1);
+        periods.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+      }
+
+      async function sumItc(extra: Array<ReturnType<typeof sql>>): Promise<{ cgst: string; sgst: string; igst: string; cess: string }> {
+        const [row] = await ctx.db
+          .select({
+            cgst: sql<string>`COALESCE(SUM(${itcLedgerEntries.cgst}::numeric), 0)::text`,
+            sgst: sql<string>`COALESCE(SUM(${itcLedgerEntries.sgst}::numeric), 0)::text`,
+            igst: sql<string>`COALESCE(SUM(${itcLedgerEntries.igst}::numeric), 0)::text`,
+            cess: sql<string>`COALESCE(SUM(${itcLedgerEntries.cess}::numeric), 0)::text`,
+          })
+          .from(itcLedgerEntries)
+          .where(and(
+            eq(itcLedgerEntries.businessId, ctx.businessId),
+            inArray(itcLedgerEntries.returnPeriod, periods),
+            ...extra,
+          ));
+        return { cgst: row?.cgst ?? ZERO, sgst: row?.sgst ?? ZERO, igst: row?.igst ?? ZERO, cess: row?.cess ?? ZERO };
+      }
+
+      const toTaxRow = (r: { cgst: string; sgst: string; igst: string; cess: string }) => ({
+        integratedTax: r.igst,
+        centralTax: r.cgst,
+        stateTax: r.sgst,
+        cess: r.cess,
+      });
+
+      const zero = { cgst: ZERO, sgst: ZERO, igst: ZERO, cess: ZERO };
+      const row4A3 = await sumItc([eq(itcLedgerEntries.isReverseCharge, true), eq(itcLedgerEntries.status, "available")]);
+      const row4A5 = await sumItc([eq(itcLedgerEntries.isReverseCharge, false), eq(itcLedgerEntries.status, "available")]);
+      const row4B = await sumItc([sql`${itcLedgerEntries.status} IN ('blocked', 'reversed')`]);
+
+      const total4A = {
+        integratedTax: money.sum([zero.igst, zero.igst, row4A3.igst, row4A5.igst]),
+        centralTax: money.sum([zero.cgst, zero.cgst, row4A3.cgst, row4A5.cgst]),
+        stateTax: money.sum([zero.sgst, zero.sgst, row4A3.sgst, row4A5.sgst]),
+        cess: money.sum([zero.cess, zero.cess, row4A3.cess, row4A5.cess]),
+      };
+      const total4B = toTaxRow(row4B);
+
+      const netItc = {
+        integratedTax: money.sub(total4A.integratedTax, total4B.integratedTax),
+        centralTax: money.sub(total4A.centralTax, total4B.centralTax),
+        stateTax: money.sub(total4A.stateTax, total4B.stateTax),
+        cess: money.sub(total4A.cess, total4B.cess),
+      };
+
+      return {
+        financialYear: input.financialYear,
+        periods,
+        itcAvailable: {
+          importOfGoods: toTaxRow(zero),
+          importOfServices: toTaxRow(zero),
+          reverseCharge: toTaxRow(row4A3),
+          allOther: toTaxRow(row4A5),
+          total: total4A,
+        },
+        itcReversed: { total: total4B },
+        netItc,
+      };
+    }),
+
 });

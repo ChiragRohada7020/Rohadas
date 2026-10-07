@@ -197,7 +197,7 @@ export function LockScreen({ onUnlock, onSignOut }: LockScreenProps) {
         <Animated.View style={[styles.ambientGlow, { opacity: glowOpacity }]} />
         <View style={styles.content}>
           <LogoIcon size={64} />
-          <Text style={styles.brandName}>Hisaabo</Text>
+          <Text style={styles.brandName}>Rohadas</Text>
           <ActivityIndicator size="small" color={colors.brand} style={{ marginTop: 24 }} />
           <Text style={styles.verifyingText}>Verifying session...</Text>
         </View>
@@ -214,7 +214,7 @@ export function LockScreen({ onUnlock, onSignOut }: LockScreenProps) {
         <View style={styles.content}>
           {/* Logo */}
           <LogoIcon size={64} />
-          <Text style={styles.brandName}>Hisaabo</Text>
+          <Text style={styles.brandName}>Rohadas</Text>
 
           {/* Fingerprint tap area */}
           <TouchableOpacity

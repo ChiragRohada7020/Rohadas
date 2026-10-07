@@ -16,7 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { trpc } from "../../../src/lib/trpc";
-import { formatCurrency } from "../../../src/lib/utils";
+import { formatCurrency, utcMidnightIso } from "../../../src/lib/utils";
 import { calcInvoiceTotals } from "@hisaabo/shared";
 import { makeStyles } from "../../../src/lib/makeStyles";
 import { useColors } from "../../../src/contexts/ThemeContext";
@@ -490,8 +490,8 @@ export default function InvoiceEditScreen() {
     updateMutation.mutate({
       id: id ?? "",
       partyId: selectedParty.id,
-      invoiceDate: invoiceDate.toISOString(),
-      dueDate: dueDate ? dueDate.toISOString() : null,
+      invoiceDate: utcMidnightIso(invoiceDate),
+      dueDate: dueDate ? utcMidnightIso(dueDate) : null,
       notes: notes.trim() || null,
       // Bug B: itemName is the required name snapshot; description is the
       // optional free-text per-line note (empty → omitted).

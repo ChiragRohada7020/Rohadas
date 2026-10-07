@@ -367,7 +367,7 @@ function AnimatedSplash({
             },
           ]}
         >
-          Hisaabo
+          Rohadas
         </Animated.Text>
 
         {/* Tagline */}

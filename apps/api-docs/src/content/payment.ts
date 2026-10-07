@@ -47,7 +47,7 @@ export const paymentEndpoints: EndpointGroup = {
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/payment.list?input=%7B%22json%22%3A%7B%22partyId%22%3A%22party-uuid%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/payment.list?input=%7B%22json%22%3A%7B%22partyId%22%3A%22party-uuid%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const { data, total } = await trpc.payment.list.query({
@@ -59,7 +59,7 @@ export const paymentEndpoints: EndpointGroup = {
 
 params = urllib.parse.quote(json.dumps({"json": {"partyId": "party-uuid", "page": 1}}))
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/payment.list?input={params}",
+    f"https://api.rohadas.app/api/trpc/payment.list?input={params}",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
 )`,
       },
@@ -104,7 +104,7 @@ resp = httpx.get(
       },
       codeExamples: {
         curl: `# Single invoice payment
-curl -X POST https://api.hisaabo.in/api/trpc/payment.create \\
+curl -X POST https://api.rohadas.app/api/trpc/payment.create \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -140,7 +140,7 @@ const bulkPayment = await trpc.payment.create.mutate({
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/payment.create",
+    "https://api.rohadas.app/api/trpc/payment.create",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
     json={"json": {
         "partyId": "party-uuid",
@@ -178,7 +178,7 @@ resp = httpx.post(
         ],
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/payment.unpaidInvoices?input=%7B%22json%22%3A%7B%22partyId%22%3A%22party-uuid%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/payment.unpaidInvoices?input=%7B%22json%22%3A%7B%22partyId%22%3A%22party-uuid%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const invoices = await trpc.payment.unpaidInvoices.query({ partyId: "party-uuid" });
@@ -189,7 +189,7 @@ invoices.forEach(inv => {
 
 params = urllib.parse.quote(json.dumps({"json": {"partyId": "party-uuid"}}))
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/payment.unpaidInvoices?input={params}",
+    f"https://api.rohadas.app/api/trpc/payment.unpaidInvoices?input={params}",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
 )`,
       },
@@ -216,7 +216,7 @@ resp = httpx.get(
         example: { id: "account-uuid", accountName: "HDFC Current", accountType: "current", currentBalance: "245000.00", isDefault: true },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/payment.defaultAccount?input=%7B%22json%22%3A%7B%22partyId%22%3A%22party-uuid%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/payment.defaultAccount?input=%7B%22json%22%3A%7B%22partyId%22%3A%22party-uuid%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const account = await trpc.payment.defaultAccount.query({ partyId: "party-uuid" });
@@ -227,7 +227,7 @@ if (account) {
 
 params = urllib.parse.quote(json.dumps({"json": {"partyId": "party-uuid"}}))
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/payment.defaultAccount?input={params}",
+    f"https://api.rohadas.app/api/trpc/payment.defaultAccount?input={params}",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
 )`,
       },
@@ -264,7 +264,7 @@ resp = httpx.get(
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/payment.getById?input=%7B%22json%22%3A%7B%22id%22%3A%22pay-uuid%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/payment.getById?input=%7B%22json%22%3A%7B%22id%22%3A%22pay-uuid%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const payment = await trpc.payment.getById.query({ id: "pay-uuid" });
@@ -275,7 +275,7 @@ if (payment) {
 
 params = urllib.parse.quote(json.dumps({"json": {"id": "pay-uuid"}}))
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/payment.getById?input={params}",
+    f"https://api.rohadas.app/api/trpc/payment.getById?input={params}",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
 )`,
       },
@@ -309,7 +309,7 @@ resp = httpx.get(
         example: { id: "pay-uuid", paymentNumber: "PAY-00018", amount: "32000.00", mode: "upi" },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/payment.update \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/payment.update \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -322,7 +322,7 @@ resp = httpx.get(
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/payment.update",
+    "https://api.rohadas.app/api/trpc/payment.update",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
     json={"json": {"id": "pay-uuid", "amount": "32000.00", "mode": "upi"}},
 )`,
@@ -350,14 +350,14 @@ resp = httpx.post(
         example: { success: true },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/payment.delete \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/payment.delete \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
   -d '{"json":{"id":"pay-uuid"}}'`,
         javascript: `await trpc.payment.delete.mutate({ id: "pay-uuid" });`,
         python: `httpx.post(
-    "https://api.hisaabo.in/api/trpc/payment.delete",
+    "https://api.rohadas.app/api/trpc/payment.delete",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
     json={"json": {"id": "pay-uuid"}},
 )`,
@@ -394,7 +394,7 @@ resp = httpx.post(
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/payment.untrackedPayments?input=%7B%22json%22%3A%7B%22mode%22%3A%22cash%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/payment.untrackedPayments?input=%7B%22json%22%3A%7B%22mode%22%3A%22cash%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const { data, total } = await trpc.payment.untrackedPayments.query({
@@ -406,7 +406,7 @@ console.log("Untracked cash payments:", total);`,
 
 params = urllib.parse.quote(json.dumps({"json": {"mode": "cash"}}))
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/payment.untrackedPayments?input={params}",
+    f"https://api.rohadas.app/api/trpc/payment.untrackedPayments?input={params}",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
 )`,
       },
@@ -432,7 +432,7 @@ resp = httpx.get(
         example: { assignedCount: 15, totalAmount: "127500.00" },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/payment.assignAccount \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/payment.assignAccount \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -447,7 +447,7 @@ console.log("Assigned:", result.assignedCount, "Total:", result.totalAmount);`,
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/payment.assignAccount",
+    "https://api.rohadas.app/api/trpc/payment.assignAccount",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
     json={"json": {"bankAccountId": "cash-account-uuid", "allMatching": True, "mode": "cash"}},
 )`,

@@ -1,5 +1,5 @@
 import * as readline from "readline";
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, success, outputJSON, EXIT } from "../../output.js";
 
@@ -10,7 +10,7 @@ interface ApiKeyRevokeOpts {
 
 export async function apiKeyRevokeCommand(id: string, opts: ApiKeyRevokeOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   if (!opts.yes && process.stdin.isTTY) {
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -34,7 +34,7 @@ export async function apiKeyRevokeCommand(id: string, opts: ApiKeyRevokeOpts): P
 
     success(`API key revoked: ${id}`);
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "not_found") fatalError(`API key not found: ${id}`, EXIT.NOT_FOUND);
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);

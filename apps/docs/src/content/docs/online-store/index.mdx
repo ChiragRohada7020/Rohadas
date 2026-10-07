@@ -1,11 +1,11 @@
 ---
 title: Online Store Overview
-description: Publish a customer-facing online store from Hisaabo. Customers browse items, place orders, and you manage fulfilment — all integrated with your invoicing.
+description: Publish a customer-facing online store from Rohadas. Customers browse items, place orders, and you manage fulfilment — all integrated with your invoicing.
 sidebar:
   order: 1
 ---
 
-The **Online Store** feature lets you publish a public storefront where customers can browse your products and place orders. Each order automatically creates a draft invoice in your Hisaabo account, linking your online sales directly to your invoicing and stock management.
+The **Online Store** feature lets you publish a public storefront where customers can browse your products and place orders. Each order automatically creates a draft invoice in your Rohadas account, linking your online sales directly to your invoicing and stock management.
 
 ## How it works
 
@@ -13,7 +13,7 @@ The **Online Store** feature lets you publish a public storefront where customer
 2. You choose which items to display in the store and set store prices and categories.
 3. Customers visit `https://store.hisaabo.in/myshop` and browse your products.
 4. They add items to their cart, fill in their name, phone, delivery address, and submit the order.
-5. You receive the order in Hisaabo's store orders view.
+5. You receive the order in Rohadas's store orders view.
 6. You confirm, prepare, and dispatch the order.
 7. When you confirm the order, the linked draft invoice moves to `sent` status.
 8. When the order is delivered, you record payment as usual.
@@ -26,7 +26,7 @@ Go to **Settings → Online Store** (or via the left navigation under **Store**)
 
 | Setting | Notes |
 |---|---|
-| **Store Slug** | Your store's URL path, for example `sharma-electronics`. Must be lowercase letters, numbers, and hyphens. Must start and end with a letter or number (not a hyphen). 3-50 characters. Must be unique across all Hisaabo stores. |
+| **Store Slug** | Your store's URL path, for example `sharma-electronics`. Must be lowercase letters, numbers, and hyphens. Must start and end with a letter or number (not a hyphen). 3-50 characters. Must be unique across all Rohadas stores. |
 | **Tagline** | A short tagline displayed below your business name on the storefront. Maximum 200 characters. |
 | **Accent Colour** | Hex colour code for the storefront's primary colour (for example, `#6366f1`). |
 | **Min Order Amount** | Minimum cart total required to place an order. Leave blank for no minimum. |
@@ -98,7 +98,7 @@ Cancelling an order does not automatically restore the stock that was deducted w
 
 ## How orders create invoices
 
-When a customer places an order, Hisaabo automatically:
+When a customer places an order, Rohadas automatically:
 
 1. Creates a sale invoice with document type `invoice`
 2. Links each cart item as an invoice line item
@@ -119,10 +119,10 @@ Without Turnstile, the checkout form is accessible to automated scripts.
 Not currently. The store is an order-collection tool. Collect payment separately (via UPI QR shown on the invoice PDF, or by calling the customer).
 
 **Can I have multiple stores for one business?**
-No. Each business has one store. If you need multiple storefronts, create additional businesses in Hisaabo.
+No. Each business has one store. If you need multiple storefronts, create additional businesses in Rohadas.
 
 **The store slug I want is taken. How can I check who has it?**
-The `checkSlug` API checks uniqueness across all businesses in your Hisaabo instance. If it is taken and you are the owner of the other business, change that business's slug in its settings.
+The `checkSlug` API checks uniqueness across all businesses in your Rohadas instance. If it is taken and you are the owner of the other business, change that business's slug in its settings.
 
 **Can I customise the store's appearance beyond the accent colour?**
 The storefront template is currently fixed. If you are self-hosting, you can modify the React components in `packages/web` to customise the layout. CSS-level customisation is limited to the accent colour through the settings.

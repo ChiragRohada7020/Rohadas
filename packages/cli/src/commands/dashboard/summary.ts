@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, EXIT, hasColor, termWidth } from "../../output.js";
 import { formatAmount, formatStatus, formatRelativeDate, currentFY, fyStart, todayISO } from "../../format.js";
@@ -27,7 +27,7 @@ function colorMoney(amount: string, good = true): string {
 
 export async function dashboardCommand(opts: { json?: boolean }): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
   const from = fyStart();
   const to = todayISO();
 
@@ -43,7 +43,7 @@ export async function dashboardCommand(opts: { json?: boolean }): Promise<void> 
     const fy = currentFY();
 
     console.log();
-    console.log(` Hisaabo Dashboard` + " ".repeat(Math.max(2, width - 30)) + (cfg.businessName ?? ""));
+    console.log(` Rohadas Dashboard` + " ".repeat(Math.max(2, width - 30)) + (cfg.businessName ?? ""));
     console.log(` FY ${fy} (01 Apr ${fy.split("-")[0]} - 31 Mar 20${fy.split("-")[1]})`);
     console.log(` ${"═".repeat(width)}`);
     console.log();
@@ -95,7 +95,7 @@ export async function dashboardCommand(opts: { json?: boolean }): Promise<void> 
     console.log();
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "network_error") fatalError(err.message, EXIT.NETWORK);

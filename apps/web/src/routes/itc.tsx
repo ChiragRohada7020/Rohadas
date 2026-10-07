@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { StatCard } from "@/components/ui/StatCard";
 import { toast } from "@/hooks/useToast";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { PillTabs } from "@/components/ui/Tabs";
+import { PillTabs, SegmentedControl } from "@/components/ui/Tabs";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { Listbox } from "@/components/ui/Listbox";
@@ -104,6 +104,21 @@ function ITCPage() {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
+
+  // Monthly vs Full Year — ITC is claimed and reported per return period, but a
+  // CA reconciling the year needs the whole financial year in one place.
+  const [periodMode, setPeriodModeRaw] = useState<"monthly" | "yearly">(
+    () => (localStorage.getItem("hisaabo_itc_period_mode") as "monthly" | "yearly") || "monthly",
+  );
+  const setPeriodMode = (m: "monthly" | "yearly") => {
+    setPeriodModeRaw(m);
+    localStorage.setItem("hisaabo_itc_period_mode", m);
+  };
+  const [financialYear, setFinancialYear] = useState(() => {
+    const d = new Date();
+    return d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1;
+  });
+
   const [activeTab, setActiveTabRaw] = useState<ITCTab>(
     () => (localStorage.getItem("hisaabo_itc_tab") as ITCTab) || "dashboard",
   );
@@ -115,6 +130,7 @@ function ITCPage() {
 
   const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - i);
   const returnPeriod = returnPeriodString(year, month);
+  const fyOptions = Array.from({ length: 5 }, (_, i) => financialYear - i);
 
   const tabs: Array<{ value: ITCTab; label: string }> = [
     { value: "dashboard", label: "Dashboard" },
@@ -141,41 +157,70 @@ function ITCPage() {
       </div>
 
       {/* Period selector */}
-      <div className="flex items-center gap-3 mb-6">
-        <select
-          className="input w-40"
-          value={month}
-          onChange={(e) => setMonth(Number(e.target.value))}
-          aria-label="Select month"
-        >
-          {months.map((m, i) => (
-            <option key={i} value={i + 1}>{m}</option>
-          ))}
-        </select>
-        <select
-          className="input w-28"
-          value={year}
-          onChange={(e) => setYear(Number(e.target.value))}
-          aria-label="Select year"
-        >
-          {years.map((y) => (
-            <option key={y} value={y}>{y}</option>
-          ))}
-        </select>
-        <span className="text-xs text-text-tertiary ml-2">
-          Return period: {months[month - 1]} {year}
-        </span>
+      <div className="flex items-center gap-3 mb-6 flex-wrap">
+        <SegmentedControl
+          tabs={[
+            { value: "monthly", label: "Monthly" },
+            { value: "yearly", label: "Full Year" },
+          ]}
+          value={periodMode}
+          onChange={(v) => setPeriodMode(v as "monthly" | "yearly")}
+        />
+        {periodMode === "monthly" ? (
+          <>
+            <select
+              className="input w-40"
+              value={month}
+              onChange={(e) => setMonth(Number(e.target.value))}
+              aria-label="Select month"
+            >
+              {months.map((m, i) => (
+                <option key={i} value={i + 1}>{m}</option>
+              ))}
+            </select>
+            <select
+              className="input w-28"
+              value={year}
+              onChange={(e) => setYear(Number(e.target.value))}
+              aria-label="Select year"
+            >
+              {years.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+            <span className="text-xs text-text-tertiary ml-2">
+              Return period: {months[month - 1]} {year}
+            </span>
+          </>
+        ) : (
+          <select
+            className="input w-40"
+            value={financialYear}
+            onChange={(e) => setFinancialYear(Number(e.target.value))}
+            aria-label="Select financial year"
+          >
+            {fyOptions.map((fy) => (
+              <option key={fy} value={fy}>{`FY ${fy}-${String(fy + 1).slice(2)}`}</option>
+            ))}
+          </select>
+        )}
       </div>
 
-      {activeTab === "dashboard" && (
-        <DashboardView returnPeriod={returnPeriod} onNavigateTab={setActiveTab} />
+      {periodMode === "yearly" && activeTab === "gstr3b-t4" ? (
+        <AnnualTable4View financialYear={financialYear} />
+      ) : (
+        <>
+          {activeTab === "dashboard" && (
+            <DashboardView returnPeriod={returnPeriod} onNavigateTab={setActiveTab} />
+          )}
+          {activeTab === "ledger" && <LedgerView returnPeriod={returnPeriod} />}
+          {activeTab === "aging" && <AgingAlertsView />}
+          {activeTab === "utilization" && (
+            <UtilizationView returnPeriod={returnPeriod} year={year} month={month} />
+          )}
+          {activeTab === "gstr3b-t4" && <GSTR3BTable4View year={year} month={month} />}
+        </>
       )}
-      {activeTab === "ledger" && <LedgerView returnPeriod={returnPeriod} />}
-      {activeTab === "aging" && <AgingAlertsView />}
-      {activeTab === "utilization" && (
-        <UtilizationView returnPeriod={returnPeriod} year={year} month={month} />
-      )}
-      {activeTab === "gstr3b-t4" && <GSTR3BTable4View year={year} month={month} />}
     </div>
   );
 }
@@ -1149,6 +1194,149 @@ function ReportSkeleton() {
             <div className="skeleton h-4 w-16" />
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+// ── Tab 5 (Full Year): annual GSTR-3B Table 4 ─────────────────────────
+
+/**
+ * Input tax credit for the whole financial year, in Table 4 shape.
+ *
+ * ITC is claimed per return period, so the monthly view is what you file — but a
+ * CA reconciling the year needs the eligible / reversed / net split across all
+ * twelve periods at once. This is a single query over the whole FY rather than
+ * twelve monthly ones, so it stays fast.
+ */
+function AnnualTable4View({ financialYear }: { financialYear: number }) {
+  const { data, isLoading, error } = trpc.itc.gstr3bTable4Annual.useQuery({ financialYear });
+
+  if (isLoading) return <ReportSkeleton />;
+  if (error) {
+    return (
+      <div className="card px-5 py-4 border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800">
+        <p className="text-sm text-red-700 dark:text-red-400">
+          Failed to load: {error.message}
+        </p>
+      </div>
+    );
+  }
+  if (!data) return null;
+
+  const rows: Array<{ label: string; v: typeof data.netItc; muted?: boolean }> = [
+    { label: "4A(1) Import of goods", v: data.itcAvailable.importOfGoods, muted: true },
+    { label: "4A(2) Import of services", v: data.itcAvailable.importOfServices, muted: true },
+    { label: "4A(3) Inward supplies (RCM)", v: data.itcAvailable.reverseCharge },
+    { label: "4A(5) All other ITC", v: data.itcAvailable.allOther },
+  ];
+
+  const grandTotal =
+    parseFloat(data.itcAvailable.total.integratedTax) +
+    parseFloat(data.itcAvailable.total.centralTax) +
+    parseFloat(data.itcAvailable.total.stateTax);
+
+  return (
+    <div className="space-y-5">
+      <div className="card px-4 py-3">
+        <p className="text-sm font-semibold text-text-primary">
+          GSTR-3B Table 4 — Full Year {data.financialYear}
+        </p>
+        <p className="text-xs text-text-tertiary mt-0.5">
+          All twelve return periods combined ({data.periods.length} periods).
+        </p>
+      </div>
+
+      <div className="card overflow-hidden">
+        <div className="px-5 py-3 border-b border-border-light">
+          <h3 className="text-sm font-semibold text-text-primary">
+            Eligible ITC (Table 4A)
+          </h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Section</th>
+                <th className="text-right">IGST</th>
+                <th className="text-right">CGST</th>
+                <th className="text-right">SGST</th>
+                <th className="text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.label} className={r.muted ? "text-text-tertiary" : undefined}>
+                  <td>{r.label}</td>
+                  <td className="text-right tabular-nums">{formatCurrency(r.v.integratedTax)}</td>
+                  <td className="text-right tabular-nums">{formatCurrency(r.v.centralTax)}</td>
+                  <td className="text-right tabular-nums">{formatCurrency(r.v.stateTax)}</td>
+                  <td className="text-right tabular-nums">
+                    {formatCurrency(
+                      (
+                        parseFloat(r.v.integratedTax) +
+                        parseFloat(r.v.centralTax) +
+                        parseFloat(r.v.stateTax)
+                      ).toFixed(2),
+                    )}
+                  </td>
+                </tr>
+              ))}
+              <tr className="border-t-2 border-border-color bg-surface-1 font-semibold">
+                <td>Total eligible ITC</td>
+                <td className="text-right tabular-nums">
+                  {formatCurrency(data.itcAvailable.total.integratedTax)}
+                </td>
+                <td className="text-right tabular-nums">
+                  {formatCurrency(data.itcAvailable.total.centralTax)}
+                </td>
+                <td className="text-right tabular-nums">
+                  {formatCurrency(data.itcAvailable.total.stateTax)}
+                </td>
+                <td className="text-right tabular-nums">{formatCurrency(grandTotal.toFixed(2))}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="card overflow-hidden">
+        <div className="px-5 py-3 border-b border-border-light">
+          <h3 className="text-sm font-semibold text-text-primary">
+            Reversals (4B) and net ITC
+          </h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Section</th>
+                <th className="text-right">IGST</th>
+                <th className="text-right">CGST</th>
+                <th className="text-right">SGST</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>4B(1) Reversed — Rules 42 &amp; 43 and other reversals</td>
+                <td className="text-right tabular-nums">
+                  {formatCurrency(data.itcReversed.total.integratedTax)}
+                </td>
+                <td className="text-right tabular-nums">
+                  {formatCurrency(data.itcReversed.total.centralTax)}
+                </td>
+                <td className="text-right tabular-nums">
+                  {formatCurrency(data.itcReversed.total.stateTax)}
+                </td>
+              </tr>
+              <tr className="border-t-2 border-border-color bg-surface-1 font-semibold">
+                <td>Net ITC available for the year</td>
+                <td className="text-right tabular-nums">{formatCurrency(data.netItc.integratedTax)}</td>
+                <td className="text-right tabular-nums">{formatCurrency(data.netItc.centralTax)}</td>
+                <td className="text-right tabular-nums">{formatCurrency(data.netItc.stateTax)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import Conf from "conf";
 import { hostname, userInfo } from "os";
 import { createHash } from "crypto";
 import { fatalError, warn } from "./output.js";
-import type { HisaaboClient } from "./client.js";
+import type { RohadasClient } from "./client.js";
 
 interface ConfigSchema {
   apiUrl: string;
@@ -146,7 +146,7 @@ export function getConfigPath(): string {
  * Called after requireAuth() in command handlers.
  * Non-fatal — prints warning and continues (the API will block tenant ops anyway).
  */
-export async function checkMaintenance(client: HisaaboClient): Promise<void> {
+export async function checkMaintenance(client: RohadasClient): Promise<void> {
   try {
     const status = await client.system.maintenanceStatus();
     if (status.enabled) {

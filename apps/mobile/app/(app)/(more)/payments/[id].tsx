@@ -13,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { trpc } from "../../../../src/lib/trpc";
-import { formatCurrency, formatDate } from "../../../../src/lib/utils";
+import { formatCurrency, formatDate, utcMidnightIso } from "../../../../src/lib/utils";
 import { makeStyles } from "../../../../src/lib/makeStyles";
 import { useColors } from "../../../../src/contexts/ThemeContext";
 import { haptic } from "../../../../src/lib/haptics";
@@ -113,7 +113,7 @@ export default function PaymentDetailScreen() {
       mode: editMode,
       referenceNumber: editReferenceNumber.trim() || null,
       notes: editNotes.trim() || null,
-      paymentDate: editDate.toISOString(),
+      paymentDate: utcMidnightIso(editDate),
     });
   }, [payment, editAmount, editMode, editReferenceNumber, editNotes, editDate, updatePayment]);
 

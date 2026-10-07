@@ -1,11 +1,11 @@
 # @hisaabo/mcp
 
-The Hisaabo MCP server. Connect Hisaabo invoicing data to Claude Desktop, OpenClaw, or any MCP-compatible AI agent. 130+ tools covering every business operation.
+The Rohadas MCP server. Connect Rohadas invoicing data to Claude Desktop, OpenClaw, or any MCP-compatible AI agent. 130+ tools covering every business operation.
 
 [![Model Context Protocol](https://img.shields.io/badge/MCP-compatible-7C3AED)](https://modelcontextprotocol.io/)
 [![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 
-**What this does:** Once configured, you can ask Claude "How much does Gupta Enterprises owe me?" or "Create an invoice for 20 bags of rice at ₹1,250 each" and it will call the real Hisaabo API, use your live business data, and return accurate results.
+**What this does:** Once configured, you can ask Claude "How much does Gupta Enterprises owe me?" or "Create an invoice for 20 bags of rice at ₹1,250 each" and it will call the real Rohadas API, use your live business data, and return accurate results.
 
 ---
 
@@ -52,7 +52,7 @@ Ask Claude: *"What is my business's total outstanding receivables?"*
 
 | Variable | Required | Description |
 |---|---|---|
-| `HISAABO_API_URL` | Yes | Base URL of your Hisaabo API (e.g. `http://localhost:3000` for local dev) |
+| `HISAABO_API_URL` | Yes | Base URL of your Rohadas API (e.g. `http://localhost:3000` for local dev) |
 | `HISAABO_API_KEY` | Yes | Session token from `hisaabo whoami --json` → `token` |
 | `HISAABO_TENANT_ID` | Yes | Tenant UUID from `hisaabo whoami --json` → `tenantId` |
 | `HISAABO_BUSINESS_ID` | Yes | Business UUID from `hisaabo whoami --json` → `businessId` |

@@ -28,7 +28,7 @@ function VerifyPage() {
   // instead of consuming the token in the browser. Emails ship the HTTPS
   // URL as the clickable CTA because email clients strip custom URL
   // schemes — see the rationale in packages/api/src/routers/auth.ts
-  // (sendMagicLink). `handoffMode` drives the "Opening Hisaabo…" UI.
+  // (sendMagicLink). `handoffMode` drives the "Opening Rohadas…" UI.
   const [handoffMode, setHandoffMode] = useState<"desktop" | "mobile" | null>(null);
   const calledRef = useRef(false);
 
@@ -98,7 +98,7 @@ function VerifyPage() {
         <div className="flex items-center justify-center gap-2.5 mb-8">
           <Logo className="w-9 h-9" />
           <span className="font-semibold text-lg tracking-tight text-text-primary">
-            Hisaabo
+            Rohadas
           </span>
         </div>
 
@@ -126,7 +126,7 @@ function VerifyPage() {
               <Logo className="w-12 h-12" />
             </div>
             <h1 className="text-lg font-semibold text-text-primary mb-1">
-              Opening Hisaabo{handoffMode === "desktop" ? " Desktop" : ""}…
+              Opening Rohadas{handoffMode === "desktop" ? " Desktop" : ""}…
             </h1>
             <p className="text-sm text-text-tertiary mb-6">
               We&rsquo;re handing your sign-in off to the {handoffMode === "desktop" ? "desktop app" : "mobile app"}. If nothing happens, tap the button below.
@@ -135,7 +135,7 @@ function VerifyPage() {
               onClick={retryHandoff}
               className="btn-primary w-full py-2.5 mb-3"
             >
-              Open Hisaabo {handoffMode === "desktop" ? "Desktop" : "App"}
+              Open Rohadas {handoffMode === "desktop" ? "Desktop" : "App"}
             </button>
             <button
               onClick={verifyInBrowser}

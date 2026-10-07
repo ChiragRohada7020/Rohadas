@@ -181,7 +181,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* Footer */}
-        <Text style={styles.footer}>Hisaabo v{Constants.expoConfig?.version ?? "0.4.0"}</Text>
+        <Text style={styles.footer}>Rohadas v{Constants.expoConfig?.version ?? "0.4.0"}</Text>
       </ScrollView>
 
       {/* Org Switcher Sheet */}

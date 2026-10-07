@@ -16,7 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { trpc } from "../../../../src/lib/trpc";
-import { formatCurrency } from "../../../../src/lib/utils";
+import { formatCurrency, utcMidnightIso } from "../../../../src/lib/utils";
 import { makeStyles } from "../../../../src/lib/makeStyles";
 import { useColors } from "../../../../src/contexts/ThemeContext";
 import { haptic } from "../../../../src/lib/haptics";
@@ -283,8 +283,8 @@ export default function CreateRecurringInvoiceScreen() {
         taxPercent: li.taxPercent || "0",
         discountPercent: li.discountPercent || "0",
       })),
-      startDate: startDate.toISOString(),
-      endDate: showEndDate && endDate ? endDate.toISOString() : undefined,
+      startDate: utcMidnightIso(startDate),
+      endDate: showEndDate && endDate ? utcMidnightIso(endDate) : undefined,
       maxRuns: maxRuns ? parseInt(maxRuns) : undefined,
       notes: notes.trim() || undefined,
     });

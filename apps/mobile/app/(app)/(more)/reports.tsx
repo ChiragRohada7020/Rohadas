@@ -237,7 +237,7 @@ export default function ReportsScreen() {
           ) : plData ? (
             <>
               <PLRow label="Revenue" value={plData.revenue} valueColor={colors.success} />
-              <PLRow label="Cost of Goods (Purchases)" value={plData.cogs} valueColor={colors.danger} negative />
+              <PLRow label="Purchases" value={plData.cogs} valueColor={colors.danger} negative />
               <View style={styles.plDivider} />
               <PLRow label="Gross Profit" value={plData.grossProfit} bold
                 suffix={`(${plData.grossMarginPercent}%)`}

@@ -16,11 +16,12 @@ import os from "node:os";
 import QRCode from "qrcode";
 import { appRouter } from "./router.js";
 import { createContext, getSessionIdFromRequest } from "./context.js";
-import type { InvoicePDFData } from "./lib/invoice-pdf.js";
+import type { InvoicePDFData, InvoiceTemplate } from "./lib/invoice-pdf.js";
 import { generateLedgerPDF } from "./lib/ledger-pdf.js";
 import { controlDb, getTenantDb, invoices, invoiceItems, items, itemVariants, parties, businesses, sessions, tenants, tenantMembers, magicLinkTokens, bankAccounts, storeOrders, payments, assertMigrationsPresent } from "@hisaabo/db";
 import { calcLineItem, calcInvoiceTotals, money } from "@hisaabo/shared";
 import { verifyTurnstile } from "./lib/turnstile.js";
+import { whatsAppService } from "./lib/whatsapp.js";
 import { startRecurringScheduler, stopRecurringScheduler } from "./lib/recurring-invoice-scheduler.js";
 import { logger } from "./lib/logger.js";
 import { validateEnv } from "./lib/env.js";
@@ -353,7 +354,7 @@ class Semaphore {
 
 const pdfSemaphore = new Semaphore(os.cpus().length);
 
-async function generatePDFInWorker(data: any, format: "a5" | "a4" | "thermal"): Promise<Buffer> {
+async function generatePDFInWorker(data: any, format: "a5" | "a4" | "thermal", template: InvoiceTemplate = "classic"): Promise<Buffer> {
   await pdfSemaphore.acquire();
   try {
     const dir = path.dirname(fileURLToPath(import.meta.url));
@@ -363,7 +364,7 @@ async function generatePDFInWorker(data: any, format: "a5" | "a4" | "thermal"): 
     if (fs.existsSync(jsPath)) {
       // Production: built .js worker exists, run in a worker thread
       return await new Promise((resolve, reject) => {
-        const worker = new Worker(jsPath, { workerData: { data, format } });
+        const worker = new Worker(jsPath, { workerData: { data, format, template } });
         worker.on("message", resolve);
         worker.on("error", reject);
         worker.on("exit", (code) => {
@@ -375,7 +376,7 @@ async function generatePDFInWorker(data: any, format: "a5" | "a4" | "thermal"): 
     // Dev: no built worker, run in-process (tsx doesn't support worker threads well)
     const { generateInvoicePDF } = await import("./lib/invoice-pdf.js");
     return await new Promise((resolve, reject) => {
-      const doc = generateInvoicePDF(data, format);
+      const doc = generateInvoicePDF(data, format, template);
       const chunks: Buffer[] = [];
       doc.on("data", (chunk: Buffer) => chunks.push(chunk));
       doc.on("end", () => resolve(Buffer.concat(chunks)));
@@ -580,13 +581,73 @@ app.get("/api/invoices/:id/pdf", async (c) => {
     logoBuffer: biz.logoData ?? undefined,
   };
 
-  const pdfBuffer = await generatePDFInWorker(pdfData, format);
+  const pdfBuffer = await generatePDFInWorker(pdfData, format, (biz.invoiceTemplate as InvoiceTemplate) || "classic");
   return new Response(new Uint8Array(pdfBuffer), {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="${invoice.invoiceNumber.replace(/[^a-zA-Z0-9_-]/g, "_")}.pdf"`,
     },
   });
+});
+
+// ── WhatsApp QR code endpoint (authed) ─────────────────────────
+// GET /api/whatsapp/qr — serves the current QR code as a PNG image
+// (if Baileys is waiting for a scan). Returns 410 when the session
+// is already connected or no QR is pending.
+app.get("/api/whatsapp/qr", async (c) => {
+  const sessionId = getSessionIdFromRequest(c.req.raw);
+  if (!sessionId) return c.json({ error: "Unauthorized" }, 401);
+  const [sessionRow] = await controlDb
+    .select({ userId: sessions.userId, tenantId: sessions.tenantId })
+    .from(sessions)
+    .where(and(eq(sessions.id, sessionId), gt(sessions.expiresAt, new Date())))
+    .limit(1);
+  if (!sessionRow) return c.json({ error: "Unauthorized" }, 401);
+
+  const qrBuffer = await whatsAppService.getQRCode();
+  if (!qrBuffer) {
+    return c.json({ error: "No QR code available" }, 410);
+  }
+
+  return new Response(new Uint8Array(qrBuffer), {
+    headers: { "Content-Type": "image/png" },
+  });
+});
+
+// ── WhatsApp connection status endpoint (authed) ───────────────
+// GET /api/whatsapp/status — returns the current WhatsApp connection state
+app.get("/api/whatsapp/status", async (c) => {
+  const sessionId = getSessionIdFromRequest(c.req.raw);
+  if (!sessionId) return c.json({ error: "Unauthorized" }, 401);
+  const [sessionRow] = await controlDb
+    .select({ userId: sessions.userId, tenantId: sessions.tenantId })
+    .from(sessions)
+    .where(and(eq(sessions.id, sessionId), gt(sessions.expiresAt, new Date())))
+    .limit(1);
+  if (!sessionRow) return c.json({ error: "Unauthorized" }, 401);
+
+  const status = await whatsAppService.getStatus();
+  return c.json(status);
+});
+
+// ── WhatsApp Reset endpoint (authed) ───────────────────────────
+// POST /api/whatsapp/reset — clears saved auth state and forces a new QR code
+app.post("/api/whatsapp/reset", async (c) => {
+  const sessionId = getSessionIdFromRequest(c.req.raw);
+  if (!sessionId) return c.json({ error: "Unauthorized" }, 401);
+  const [sessionRow] = await controlDb
+    .select({ userId: sessions.userId, tenantId: sessions.tenantId })
+    .from(sessions)
+    .where(and(eq(sessions.id, sessionId), gt(sessions.expiresAt, new Date())))
+    .limit(1);
+  if (!sessionRow) return c.json({ error: "Unauthorized" }, 401);
+
+  try {
+    await whatsAppService.reset();
+    return c.json({ success: true, message: "Auth state cleared — new QR code will be generated" });
+  } catch (err: any) {
+    return c.json({ error: "Failed to reset WhatsApp session", details: err?.message }, 500);
+  }
 });
 
 // ── Business Logo endpoint (authed) ───────────────────────────
@@ -957,6 +1018,60 @@ app.get("/store/:slug/logo", async (c) => {
       ...LOGO_SAFE_HEADERS,
       "Content-Type": row.logoMimeType,
       "Cache-Control": "public, max-age=3600",
+      ETag: etag,
+    },
+  });
+});
+
+// GET /api/items/:id/image — item image bytes for authenticated clients (the
+// POS grid and the Items page). Auth is via the session cookie; the business
+// is passed as ?b=<businessId> because <img> tags cannot send the
+// x-business-id header. Mirrors the invoice-PDF auth path. We only ever serve
+// bytes that were magic-byte validated (PNG/JPEG) at upload time.
+app.get("/api/items/:id/image", async (c) => {
+  const sessionId = getSessionIdFromRequest(c.req.raw);
+  if (!sessionId) return c.json({ error: "Unauthorized" }, 401);
+
+  const [sessionRow] = await controlDb
+    .select({ userId: sessions.userId, tenantId: sessions.tenantId })
+    .from(sessions)
+    .where(and(eq(sessions.id, sessionId), gt(sessions.expiresAt, new Date())))
+    .limit(1);
+  if (!sessionRow) return c.json({ error: "Unauthorized" }, 401);
+  if (!sessionRow.tenantId) return c.json({ error: "No organization selected" }, 400);
+
+  const businessId = c.req.query("b");
+  if (!businessId) return c.json({ error: "No business selected" }, 400);
+
+  const db = await getTenantDb(sessionRow.tenantId);
+  const bizAccess = await verifyBusinessAccess(db, businessId, sessionRow.tenantId);
+  if (!bizAccess.ok) return c.json({ error: bizAccess.error }, 403);
+
+  const [row] = await db
+    .select({
+      imageData: items.imageData,
+      imageMimeType: items.imageMimeType,
+      imageUpdatedAt: items.imageUpdatedAt,
+    })
+    .from(items)
+    .where(and(eq(items.id, c.req.param("id")), eq(items.businessId, businessId)))
+    .limit(1);
+
+  if (!row || !row.imageData || !row.imageMimeType) {
+    return c.json({ error: "Not found" }, 404);
+  }
+
+  const etag = `"${row.imageUpdatedAt?.getTime() ?? 0}"`;
+  if (c.req.header("if-none-match") === etag) {
+    return new Response(null, { status: 304, headers: { ETag: etag } });
+  }
+
+  return new Response(new Uint8Array(row.imageData), {
+    status: 200,
+    headers: {
+      "Content-Type": row.imageMimeType,
+      "Cache-Control": "private, max-age=86400",
+      "X-Content-Type-Options": "nosniff",
       ETag: etag,
     },
   });
@@ -1670,7 +1785,7 @@ function brandedHtml(title: string, heading: string, message: string, status: nu
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title} — Hisaabo</title>
+  <title>${title} — Rohadas</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -1689,13 +1804,13 @@ function brandedHtml(title: string, heading: string, message: string, status: nu
 </head>
 <body>
   <div class="container">
-    <div class="logo"><span>H</span></div>
+    <div class="logo"><span>R</span></div>
     ${status >= 400 ? `<div class="status">${status}</div>` : ""}
     <h1>${heading}</h1>
     <p>${message}</p>
     <div class="links">
-      <a href="https://hisaabo.in">hisaabo.in</a>
-      <a href="https://github.com/hisaabo">GitHub</a>
+      <a href="https://rohadas.app">rohadas.app</a>
+      <a href="https://github.com/rohadas">GitHub</a>
       <a href="/health">API Status</a>
     </div>
   </div>
@@ -1804,8 +1919,8 @@ app.post("/webhooks/shipping/:businessId", async (c) => {
 app.get("/", (c) => {
   return c.html(brandedHtml(
     "API",
-    "Hisaabo API",
-    "Professional billing for Indian businesses. This is the API server — the web app is at <a href=\"https://app.hisaabo.in\">app.hisaabo.in</a>",
+    "Rohadas API",
+    "Professional billing for Indian businesses. This is the API server — the web app is at <a href=\"https://app.rohadas.app\">app.rohadas.app</a>",
     200,
   ));
 });
@@ -1819,7 +1934,7 @@ app.notFound((c) => {
   return c.html(brandedHtml(
     "Not Found",
     "Page not found",
-    "The page you're looking for doesn't exist. If you're looking for the Hisaabo app, visit <a href=\"https://app.hisaabo.in\">app.hisaabo.in</a>",
+    "The page you're looking for doesn't exist. If you're looking for the Rohadas app, visit <a href=\"https://app.rohadas.app\">app.rohadas.app</a>",
     404,
   ), 404);
 });
@@ -1843,7 +1958,7 @@ app.notFound((c) => {
 const port = parseInt(process.env.PORT || "3000", 10);
 
 const server = serve({ fetch: app.fetch, port }, (info) => {
-  logger.info({ port: info.port }, `Hisaabo API running on http://localhost:${info.port}`);
+  logger.info({ port: info.port }, `Rohadas API running on http://localhost:${info.port}`);
   logger.info({ port: info.port }, `  tRPC endpoint: http://localhost:${info.port}/api/trpc`);
   startRecurringScheduler();
 });

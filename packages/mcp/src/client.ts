@@ -1,9 +1,9 @@
 /**
- * HisaaboClient — thin fetch wrapper over the tRPC HTTP API.
+ * RohadasClient — thin fetch wrapper over the tRPC HTTP API.
  *
  * This is an inline copy of the client designed in packages/client (ADR-001).
  * When packages/client is built, this file should be replaced with:
- *   import { HisaaboClient } from "@hisaabo/client";
+ *   import { RohadasClient } from "@hisaabo/client";
  *
  * The tRPC wire format used here:
  *   - Queries: GET /api/trpc/<path>?input=<superjson-encoded>
@@ -26,21 +26,21 @@ export interface ClientConfig {
 
 // ── Structured error types ──────────────────────────────────────────────────
 
-export type HisaaboError =
+export type RohadasError =
   | { code: "unauthorized"; message: string }
   | { code: "forbidden"; message: string }
   | { code: "not_found"; resource: string }
   | { code: "validation_failed"; fields: Record<string, string[]> }
   | { code: "api_error"; message: string };
 
-export class HisaaboApiError extends Error {
-  constructor(public readonly hisaaboError: HisaaboError) {
-    super(formatHisaaboError(hisaaboError));
-    this.name = "HisaaboApiError";
+export class RohadasApiError extends Error {
+  constructor(public readonly hisaaboError: RohadasError) {
+    super(formatRohadasError(hisaaboError));
+    this.name = "RohadasApiError";
   }
 }
 
-export function formatHisaaboError(err: HisaaboError): string {
+export function formatRohadasError(err: RohadasError): string {
   switch (err.code) {
     case "unauthorized":
       return `Authentication required: ${err.message}. Check that HISAABO_API_KEY is set and not expired.`;
@@ -62,7 +62,7 @@ export function formatHisaaboError(err: HisaaboError): string {
 
 // ── tRPC error normalization ────────────────────────────────────────────────
 
-function normalizeTrpcError(raw: unknown): HisaaboError {
+function normalizeTrpcError(raw: unknown): RohadasError {
   if (!raw || typeof raw !== "object") {
     return { code: "api_error", message: "Unknown error from API" };
   }
@@ -91,7 +91,7 @@ function normalizeTrpcError(raw: unknown): HisaaboError {
 
 // ── HTTP client ────────────────────────────────────────────────────────────
 
-export class HisaaboClient {
+export class RohadasClient {
   /** Base API URL, exposed for tools that need to construct URLs (e.g. PDF download). */
   readonly apiUrl: string;
 
@@ -112,18 +112,18 @@ export class HisaaboClient {
     const body = await res.json() as unknown;
 
     if (typeof body !== "object" || body === null) {
-      throw new HisaaboApiError({ code: "api_error", message: "Unexpected response format from API" });
+      throw new RohadasApiError({ code: "api_error", message: "Unexpected response format from API" });
     }
 
     const envelope = body as Record<string, unknown>;
 
     if (!res.ok || "error" in envelope) {
-      throw new HisaaboApiError(normalizeTrpcError(envelope["error"] ?? { code: "api_error", message: `HTTP ${res.status}` }));
+      throw new RohadasApiError(normalizeTrpcError(envelope["error"] ?? { code: "api_error", message: `HTTP ${res.status}` }));
     }
 
     const result = (envelope["result"] as Record<string, unknown> | undefined);
     if (!result) {
-      throw new HisaaboApiError({ code: "api_error", message: "Missing result in API response" });
+      throw new RohadasApiError({ code: "api_error", message: "Missing result in API response" });
     }
 
     // tRPC batch format wraps in { data: <superjson-value> }
@@ -388,6 +388,69 @@ export class HisaaboClient {
       },
       gstr9(input: { financialYear: string }) {
         return c.query<any>("gst.gstr9", input);
+      },
+      gstr4(input: { year: number; quarter: number; compositionRate?: number }) {
+        return c.query<any>("gst.gstr4", input);
+      },
+    };
+  }
+
+  get inventory() {
+    const c = this;
+    return {
+      // ── Godowns ──
+      godowns() {
+        return c.query<any[]>("inventory.list", {});
+      },
+      createGodown(input: { name: string; code?: string; city?: string; isPrimary?: boolean }) {
+        return c.mutate<any>("inventory.create", input);
+      },
+      setPrimaryGodown(id: string) {
+        return c.mutate<any>("inventory.setPrimary", { id });
+      },
+      updateGodown(id: string, data: Record<string, unknown>) {
+        return c.mutate<any>("inventory.update", { id, data });
+      },
+      deleteGodown(id: string) {
+        return c.mutate<any>("inventory.delete", { id });
+      },
+      stockByGodown(itemId: string, variantId?: string) {
+        return c.query<any>("inventory.stockByGodown", { itemId, variantId });
+      },
+      transfer(input: {
+        itemId: string;
+        quantity: string;
+        fromGodownId?: string;
+        toGodownId: string;
+        referenceNumber?: string;
+        notes?: string;
+      }) {
+        return c.mutate<any>("inventory.transfer", input);
+      },
+      transferHistory(input?: Record<string, unknown>) {
+        return c.query<any[]>("inventory.transferHistory", input ?? {});
+      },
+
+      // ── Lots (batch / serial / expiry) ──
+      lots(input?: Record<string, unknown>) {
+        return c.query<any[]>("inventory.listLots", input ?? {});
+      },
+      createLot(input: {
+        itemId: string;
+        quantity: string;
+        batchNo?: string;
+        serialNo?: string;
+        expiryDate?: string;
+        godownId?: string;
+        unitCost?: string;
+      }) {
+        return c.mutate<any>("inventory.createLot", input);
+      },
+      allocateFEFO(input: { itemId: string; quantity: string; godownId?: string }) {
+        return c.query<any>("inventory.allocateFEFO", input);
+      },
+      expiringSoon(withinDays?: number) {
+        return c.query<any[]>("inventory.expiringSoon", { withinDays: withinDays ?? 30 });
       },
     };
   }

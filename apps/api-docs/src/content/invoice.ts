@@ -10,7 +10,7 @@ export const invoiceEndpoints: EndpointGroup = {
       method: "query",
       path: "invoice.list",
       title: "List Invoices",
-      description: "Paginated list of invoices for the active business. Supports filtering by type, status, party, date range, and full-text search on invoice number and party name.",
+      description: "Paginated list of invoices for the active business. Supports filtering by type, status, party, date range, source, balance range, and full-text search on invoice number and party name.",
       auth: "business",
       requiredRole: "viewer",
       input: [
@@ -22,6 +22,9 @@ export const invoiceEndpoints: EndpointGroup = {
         { name: "toDate", type: "string (ISO 8601)", required: false, description: "End of date range (inclusive)" },
         { name: "itemId", type: "string (UUID)", required: false, description: "Filter invoices containing a specific item" },
         { name: "search", type: "string", required: false, description: "Search by invoice number or party name (case-insensitive)" },
+        { name: "source", type: "string", required: false, description: "Filter by origin channel: `manual`, `pos`, `online_store`, or `webhook`" },
+        { name: "balanceMin", type: "number", required: false, description: "Minimum outstanding balance (totalAmount - amountPaid - totalAdjusted)" },
+        { name: "balanceMax", type: "number", required: false, description: "Maximum outstanding balance (totalAmount - amountPaid - totalAdjusted)" },
         { name: "sortBy", type: "enum", required: false, description: "Sort column", enumValues: ["date", "amount", "number"] },
         { name: "sortDir", type: "enum", required: false, description: "Sort direction", enumValues: ["asc", "desc"] },
         { name: "page", type: "number", required: false, description: "Page number (1-indexed)", default: "1" },
@@ -54,7 +57,7 @@ export const invoiceEndpoints: EndpointGroup = {
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/invoice.list?input=%7B%22json%22%3A%7B%22page%22%3A1%2C%22limit%22%3A20%2C%22type%22%3A%22sale%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/invoice.list?input=%7B%22json%22%3A%7B%22page%22%3A1%2C%22limit%22%3A20%2C%22type%22%3A%22sale%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const { data, total } = await trpc.invoice.list.query({
@@ -69,7 +72,7 @@ console.log(\`Showing \${data.length} of \${total} invoices\`);`,
 
 params = urllib.parse.quote(json.dumps({"json": {"page": 1, "limit": 20, "type": "sale"}}))
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/invoice.list?input={params}",
+    f"https://api.rohadas.app/api/trpc/invoice.list?input={params}",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -137,7 +140,7 @@ result = resp.json()["result"]["data"]["json"]`,
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/invoice.getById?input=%7B%22json%22%3A%7B%22id%22%3A%22inv-uuid%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/invoice.getById?input=%7B%22json%22%3A%7B%22id%22%3A%22inv-uuid%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const invoice = await trpc.invoice.getById.query({ id: "inv-uuid" });
@@ -152,7 +155,7 @@ const balance = Number(invoice.totalAmount) - Number(invoice.amountPaid);`,
 
 params = urllib.parse.quote(json.dumps({"json": {"id": "inv-uuid"}}))
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/invoice.getById?input={params}",
+    f"https://api.rohadas.app/api/trpc/invoice.getById?input={params}",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
 )`,
       },
@@ -215,7 +218,7 @@ resp = httpx.get(
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/invoice.create \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/invoice.create \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -261,7 +264,7 @@ console.log("Total:  ", invoice.totalAmount);   // "26250.00" (₹25,000 + ₹1,
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/invoice.create",
+    "https://api.rohadas.app/api/trpc/invoice.create",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -318,7 +321,7 @@ print("Total:  ", invoice["totalAmount"])    # "26250.00"`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/invoice.updateStatus \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/invoice.updateStatus \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -328,7 +331,7 @@ print("Total:  ", invoice["totalAmount"])    # "26250.00"`,
   status: "sent",
 });`,
         python: `httpx.post(
-    "https://api.hisaabo.in/api/trpc/invoice.updateStatus",
+    "https://api.rohadas.app/api/trpc/invoice.updateStatus",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
     json={"json": {"id": "inv-uuid", "status": "sent"}},
 )`,
@@ -353,14 +356,14 @@ print("Total:  ", invoice["totalAmount"])    # "26250.00"`,
         example: { success: true },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/invoice.delete \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/invoice.delete \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
   -d '{"json":{"id":"inv-uuid"}}'`,
         javascript: `await trpc.invoice.delete.mutate({ id: "inv-uuid" });`,
         python: `httpx.post(
-    "https://api.hisaabo.in/api/trpc/invoice.delete",
+    "https://api.rohadas.app/api/trpc/invoice.delete",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
     json={"json": {"id": "inv-uuid"}},
 )`,
@@ -388,7 +391,7 @@ print("Total:  ", invoice["totalAmount"])    # "26250.00"`,
         example: { deliveryMethod: "courier" },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/invoice.lastDeliveryMethod?input=%7B%22json%22%3A%7B%22partyId%22%3A%22party-uuid%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/invoice.lastDeliveryMethod?input=%7B%22json%22%3A%7B%22partyId%22%3A%22party-uuid%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const { deliveryMethod } = await trpc.invoice.lastDeliveryMethod.query({
@@ -402,7 +405,7 @@ params = urllib.parse.urlencode({
     "input": json.dumps({"json": {"partyId": "party-uuid"}})
 })
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/invoice.lastDeliveryMethod?{params}",
+    f"https://api.rohadas.app/api/trpc/invoice.lastDeliveryMethod?{params}",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,

@@ -12,6 +12,7 @@ import { AccountTab } from "@/components/settings/AccountTab";
 import { StoreTab } from "@/components/settings/StoreTab";
 import { POSTab } from "@/components/settings/POSTab";
 import { ShippingTab } from "@/components/settings/ShippingTab";
+import { CommunicationsTab } from "@/components/settings/CommunicationsTab";
 import { WhatsNextModal } from "@/components/settings/WhatsNextModal";
 import { ImportWizard } from "@/components/ImportWizard";
 import { RestoreOnboarding } from "@/components/settings/RestoreOnboarding";
@@ -81,7 +82,7 @@ function SettingsPage() {
     if (onboardingPath === "restore" && isOwner && session?.tenantId) {
       return (
         <div>
-          <PageHeader title="Restore from backup" description="Import a previously exported Hisaabo backup" />
+          <PageHeader title="Restore from backup" description="Import a previously exported Rohadas backup" />
           <RestoreOnboarding
             tenantId={session.tenantId}
             onBack={() => setOnboardingPath("choose")}
@@ -161,7 +162,7 @@ function SettingsPage() {
             </span>
             <div>
               <p className="text-sm font-medium text-text-primary">Restore from a backup</p>
-              <p className="text-xs text-text-tertiary mt-0.5">Import a previously exported Hisaabo backup to restore all your data</p>
+              <p className="text-xs text-text-tertiary mt-0.5">Import a previously exported Rohadas backup to restore all your data</p>
             </div>
           </button>
         </div>
@@ -245,8 +246,9 @@ function SettingsPage() {
           {tab === "targets" && <SalesTargetsTab />}
           {tab === "data" && <DataTab />}
           {tab === "account" && <AccountTab />}
-          {tab === "store" && <StoreTab />}
-          {tab === "pos" && biz && <POSTab biz={biz} />}
+           {tab === "store" && <StoreTab />}
+           {tab === "communications" && <CommunicationsTab />}
+           {tab === "pos" && biz && <POSTab biz={biz} />}
         </div>
       </div>
     </div>

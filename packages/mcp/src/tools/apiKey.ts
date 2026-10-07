@@ -9,10 +9,10 @@
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { HisaaboClient } from "../client.js";
+import type { RohadasClient } from "../client.js";
 import { wrapTool } from "../lib/errors.js";
 
-export function registerApiKeyTools(server: McpServer, client: HisaaboClient) {
+export function registerApiKeyTools(server: McpServer, client: RohadasClient) {
 
   server.tool(
     "api_key_list",
@@ -36,7 +36,7 @@ export function registerApiKeyTools(server: McpServer, client: HisaaboClient) {
   server.tool(
     "api_key_create",
     [
-      "Create a new API key for programmatic access to the Hisaabo API.",
+      "Create a new API key for programmatic access to the Rohadas API.",
       "The full key is returned exactly once in this response — it is never stored in plain text and cannot be retrieved again.",
       "Save the key immediately after creation. API keys are available on paid plans only.",
       "Optionally set an expiry date (ISO 8601) to create a time-limited key.",

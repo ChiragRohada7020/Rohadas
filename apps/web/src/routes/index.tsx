@@ -20,7 +20,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PillTabs } from "@/components/ui/Tabs";
 import { DateRangeBar } from "@/components/ui/DateRangeBar";
-import { useDateRange, getGranularity } from "@/hooks/useDateRange";
+import { useDateRange, getGranularity, DASHBOARD_PRESETS } from "@/hooks/useDateRange";
 
 // ─── Milestone banner ─────────────────────────────────────────────────────────
 
@@ -410,7 +410,17 @@ const EXPENSE_COLORS = [
 // Recharts ResponsiveContainer types are incompatible with React 19's stricter ReactNode
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function renderResponsive(children: React.ReactElement, width: string, height: string) {
-  return <ResponsiveContainer width={width as any} height={height as any}>{children as any}</ResponsiveContainer>;
+  // `minWidth`/`minHeight` default to 0 inside recharts, which means a container
+  // measured at 0 (during first paint, inside a hidden tab, or before the parent
+  // has laid out) is handed width(-1)/height(-1) and throws:
+  //   "The width(-1) and height(-1) of chart should be greater than 0".
+  // The explicit minimums keep the measurement positive and the chart simply
+  // renders once layout settles.
+  return (
+    <ResponsiveContainer width={width as any} height={height as any} minWidth={1} minHeight={1}>
+      {children as any}
+    </ResponsiveContainer>
+  );
 }
 
 // ─── Chart card wrapper ───────────────────────────────────────────────────────
@@ -442,7 +452,14 @@ function ChartCard({
 
 // ─── Charts ───────────────────────────────────────────────────────────────────
 
-function formatPeriodLabel(period: string, granularity: "week" | "month" | "fy"): string {
+function formatPeriodLabel(
+  period: string,
+  granularity: "day" | "week" | "month" | "fy",
+): string {
+  // A daily bucket is already a single date — no range suffix needed.
+  if (granularity === "day") {
+    return formatDateShort(new Date(period));
+  }
   if (granularity === "week") {
     const start = new Date(period);
     const end = new Date(start);
@@ -464,7 +481,7 @@ function SalesTrendChart({
 }: {
   fromDate?: string;
   toDate?: string;
-  granularity: "week" | "month" | "fy";
+  granularity: "day" | "week" | "month" | "fy";
 }) {
   const { data: raw } = trpc.dashboard.salesTrend.useQuery({
     fromDate,
@@ -541,8 +558,8 @@ function InvoiceStatusChart({ fromDate, toDate }: { fromDate?: string; toDate?: 
       <div className="px-4 py-4" style={{ height: 260 }}>
         <div className="flex flex-col h-full">
           {/* Donut with center label */}
-          <div className="relative flex-1">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="relative flex-1 min-h-0">
+            {renderResponsive(
               <PieChart>
                 <Pie
                   data={data.map(d => ({ ...d, label: INVOICE_STATUS_LABELS[d.status] || d.status }))}
@@ -565,8 +582,10 @@ function InvoiceStatusChart({ fromDate, toDate }: { fromDate?: string; toDate?: 
                   {...tooltipStyle}
                   formatter={(value: any, name: any) => [value, name]}
                 />
-              </PieChart>
-            </ResponsiveContainer>
+              </PieChart>,
+              "100%",
+              "100%",
+            )}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="text-center">
                 <span className="block text-lg font-bold tabular-nums text-text-primary">{total}</span>
@@ -1127,11 +1146,13 @@ function PageSkeleton() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const PRESET_LABELS: Record<string, string> = {
+  today: "Today",
+  yesterday: "Yesterday",
   "this-month": "This Month",
   "last-month": "Last Month",
   "last-30": "Last 30 Days",
-  "this-fy": "This Financial Year",
-  "last-fy": "Last Financial Year",
+  "this-fy": "This Year",
+  "last-fy": "Last Year",
   "custom": "Custom Range",
   "all": "All Time",
 };
@@ -1155,7 +1176,10 @@ function DashboardPage() {
     customFrom,
     customTo,
     setCustomRange,
-  } = useDateRange("dashboard", "this-fy");
+  // Defaults to TODAY. The dashboard is a "how did we do" screen, and someone
+  // opening it wants today's numbers first — not a whole financial year, which
+  // is what it used to default to. Monthly and yearly are one click away.
+  } = useDateRange("dashboard", "today");
 
   const granularity = getGranularity(preset);
   const periodLabel = PRESET_LABELS[preset] ?? "Custom Range";
@@ -1169,7 +1193,29 @@ function DashboardPage() {
     { placeholderData: keepPreviousData }
   );
 
+  // POS availability gates the "POS" quick-action button.
+  const { data: businesses } = trpc.business.list.useQuery();
+  const activeBiz = businesses?.find((b) => b.id === getBusinessId()) ?? businesses?.[0];
+  const posEnabled = !!activeBiz?.posEnabled;
+
   const { data: statusBreakdown } = trpc.dashboard.invoiceStatusBreakdown.useQuery(
+    from || to ? { fromDate: from, toDate: to } : {},
+    { placeholderData: keepPreviousData }
+  );
+
+  // Gross/net profit must come from the COSTING engine, not from the summary
+  // cards.
+  //
+  // This page previously did `totalSales - totalPurchases`. `totalPurchases` is
+  // GROSS purchases — everything bought in the period — while `totalSales` is
+  // only what was SOLD, so the two are not comparable: gross profit swung to
+  // roughly MINUS the value of unsold stock (on the seeded books, about
+  // -6.7 lakh against a true +1.97 lakh) and net profit was wrong by the same
+  // amount. `dashboard.profitAndLoss` returns revenue, COGS
+  // (opening + purchases - closing) and the resulting profit, and it uses the
+  // same code path as the ledger P&L, so the dashboard, the reports page and
+  // the books all agree.
+  const { data: plData } = trpc.dashboard.profitAndLoss.useQuery(
     from || to ? { fromDate: from, toDate: to } : {},
     { placeholderData: keepPreviousData }
   );
@@ -1215,7 +1261,7 @@ function DashboardPage() {
   if (!data) {
     return (
       <EmptyState
-        title="Welcome to Hisaabo"
+        title="Welcome to Rohadas"
         description="Set up your business to start creating invoices and tracking payments."
         action={
           <Link to="/settings" className="btn-primary">
@@ -1226,9 +1272,11 @@ function DashboardPage() {
     );
   }
 
-  // Compute gross & net profit from summary data
-  const grossProfit = parseFloat(data.totalSales) - parseFloat(data.totalPurchases);
-  const netProfit = grossProfit - parseFloat(data.totalExpenses);
+  // Gross & net profit come from the costing engine (see the note at the fetch).
+  // COGS is the cost of what was SOLD, not the gross purchase figure.
+  const grossProfit = plData ? parseFloat(plData.grossProfit) : null;
+  const netProfit = plData ? parseFloat(plData.netProfit) : null;
+  const marginPercent = plData?.grossMarginPercent ?? null;
 
   // Find overdue invoices from status breakdown
   const overdueEntry = statusBreakdown?.find((s) => s.status === "overdue");
@@ -1240,20 +1288,45 @@ function DashboardPage() {
       <PageHeader
         title="Dashboard"
         actions={
-          <div className="flex items-center gap-3">
-            <DateRangeBar
-              preset={preset}
-              onPresetChange={handlePresetChange}
-              customFrom={customFrom}
-              customTo={customTo}
-              onCustomChange={setCustomRange}
-            />
-            <Link to="/invoices" search={{ create: "1" }} className="btn-primary">
-              + New Invoice
-            </Link>
-          </div>
+          <DateRangeBar
+            preset={preset}
+            onPresetChange={handlePresetChange}
+            customFrom={customFrom}
+            customTo={customTo}
+            onCustomChange={setCustomRange}
+            presets={DASHBOARD_PRESETS}
+          />
         }
       />
+
+      {/* Quick actions */}
+      <div className="mb-5 flex flex-wrap gap-2.5">
+        <Link
+          to="/invoices"
+          search={{ type: "sale", create: "1" }}
+          className="btn-primary flex-1 min-w-[150px] justify-center py-2.5"
+        >
+          <PlusIcon />
+          Create Sale
+        </Link>
+        <Link
+          to="/invoices"
+          search={{ type: "purchase", create: "1" }}
+          className="btn-secondary flex-1 min-w-[150px] justify-center py-2.5"
+        >
+          <PlusIcon />
+          Create Purchase
+        </Link>
+        {posEnabled && (
+          <Link
+            to="/pos"
+            className="btn-secondary flex-1 min-w-[150px] justify-center py-2.5"
+          >
+            <RegisterIcon />
+            POS
+          </Link>
+        )}
+      </div>
 
       {showJoinBanner && joinedOrg && (
         <div className="mb-4 px-4 py-3 rounded-xl bg-brand-600/[0.06] border border-brand-600/20 flex items-center justify-between">
@@ -1292,19 +1365,27 @@ function DashboardPage() {
           <p className="text-[11px] font-medium text-text-tertiary mb-1">Gross Profit</p>
           <p className={cn(
             "text-lg font-bold tabular-nums",
-            grossProfit >= 0 ? "text-emerald-600" : "text-red-600"
+            grossProfit === null ? "text-text-tertiary" : grossProfit >= 0 ? "text-emerald-600" : "text-red-600"
           )}>
-            {formatCurrency(String(grossProfit))}
+            {grossProfit === null ? "—" : formatCurrency(String(grossProfit))}
           </p>
+          {marginPercent !== null && (
+            <p className="text-[11px] text-text-tertiary mt-0.5">{marginPercent}% margin</p>
+          )}
         </div>
         <div className="card px-4 py-3">
           <p className="text-[11px] font-medium text-text-tertiary mb-1">Net Profit</p>
           <p className={cn(
             "text-lg font-bold tabular-nums",
-            netProfit >= 0 ? "text-emerald-600" : "text-red-600"
+            netProfit === null ? "text-text-tertiary" : netProfit >= 0 ? "text-emerald-600" : "text-red-600"
           )}>
-            {formatCurrency(String(netProfit))}
+            {netProfit === null ? "—" : formatCurrency(String(netProfit))}
           </p>
+          {plData && (
+            <p className="text-[11px] text-text-tertiary mt-0.5">
+              after COGS {formatCurrency(plData.cogs)}
+            </p>
+          )}
         </div>
       </div>
 
@@ -1351,3 +1432,42 @@ function DashboardPage() {
     </div>
   );
 }
+
+// ── Quick-action icons ───────────────────────────────────────────
+
+function PlusIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-4 w-4"
+      aria-hidden="true"
+    >
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+function RegisterIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-4 w-4"
+      aria-hidden="true"
+    >
+      <path d="M15.75 15.75V18m-7.5-6.75h.008v.008H8.25v-.008zm0 2.25h.008v.008H8.25V13.5zm0 2.25h.008v.008H8.25v-.008zm0 2.25h.008v.008H8.25V18zm2.498-6.75h.007v.008h-.007v-.008zm0 2.25h.007v.008h-.007V13.5zm0 2.25h.007v.008h-.007v-.008zm0 2.25h.007v.008h-.007V18zm2.504-6.75h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V13.5zm0 2.25h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V18zm2.498-6.75h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V13.5zM8.25 6h7.5v2.25h-7.5V6zM12 2.25c-1.892 0-3.758.11-5.593.322C5.307 2.7 4.5 3.65 4.5 4.757V19.5a2.25 2.25 0 002.25 2.25h10.5a2.25 2.25 0 002.25-2.25V4.757c0-1.108-.806-2.057-1.907-2.185A48.507 48.507 0 0012 2.25z" />
+    </svg>
+  );
+}
+

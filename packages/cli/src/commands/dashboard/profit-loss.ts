@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, EXIT, hasColor, termWidth } from "../../output.js";
 import { formatINR, formatDate, fyStart, todayISO, monthStart, monthEnd } from "../../format.js";
@@ -73,7 +73,7 @@ function colorPL(formatted: string, isProfit: boolean): string {
 
 export async function dashboardProfitLossCommand(opts: ProfitLossOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   let fromDate = opts.from ?? fyStart();
   let toDate = opts.to ?? todayISO();
@@ -111,7 +111,11 @@ export async function dashboardProfitLossCommand(opts: ProfitLossOpts): Promise<
     lines.push(plBlank(innerW));
 
     lines.push(plLine("Revenue", formatPL(revenue), innerW, { bold: true }));
-    lines.push(plLine("Cost of Goods Sold", formatPL(-cogs), innerW));
+    // Labelled "Purchases", not "Cost of Goods Sold": this figure is the total of
+    // purchase invoices in the period, NOT a cost-of-goods-sold valuation
+    // (which needs opening stock + purchases - closing stock). Calling it COGS
+    // misrepresents it to the user.
+    lines.push(plLine("Purchases", formatPL(-cogs), innerW));
     lines.push(plSeparator(innerW));
 
     const gpFormatted = formatPL(grossProfit);
@@ -136,7 +140,7 @@ export async function dashboardProfitLossCommand(opts: ProfitLossOpts): Promise<
     process.stdout.write("\n");
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "network_error") fatalError(err.message, EXIT.NETWORK);

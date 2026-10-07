@@ -1,10 +1,11 @@
-import { eq, and, sql, desc, isNull } from "drizzle-orm";
+import { eq, and, sql, desc, isNull, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { invoices, invoiceItems, items, payments, expenses, parties, businesses } from "@hisaabo/db";
 import { money } from "@hisaabo/shared";
 import { router, viewerProcedure } from "../trpc.js";
 import { requireCan } from "../lib/permissions.js";
 import { buildBusinessDateFilter } from "../lib/business-date.js";
+import { computeInventoryAndCogs } from "../lib/inventory-costing.js";
 
 
 export const dashboardRouter = router({
@@ -222,7 +223,7 @@ export const dashboardRouter = router({
       months: z.number().int().min(3).max(24).default(6),
       fromDate: z.string().datetime().optional(),
       toDate: z.string().datetime().optional(),
-      granularity: z.enum(["week", "month", "fy"]).default("month"),
+      granularity: z.enum(["day", "week", "month", "fy"]).default("month"),
     }))
     .query(async ({ input, ctx }) => {
       requireCan(ctx.ability, "read", "Report");
@@ -312,13 +313,13 @@ export const dashboardRouter = router({
         rangeEnd = new Date();
       }
 
-      const stepInterval = input.granularity === "week" ? "1 week" : "1 month";
+      const stepInterval =
+        input.granularity === "day" ? "1 day" : input.granularity === "week" ? "1 week" : "1 month";
 
-      // Week: use raw fromDate/toDate so buckets align to the selected
-      // period (e.g. March 1 for calendar months) rather than snapping to
-      // ISO week boundaries which can bleed into adjacent months.
-      // Month: date_trunc ensures buckets always start on the 1st.
-      const useRawBounds = input.granularity === "week";
+      // Day/week: use raw fromDate/toDate so buckets align to the selected
+      // period rather than snapping to a calendar boundary. Month: date_trunc
+      // ensures buckets always start on the 1st.
+      const useRawBounds = input.granularity === "week" || input.granularity === "day";
       const seriesStart = useRawBounds
         ? sql`${rangeStart.toISOString()}::timestamptz`
         : sql`date_trunc('month', ${rangeStart.toISOString()}::timestamptz)`;
@@ -538,21 +539,51 @@ export const dashboardRouter = router({
       invConditions.push(...buildBusinessDateFilter(invoices, { from: input.fromDate, to: input.toDate }));
       expConditions.push(...buildBusinessDateFilter(expenses, { from: input.fromDate, to: input.toDate }));
 
+      // Revenue, purchases and credit notes are all PRE-TAX: NET SALES =
+      // subtotal − discount, i.e. EXCLUDING GST. GST is a liability collected
+      // on behalf of the government, not income — including it overstates
+      // revenue by the tax and breaks gross profit whenever input and output
+      // GST rates differ.
+      const netSaleExpr = sql<string>`(${invoices.subtotal}::numeric - COALESCE(${invoices.discountAmount}::numeric, 0))`;
+
       const [
         [sales],
         [purchases],
+        [creditNotes],
         [expenseTotal],
         expenseBreakdown,
       ] = await Promise.all([
         ctx.db.select({
-          total: sql<string>`COALESCE(SUM(${invoices.totalAmount}::numeric), 0)::text`,
+          total: sql<string>`COALESCE(SUM(${netSaleExpr}), 0)::text`,
         }).from(invoices)
-          .where(and(...invConditions, eq(invoices.type, "sale"), eq(invoices.documentType, "invoice"), sql`${invoices.status} != 'cancelled'`)),
+          .where(and(
+            ...invConditions,
+            eq(invoices.type, "sale"),
+            eq(invoices.documentType, "invoice"),
+            sql`${invoices.status} NOT IN ('cancelled', 'draft')`,
+          )),
 
         ctx.db.select({
-          total: sql<string>`COALESCE(SUM(${invoices.totalAmount}::numeric), 0)::text`,
+          total: sql<string>`COALESCE(SUM(${netSaleExpr}), 0)::text`,
         }).from(invoices)
-          .where(and(...invConditions, eq(invoices.type, "purchase"), eq(invoices.documentType, "invoice"), sql`${invoices.status} != 'cancelled'`)),
+          .where(and(
+            ...invConditions,
+            eq(invoices.type, "purchase"),
+            eq(invoices.documentType, "invoice"),
+            sql`${invoices.status} NOT IN ('cancelled', 'draft')`,
+          )),
+
+        // Credit notes / sales returns REVERSE revenue (customer returns goods
+        // or is refunded). They must reduce revenue, not be ignored.
+        ctx.db.select({
+          total: sql<string>`COALESCE(SUM(${netSaleExpr}), 0)::text`,
+        }).from(invoices)
+          .where(and(
+            ...invConditions,
+            eq(invoices.type, "sale"),
+            inArray(invoices.documentType, ["credit_note", "sales_return"]),
+            sql`${invoices.status} NOT IN ('cancelled', 'draft')`,
+          )),
 
         ctx.db.select({
           total: sql<string>`COALESCE(SUM(${expenses.amount}::numeric), 0)::text`,
@@ -568,8 +599,23 @@ export const dashboardRouter = router({
           .orderBy(sql`SUM(${expenses.amount}::numeric) DESC`),
       ]);
 
-      const revenue = sales.total;
-      const cogs = purchases.total;
+      // Net revenue = sales invoices MINUS credit notes / sales returns.
+      const revenue = money.sub(sales.total, creditNotes?.total ?? "0.00");
+
+      // COGS is a real cost-of-goods-sold figure:
+      //   Opening Inventory + Purchases(at cost) − Closing Inventory
+      // NOT "total purchase invoices" (that measures what was bought, not what
+      // was sold, and overstates gross profit whenever stock is left on the
+      // shelf). See lib/inventory-costing.ts.
+      const costing = await computeInventoryAndCogs(
+        ctx.db,
+        ctx.businessId,
+        input.fromDate ? new Date(input.fromDate) : undefined,
+        input.toDate ? new Date(input.toDate) : undefined,
+      );
+
+      const purchasesInPeriod = purchases.total;
+      const cogs = costing.cogs;
       const grossProfit = money.sub(revenue, cogs);
       const totalExpenses = expenseTotal.total;
       const netProfit = money.sub(grossProfit, totalExpenses);
@@ -578,6 +624,11 @@ export const dashboardRouter = router({
         revenue,
         cogs,
         grossProfit,
+        openingInventory: costing.openingInventory,
+        closingInventory: costing.closingInventory,
+        purchasesInPeriod,
+        costingMethod: costing.costingMethod,
+        stockDataIncomplete: costing.stockDataIncomplete,
         grossMarginPercent: money.toNumber(revenue) > 0
           ? ((money.toNumber(grossProfit) / money.toNumber(revenue)) * 100).toFixed(1)
           : "0.0",

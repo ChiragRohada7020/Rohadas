@@ -14,13 +14,13 @@
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { HisaaboClient } from "../client.js";
+import type { RohadasClient } from "../client.js";
 import { wrapTool } from "../lib/errors.js";
 import { MAX_PAGE_SIZE, withPaginationMeta } from "../lib/pagination.js";
 
 const PAYMENT_MODES = ["cash", "bank", "upi", "cheque", "other"] as const;
 
-export function registerPaymentTools(server: McpServer, client: HisaaboClient) {
+export function registerPaymentTools(server: McpServer, client: RohadasClient) {
 
   server.tool(
     "payment_create",

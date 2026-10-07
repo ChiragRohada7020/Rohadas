@@ -154,7 +154,13 @@ export const businessRouter = router({
         ipAddress: ctx.ipAddress,
       });
 
-      return biz;
+      // Exclude the raw logo bytes from the response — clients fetch the logo
+      // from the dedicated logo endpoint. Returning a large binary payload here
+      // makes the mutation response big enough to trip SuperJSON parsing on the
+      // client, which surfaces as a spurious "failed to save" toast even though
+      // the write succeeded.
+      const { logoData: _logoData, ...safe } = biz;
+      return safe;
     }),
 
   // Upload a business logo. Stored as bytea on the businesses row so it

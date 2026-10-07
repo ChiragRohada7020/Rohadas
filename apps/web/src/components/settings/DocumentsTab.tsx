@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { cn } from "@/lib/utils";
 import { InputField } from "@/components/ui/FormField";
 import { toast } from "@/hooks/useToast";
 
@@ -14,6 +15,15 @@ const DOC_TYPES = [
   { key: "credit_note", label: "Credit Note", prefixField: "creditNotePrefix", counterField: "nextCreditNoteNumber" },
   { key: "delivery_challan", label: "Delivery Challan", prefixField: "deliveryChallanPrefix", counterField: "nextDeliveryChallanNumber" },
   { key: "proforma", label: "Proforma Invoice", prefixField: "proformaPrefix", counterField: "nextProformaNumber" },
+] as const;
+
+// Invoice PDF template options. All four are GST-compliant; only the visual
+// theme differs. `accent` + `banner` drive the little preview swatch.
+const INVOICE_TEMPLATE_OPTIONS = [
+  { id: "classic", name: "Classic", desc: "Indigo band, open layout — the original GST invoice.", accent: "#4f46e5", banner: "filled", layout: "standard" },
+  { id: "modern",  name: "Modern",  desc: "Teal accent, framed details card + gridded items table.", accent: "#0d9488", banner: "plain", layout: "boxed" },
+  { id: "minimal", name: "Minimal", desc: "Monochrome, open layout — maximum readability.", accent: "#111827", banner: "underline", layout: "standard" },
+  { id: "bold",    name: "Bold",    desc: "Dark header band, framed details card + gridded table.", accent: "#1e293b", banner: "filled", layout: "boxed" },
 ] as const;
 
 export function DocumentsTab({ biz }: DocumentsTabProps) {
@@ -32,6 +42,10 @@ export function DocumentsTab({ biz }: DocumentsTabProps) {
     biz.defaultTermsAndConditions ?? ""
   );
   const [defaultsDirty, setDefaultsDirty] = useState(false);
+
+  // Invoice PDF template — the visual theme applied to every generated invoice.
+  const [template, setTemplate] = useState<string>(biz.invoiceTemplate ?? "classic");
+  const [templateDirty, setTemplateDirty] = useState(false);
 
   const utils = trpc.useUtils();
 
@@ -62,6 +76,22 @@ export function DocumentsTab({ biz }: DocumentsTabProps) {
     onError: (err) => toast.error("Failed to update sequence number", err.message),
   });
 
+  const templateMutation = trpc.business.update.useMutation({
+    onSuccess: () => {
+      toast.success("Invoice template saved");
+      utils.business.list.invalidate();
+      setTemplateDirty(false);
+    },
+    onError: (err) => toast.error("Failed to save template", err.message),
+  });
+
+  function handleSaveTemplate() {
+    templateMutation.mutate({
+      id: biz.id,
+      data: { invoiceTemplate: template as "classic" | "modern" | "minimal" | "bold" },
+    });
+  }
+
   function handlePrefixChange(field: string, value: string) {
     setPrefixes((prev) => ({ ...prev, [field]: value }));
     setPrefixesDirty(true);
@@ -86,6 +116,87 @@ export function DocumentsTab({ biz }: DocumentsTabProps) {
 
   return (
     <div className="space-y-6">
+      {/* Invoice Template */}
+      <div className="card overflow-hidden">
+        <div className="px-6 py-4 border-b border-border-light flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-text-primary">Invoice Template</h3>
+            <p className="text-xs text-text-tertiary mt-0.5">
+              The look of every invoice PDF you download or send. All templates carry the full GST format
+              (GSTIN, HSN, CGST/SGST/IGST split, amount in words).
+            </p>
+          </div>
+          {templateDirty && (
+            <button
+              className="btn-primary btn-sm"
+              onClick={handleSaveTemplate}
+              disabled={templateMutation.isPending}
+            >
+              {templateMutation.isPending ? "Saving..." : "Save"}
+            </button>
+          )}
+        </div>
+        <div className="p-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {INVOICE_TEMPLATE_OPTIONS.map((t) => {
+            const selected = template === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => {
+                  setTemplate(t.id);
+                  setTemplateDirty(true);
+                }}
+                className={cn(
+                  "text-left rounded-xl border p-2.5 transition-all",
+                  selected
+                    ? "border-brand-600 ring-2 ring-brand-600/30 bg-brand-600/[0.04]"
+                    : "border-border-light hover:border-border",
+                )}
+              >
+                {/* Mini invoice preview */}
+                <div className="h-24 rounded-lg border border-border-light overflow-hidden bg-white mb-2">
+                  {t.banner === "filled" ? (
+                    <div className="h-5" style={{ background: t.accent }} />
+                  ) : t.banner === "plain" ? (
+                    <div className="h-5 flex items-center justify-center">
+                      <div className="h-1 w-16 rounded" style={{ background: t.accent }} />
+                    </div>
+                  ) : (
+                    <div className="h-5 flex items-center justify-center">
+                      <div className="h-px w-16" style={{ background: t.accent }} />
+                    </div>
+                  )}
+                  {t.layout === "boxed" ? (
+                    <div className="p-2">
+                      <div className="grid grid-cols-3 rounded-sm border border-gray-200 overflow-hidden">
+                        <div className="h-3 border-r border-gray-200" />
+                        <div className="h-3 border-r border-gray-200" />
+                        <div className="h-3" style={{ background: t.accent, opacity: 0.15 }} />
+                        <div className="h-3 border-t border-r border-gray-200" />
+                        <div className="h-3 border-t border-r border-gray-200" />
+                        <div className="h-3 border-t border-gray-200" />
+                      </div>
+                      <div className="mt-2 h-1.5 w-3/4 rounded bg-gray-100" />
+                    </div>
+                  ) : (
+                    <div className="p-2 space-y-1.5">
+                      <div className="h-1.5 w-1/2 rounded bg-gray-200" />
+                      <div className="h-1.5 w-2/3 rounded bg-gray-100" />
+                      <div className="h-1.5 w-1/3 rounded bg-gray-100" />
+                      <div className="mt-2.5 h-2 w-full rounded-sm" style={{ background: t.accent, opacity: 0.15 }} />
+                      <div className="h-1.5 w-3/4 rounded bg-gray-100" />
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm font-medium text-text-primary">{t.name}</p>
+                <p className="text-[11px] text-text-tertiary mt-0.5 leading-snug">{t.desc}</p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Prefixes */}
       <div className="card overflow-hidden">
         <div className="px-6 py-4 border-b border-border-light flex items-center justify-between">

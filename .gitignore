@@ -60,3 +60,15 @@ test-results
 
 # Debug dumps
 *-dump.json
+
+# WhatsApp session credentials (Baileys device/identity keys) — NEVER commit.
+# These grant full access to the linked WhatsApp account.
+packages/api/whatsapp-auth/
+
+# Internal agent tooling (plans, worktrees, local config)
+.kilo/
+
+# Scratch / one-off scripts
+tmp_*.cjs
+scripts/_tmp-*.cjs
+_tmp-*

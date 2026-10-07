@@ -1296,6 +1296,8 @@ export const reportsRouter = router({
 
       const coaTypeMap = new Map(coaRows.map((r) => [r.code, r.accountType]));
 
+      // Include ALL accounts from CoA, even with zero balances,
+      // so the trial balance always shows the full chart structure.
       const accounts = [...accountMap.values()]
         .map((a) => ({
           accountCode: a.code,
@@ -1305,11 +1307,6 @@ export const reportsRouter = router({
           credit: a.credit,
           balance: money.sub(a.debit, a.credit),
         }))
-        .filter(
-          (a) =>
-            money.compare(a.debit, "0") !== 0 ||
-            money.compare(a.credit, "0") !== 0,
-        )
         .sort((a, b) => a.accountCode.localeCompare(b.accountCode));
 
       const totalDebit = money.sum(accounts.map((a) => a.debit));
@@ -1394,36 +1391,29 @@ export const reportsRouter = router({
       );
 
       // Build section arrays from cumulative balances (balance sheet accounts only)
+      // Include ALL balance-sheet accounts from CoA, even with zero balance,
+      // so the report always shows the full account structure like ERPNext.
       type BsItem = { accountCode: string; accountName: string; balance: string };
       const assets: BsItem[] = [];
       const liabilities: BsItem[] = [];
       const equity: BsItem[] = [];
 
-      for (const [code, acc] of allMap) {
-        const acctInfo = coaTypeMap.get(code);
-        if (!acctInfo) continue;
+      for (const [code, acctInfo] of coaTypeMap) {
         const { type } = acctInfo;
+        if (type !== "asset" && type !== "liability" && type !== "equity") continue;
 
+        const acc = allMap.get(code);
+        let balance: string;
         if (type === "asset") {
-          // Asset balance = debit - credit (debit-normal)
-          const balance = money.sub(acc.debit, acc.credit);
-          if (money.compare(balance, "0") !== 0) {
-            assets.push({ accountCode: code, accountName: acc.name, balance });
-          }
+          balance = acc ? money.sub(acc.debit, acc.credit) : "0.00";
+          assets.push({ accountCode: code, accountName: acctInfo.name, balance });
         } else if (type === "liability") {
-          // Liability balance = credit - debit (credit-normal)
-          const balance = money.sub(acc.credit, acc.debit);
-          if (money.compare(balance, "0") !== 0) {
-            liabilities.push({ accountCode: code, accountName: acc.name, balance });
-          }
+          balance = acc ? money.sub(acc.credit, acc.debit) : "0.00";
+          liabilities.push({ accountCode: code, accountName: acctInfo.name, balance });
         } else if (type === "equity") {
-          // Equity balance = credit - debit (credit-normal)
-          const balance = money.sub(acc.credit, acc.debit);
-          if (money.compare(balance, "0") !== 0) {
-            equity.push({ accountCode: code, accountName: acc.name, balance });
-          }
+          balance = acc ? money.sub(acc.credit, acc.debit) : "0.00";
+          equity.push({ accountCode: code, accountName: acctInfo.name, balance });
         }
-        // income/expense accounts go into net income, not balance sheet directly
       }
 
       // Sort each section by account code
@@ -1491,24 +1481,24 @@ export const reportsRouter = router({
         }
       }
 
-      // Split into income and expense line items
-      // Income: amount = credit - debit (credit-normal accounts)
-      // Expenses: amount = debit - credit (debit-normal accounts)
+      // Split into income and expense line items.
+      // Include ALL income/expense accounts from CoA, even with zero balance,
+      // so the P&L always shows the full chart structure like ERPNext.
       type PlItem = { accountCode: string; accountName: string; amount: string };
       const income: PlItem[] = [];
       const expenseItems: PlItem[] = [];
 
-      for (const [code, acc] of accountMap) {
-        const acctInfo = coaTypeMap.get(code);
-        if (!acctInfo) continue;
+      for (const [code, acctInfo] of coaTypeMap) {
         const { type } = acctInfo;
+        if (type !== "income" && type !== "expense") continue;
 
+        const acc = accountMap.get(code);
         if (type === "income") {
-          const amount = money.sub(acc.credit, acc.debit);
-          income.push({ accountCode: code, accountName: acc.name, amount });
+          const amount = acc ? money.sub(acc.credit, acc.debit) : "0.00";
+          income.push({ accountCode: code, accountName: acctInfo.name, amount });
         } else if (type === "expense") {
-          const amount = money.sub(acc.debit, acc.credit);
-          expenseItems.push({ accountCode: code, accountName: acc.name, amount });
+          const amount = acc ? money.sub(acc.debit, acc.credit) : "0.00";
+          expenseItems.push({ accountCode: code, accountName: acctInfo.name, amount });
         }
       }
 
@@ -1518,14 +1508,19 @@ export const reportsRouter = router({
       const totalIncome = money.sum(income.map((a) => a.amount));
       const totalExpenses = money.sum(expenseItems.map((a) => a.amount));
 
-      // Gross profit = Sales (4000) - Direct costs (5000 Purchases + 5100 Direct Expenses)
+      // Gross profit = Sales (4000) − Cost of sales (5000 Purchases + 5100 Direct Expenses).
+      // 4010 Sales Returns is declared as an INCOME account in the CoA (contra-income):
+      // the ledger DEBITS it, so its signed amount is already negative and it lands in
+      // `income`, not `expenseItems`. Reading it out of `expenseItems` therefore always
+      // yielded "0.00" and gross profit silently ignored every credit note. Read it from
+      // `income` and ADD it (it is negative) to arrive at net sales.
       const salesAmt = income.find((a) => a.accountCode === "4000")?.amount ?? "0.00";
-      const salesReturnsAmt = expenseItems.find((a) => a.accountCode === "4010")?.amount ?? "0.00";
+      const salesReturnsAmt = income.find((a) => a.accountCode === "4010")?.amount ?? "0.00";
       const purchasesAmt = expenseItems.find((a) => a.accountCode === "5000")?.amount ?? "0.00";
       const directExpAmt = expenseItems.find((a) => a.accountCode === "5100")?.amount ?? "0.00";
 
       const grossProfit = money.sub(
-        money.sub(salesAmt, salesReturnsAmt),
+        money.add(salesAmt, salesReturnsAmt), // salesReturns is negative (contra-income)
         money.add(purchasesAmt, directExpAmt),
       );
 
@@ -1824,8 +1819,6 @@ export const reportsRouter = router({
           continue; // income/expense → net income only
         }
 
-        if (money.compare(currentBalance, "0") === 0 && money.compare(previousBalance, "0") === 0) continue;
-
         const { variance, variancePercent } = computeVariance(currentBalance, previousBalance);
         const item: BsItem = { accountCode: code, accountName: name, currentBalance, previousBalance, variance, variancePercent };
 
@@ -1833,6 +1826,24 @@ export const reportsRouter = router({
         else if (type === "liability") liabilities.push(item);
         else equity.push(item);
       }
+
+      // Ensure all balance-sheet accounts from CoA appear, even with zero balances
+      const ensureSection = (section: BsItem[], type: "asset" | "liability" | "equity") => {
+        const existingCodes = new Set(section.map((s) => s.accountCode));
+        for (const [code, info] of coaTypeMap) {
+          if (info.type !== type || existingCodes.has(code)) continue;
+          const cur = curMap.get(code) ?? { debit: "0.00", credit: "0.00" };
+          const prev = prevMap.get(code) ?? { debit: "0.00", credit: "0.00" };
+          const currentBalance = type === "asset" ? money.sub(cur.debit, cur.credit) : money.sub(cur.credit, cur.debit);
+          const previousBalance = type === "asset" ? money.sub(prev.debit, prev.credit) : money.sub(prev.credit, prev.debit);
+          const { variance, variancePercent } = computeVariance(currentBalance, previousBalance);
+          section.push({ accountCode: code, accountName: info.name, currentBalance, previousBalance, variance, variancePercent });
+        }
+        section.sort((a, b) => a.accountCode.localeCompare(b.accountCode));
+      };
+      ensureSection(assets, "asset");
+      ensureSection(liabilities, "liability");
+      ensureSection(equity, "equity");
 
       // Add net income row to equity
       const { variance: niVariance, variancePercent: niVariancePct } = computeVariance(currentNetIncome, previousNetIncome);

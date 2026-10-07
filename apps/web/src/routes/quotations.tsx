@@ -6,7 +6,7 @@ import { toast } from "@/hooks/useToast";
 import { DocumentListPage } from "@/components/DocumentListPage";
 
 export const Route = createFileRoute("/quotations")({
-  validateSearch: (search) => z.object({ id: z.string().uuid().optional() }).parse(search),
+  validateSearch: (search) => z.object({ id: z.string().uuid().optional(), type: z.enum(["sale", "purchase"]).optional() }).parse(search),
   component: QuotationsPage,
 });
 
@@ -19,7 +19,7 @@ const STATUS_TABS = [
 
 function QuotationsPage() {
   const navigate = useNavigate();
-  const { id: idFromSearch } = useSearch({ from: "/quotations" });
+  const { id: idFromSearch, type } = useSearch({ from: "/quotations" });
   const [convertingId, setConvertingId] = useState<string | null>(null);
   const utils = trpc.useUtils();
 
@@ -28,7 +28,7 @@ function QuotationsPage() {
       toast.success("Converted to invoice");
       utils.invoice.list.invalidate();
       setConvertingId(null);
-      navigate({ to: "/invoices" });
+      navigate({ to: "/invoices", search: { type: type || "sale" } });
     },
     onError: (err) => {
       toast.error("Failed to convert", err.message);
@@ -47,9 +47,9 @@ function QuotationsPage() {
       config={{
         trpcRouter: "quotation",
         documentType: "quotation",
-        defaultInvoiceType: "sale",
+        defaultInvoiceType: type || "sale",
         title: "Quotations",
-        description: "Manage sales quotations",
+        description: "Manage quotations",
         buttonLabel: "+ New Quotation",
         statusTabs: STATUS_TABS,
         emptyTitle: "No quotations found",

@@ -1,6 +1,6 @@
 ---
 title: Create an Invoice
-description: Step-by-step guide to creating a sale or purchase invoice in Hisaabo, including line items, discounts, additional charges, and round-off.
+description: Step-by-step guide to creating a sale or purchase invoice in Rohadas, including line items, discounts, additional charges, and round-off.
 sidebar:
   order: 2
 ---
@@ -54,7 +54,7 @@ This opens a full-screen invoice form.
 
 <ForMobile>
 :::tip[Phone contacts]
-On first use, Hisaabo asks for contacts permission. Allowing it lets you create parties directly from your phone's contact list — their name and phone number are pre-filled automatically.
+On first use, Rohadas asks for contacts permission. Allowing it lets you create parties directly from your phone's contact list — their name and phone number are pre-filled automatically.
 :::
 </ForMobile>
 
@@ -218,7 +218,7 @@ Once an invoice is fully paid (status `paid`), you cannot edit it. To make a cor
 
 ## How totals are calculated
 
-Hisaabo uses fixed-point arithmetic (strings passed through the shared `calcLineItem` and `calcInvoiceTotals` utilities) — not floating-point JavaScript numbers — for all monetary calculations. This avoids rounding errors.
+Rohadas uses fixed-point arithmetic (strings passed through the shared `calcLineItem` and `calcInvoiceTotals` utilities) — not floating-point JavaScript numbers — for all monetary calculations. This avoids rounding errors.
 
 For a single line item:
 

@@ -10,6 +10,8 @@ interface DateRangeBarProps {
   onExport?: () => void;
   exporting?: boolean;
   className?: string;
+  /** Defaults to every preset; pages can pass a focused subset. */
+  presets?: Array<{ value: DatePreset; label: string }>;
 }
 
 export function DateRangeBar({
@@ -21,10 +23,11 @@ export function DateRangeBar({
   onExport,
   exporting,
   className,
+  presets = DATE_PRESETS,
 }: DateRangeBarProps) {
   return (
     <div className={cn("flex items-center gap-2 flex-wrap", className)}>
-      {DATE_PRESETS.map((p) => (
+      {presets.map((p) => (
         <button
           key={p.value}
           type="button"

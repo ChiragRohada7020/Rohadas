@@ -1,6 +1,6 @@
 ---
 title: Invoicing Overview
-description: Overview of Hisaabo's invoicing features — sale and purchase invoices, document types, automatic numbering, stock updates, and payment linking.
+description: Overview of Rohadas's invoicing features — sale and purchase invoices, document types, automatic numbering, stock updates, and payment linking.
 sidebar:
   order: 1
 ---
@@ -10,18 +10,18 @@ import ForMobile from '../../../components/ForMobile.astro';
 import ForCA from '../../../components/ForCA.astro';
 import ForBusiness from '../../../components/ForBusiness.astro';
 
-Invoicing is the core of Hisaabo. Every sale or purchase you make flows through an invoice. This page gives you a map of the invoicing system so you know which feature to reach for in each situation.
+Invoicing is the core of Rohadas. Every sale or purchase you make flows through an invoice. This page gives you a map of the invoicing system so you know which feature to reach for in each situation.
 
 ## Invoice types
 
-Hisaabo has two **invoice types**:
+Rohadas has two **invoice types**:
 
 - **Sale invoice** — you are selling goods or services to a customer. Stock decreases when a sale invoice is created.
 - **Purchase invoice** — you are buying goods or services from a supplier. Stock increases when a purchase invoice is created.
 
 ## Document types
 
-Within sale and purchase, Hisaabo supports multiple **document types**. Each has its own sequential number series:
+Within sale and purchase, Rohadas supports multiple **document types**. Each has its own sequential number series:
 
 | Document Type | Use for | Number prefix (default) |
 |---|---|---|
@@ -71,7 +71,7 @@ The format is `PREFIX-NNNNN`, for example `INV-00001`. The counter pads to 5 dig
 
 <ForCA>
 :::tip[Audit-friendly numbering]
-The `SELECT FOR UPDATE` lock guarantees no gaps and no duplicates — exactly what you need for GSTR-1 reconciliation and Rule 46 compliance. If a client reports a "missing" invoice number during audit, it was either cancelled (still visible, filter by status) or never created. Hisaabo cannot silently skip a number.
+The `SELECT FOR UPDATE` lock guarantees no gaps and no duplicates — exactly what you need for GSTR-1 reconciliation and Rule 46 compliance. If a client reports a "missing" invoice number during audit, it was either cancelled (still visible, filter by status) or never created. Rohadas cannot silently skip a number.
 :::
 </ForCA>
 
@@ -109,7 +109,7 @@ See [Invoice Statuses](/invoicing/invoice-statuses) for the full status workflow
 
 ## GST on invoices
 
-Hisaabo automatically calculates CGST/SGST (intra-state) or IGST (inter-state) based on the 2-digit state codes stored on your business and the customer/supplier. You set the GST rate on each item (0%, 5%, 12%, 18%, or 28%) and Hisaabo applies the correct split on each invoice.
+Rohadas automatically calculates CGST/SGST (intra-state) or IGST (inter-state) based on the 2-digit state codes stored on your business and the customer/supplier. You set the GST rate on each item (0%, 5%, 12%, 18%, or 28%) and Rohadas applies the correct split on each invoice.
 
 See [GST on Invoices](/invoicing/gst-on-invoices) for full details.
 

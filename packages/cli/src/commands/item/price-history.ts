@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import {
   fatalError, outputJSON, outputTable, outputTSV, outputCSV,
@@ -20,7 +20,7 @@ interface PriceHistoryRow {
 
 export async function itemPriceHistoryCommand(id: string, opts: PriceHistoryOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const result = await client.item.priceHistory({ itemId: id });
@@ -48,7 +48,7 @@ export async function itemPriceHistoryCommand(id: string, opts: PriceHistoryOpts
     console.log();
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "not_found") fatalError(`Item not found: ${id}`, EXIT.NOT_FOUND);
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);

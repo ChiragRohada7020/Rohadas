@@ -1,0 +1,1 @@
+const fromAddress = process.env.EMAIL_FROM || "Rohadas <noreply@rohadas.app>";

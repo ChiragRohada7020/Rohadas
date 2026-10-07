@@ -621,7 +621,7 @@ export default function LoginScreen() {
             ]}
           >
             <LogoIcon size={44} />
-            <Text style={styles.brandName}>Hisaabo</Text>
+            <Text style={styles.brandName}>Rohadas</Text>
           </Animated.View>
 
           {/* ── Content Area (cross-faded) ────────────────────────── */}

@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, outputTable, EXIT, hasColor } from "../../output.js";
 import { formatAmount, formatStatus, fyStart, todayISO, monthStart, monthEnd } from "../../format.js";
@@ -14,7 +14,7 @@ interface InvoiceBreakdownOpts {
 
 export async function dashboardInvoiceBreakdownCommand(opts: InvoiceBreakdownOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   let fromDate = opts.from;
   let toDate = opts.to;
@@ -79,7 +79,7 @@ export async function dashboardInvoiceBreakdownCommand(opts: InvoiceBreakdownOpt
     process.stdout.write("\n");
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "network_error") fatalError(err.message, EXIT.NETWORK);

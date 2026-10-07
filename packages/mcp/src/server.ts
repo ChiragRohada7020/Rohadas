@@ -6,7 +6,7 @@
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { HisaaboClient } from "./client.js";
+import type { RohadasClient } from "./client.js";
 import { registerInvoiceTools } from "./tools/invoice.js";
 import { registerPartyTools } from "./tools/party.js";
 import { registerItemTools } from "./tools/item.js";
@@ -14,6 +14,7 @@ import { registerPaymentTools } from "./tools/payment.js";
 import { registerExpenseTools } from "./tools/expense.js";
 import { registerDashboardTools } from "./tools/dashboard.js";
 import { registerGstTools } from "./tools/gst.js";
+import { registerInventoryTools } from "./tools/inventory.js";
 import { registerShipmentTools } from "./tools/shipment.js";
 import { registerBankAccountTools } from "./tools/bankAccount.js";
 import { registerReportTools } from "./tools/reports.js";
@@ -36,7 +37,7 @@ import { registerSystemTools } from "./tools/system.js";
 import { registerResources } from "./resources/index.js";
 import { registerPrompts } from "./prompts/index.js";
 
-export function registerTools(server: McpServer, client: HisaaboClient): void {
+export function registerTools(server: McpServer, client: RohadasClient): void {
   // Core business operations
   registerInvoiceTools(server, client);
   registerPartyTools(server, client);
@@ -47,6 +48,7 @@ export function registerTools(server: McpServer, client: HisaaboClient): void {
   // Analytics and reporting
   registerDashboardTools(server, client);
   registerGstTools(server, client);
+registerInventoryTools(server, client);
   registerReportTools(server, client);
 
   // Logistics

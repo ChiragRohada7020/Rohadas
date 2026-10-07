@@ -26,7 +26,10 @@ import { TRPCError } from "@trpc/server";
  * Exported separately from the router so the defence can be unit-tested
  * without bringing up the tRPC context or the database.
  */
-export function validateLogoDataUrl(dataUrl: string): {
+export function validateImageDataUrl(
+  dataUrl: string,
+  label = "Image",
+): {
   bytes: Buffer;
   mime: "image/png" | "image/jpeg";
 } {
@@ -43,7 +46,7 @@ export function validateLogoDataUrl(dataUrl: string): {
   if (bytes.length > 1_048_576) {
     throw new TRPCError({
       code: "PAYLOAD_TOO_LARGE",
-      message: "Logo must be ≤ 1MB after decoding",
+      message: `${label} must be ≤ 1MB after decoding`,
     });
   }
 
@@ -90,4 +93,12 @@ export function validateLogoDataUrl(dataUrl: string): {
   }
 
   return { bytes, mime: actualMime };
+}
+
+/**
+ * Back-compat alias for the business-logo upload path. New callers should
+ * use `validateImageDataUrl` with an appropriate label.
+ */
+export function validateLogoDataUrl(dataUrl: string) {
+  return validateImageDataUrl(dataUrl, "Logo");
 }

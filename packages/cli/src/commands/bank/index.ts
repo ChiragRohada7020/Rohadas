@@ -1,5 +1,5 @@
 import * as readline from "readline";
-import { HisaaboClient, HisaaboApiError, type BankAccountSummary, type BankTransactionRow } from "../../client.js";
+import { RohadasClient, RohadasApiError, type BankAccountSummary, type BankTransactionRow } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import {
   fatalError, outputJSON, outputTable, paginationFooter, EXIT, success, type ColumnDef,
@@ -12,7 +12,7 @@ async function prompt(rl: readline.Interface, q: string): Promise<string> {
 
 export async function bankListCommand(opts: { json?: boolean }): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const [accounts, summary] = await Promise.all([
@@ -43,7 +43,7 @@ export async function bankListCommand(opts: { json?: boolean }): Promise<void> {
     console.log(`  Bank Balance:  ${formatINR(summary.bankBalance)}\n`);
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "network_error") fatalError(err.message, EXIT.NETWORK);
@@ -54,7 +54,7 @@ export async function bankListCommand(opts: { json?: boolean }): Promise<void> {
 
 export async function bankGetCommand(id: string, opts: { json?: boolean }): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const account = await client.bankAccount.get(id);
@@ -74,7 +74,7 @@ export async function bankGetCommand(id: string, opts: { json?: boolean }): Prom
     console.log();
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "network_error") fatalError(err.message, EXIT.NETWORK);
@@ -95,7 +95,7 @@ export async function bankCreateCommand(opts: {
   yes?: boolean;
 }): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
   const isNonInteractive = !process.stdin.isTTY || opts.yes;
 
   let name = opts.name;
@@ -143,7 +143,7 @@ export async function bankCreateCommand(opts: {
     console.log(`  ID: ${account.id}\n`);
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "validation_failed") fatalError(e.message, EXIT.VALIDATION);
@@ -162,7 +162,7 @@ export async function bankTransferCommand(opts: {
   date?: string;
 }): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   if (!opts.from) fatalError("--from account ID is required", EXIT.USAGE);
   if (!opts.to) fatalError("--to account ID is required", EXIT.USAGE);
@@ -185,7 +185,7 @@ export async function bankTransferCommand(opts: {
     success(`Transfer recorded: ${formatINR(opts.amount)}`);
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "validation_failed") fatalError(e.message, EXIT.VALIDATION);
@@ -203,7 +203,7 @@ export async function bankTransactionsCommand(accountId: string, opts: {
   limit?: number;
 }): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
   const page = opts.page ?? 1;
   const limit = opts.limit ?? 20;
 
@@ -234,7 +234,7 @@ export async function bankTransactionsCommand(accountId: string, opts: {
     paginationFooter(result.page, result.limit, result.total);
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "network_error") fatalError(err.message, EXIT.NETWORK);

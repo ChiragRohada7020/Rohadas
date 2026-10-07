@@ -1,4 +1,4 @@
-# Hisaabo CLI: UX Architecture & Interaction Patterns
+# Rohadas CLI: UX Architecture & Interaction Patterns
 
 ## Table of Contents
 
@@ -198,7 +198,7 @@ When a user runs `hisaabo invoice get INV-0042`:
 `hisaabo dashboard`:
 
 ```
- Hisaabo Dashboard                     Sharma Trading Co.
+ Rohadas Dashboard                     Sharma Trading Co.
  FY 2025-26 (01 Apr 2025 - 31 Mar 2026)
  ═══════════════════════════════════════════════════════════
 
@@ -299,7 +299,7 @@ When a user runs `hisaabo invoice get INV-0042`:
 ```
 $ hisaabo login
 
-  Hisaabo CLI
+  Rohadas CLI
   ───────────
 
   Server URL [http://localhost:3000]: https://billing.mycompany.in
@@ -684,7 +684,7 @@ For interactive mode, validate inline and re-prompt:
 ```
 $ hisaabo dashboard
 
-  Error: Cannot reach Hisaabo API at https://billing.mycompany.in
+  Error: Cannot reach Rohadas API at https://billing.mycompany.in
 
   Possible causes:
     - Server is not running (try: docker compose up -d)
@@ -778,12 +778,12 @@ Three levels of help, matching how users actually ask for help:
 **Level 1: Overview** (`hisaabo --help`):
 
 ```
-Hisaabo CLI - Self-hosted invoicing for Indian businesses
+Rohadas CLI - Self-hosted invoicing for Indian businesses
 
 Usage: hisaabo <command> [options]
 
 Commands:
-  login              Authenticate with your Hisaabo server
+  login              Authenticate with your Rohadas server
   dashboard          View business summary and key metrics
   business           Manage businesses and settings
 

@@ -1,13 +1,13 @@
 ---
 title: MCP Server
-description: Connect Hisaabo to Claude Desktop, OpenClaw, or any MCP-compatible AI agent. 5-minute setup, zero config, 130+ tools covering every business operation.
+description: Connect Rohadas to Claude Desktop, OpenClaw, or any MCP-compatible AI agent. 5-minute setup, zero config, 130+ tools covering every business operation.
 sidebar:
   order: 2
 ---
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-The Hisaabo MCP server implements the [Model Context Protocol](https://modelcontextprotocol.io/) — an open standard for connecting AI assistants to external tools and data sources. Once configured, any MCP-compatible AI agent can create invoices, query party ledgers, generate GST reports, manage inventory, track shipments, and run business reports through natural conversation.
+The Rohadas MCP server implements the [Model Context Protocol](https://modelcontextprotocol.io/) — an open standard for connecting AI assistants to external tools and data sources. Once configured, any MCP-compatible AI agent can create invoices, query party ledgers, generate GST reports, manage inventory, track shipments, and run business reports through natural conversation.
 
 Works with **Claude Desktop** · Works with **OpenClaw** · Works with **any MCP client**
 
@@ -19,7 +19,7 @@ This is the fastest path from zero to a working AI agent that understands your b
 
 **Step 1: Get your credentials**
 
-Log in to your Hisaabo dashboard and run the CLI `whoami` command to get all the values you need at once:
+Log in to your Rohadas dashboard and run the CLI `whoami` command to get all the values you need at once:
 
 ```bash
 # Install the CLI first (one-time)
@@ -245,7 +245,7 @@ The MCP server is not just for answering questions. It gives AI agents the abili
 
 **Automated payment follow-up** — An OpenClaw agent runs daily, identifies overdue invoices, drafts personalized reminders in Hindi or English based on party preference, and queues them for one-click sending. Your accountant reviews and approves the batch in two minutes.
 
-**CA reconciliation assistant** — Your CA connects their Claude Desktop to your Hisaabo instance (read-only mode). They can ask questions, pull GSTR data, and cross-reference ledgers without you exporting a single file or being on a call.
+**CA reconciliation assistant** — Your CA connects their Claude Desktop to your Rohadas instance (read-only mode). They can ask questions, pull GSTR data, and cross-reference ledgers without you exporting a single file or being on a call.
 
 **Multi-business dashboard agent** — An agent that spans all three of your businesses, pulling `dashboard_summary` for each, and generating a consolidated morning report comparing performance across businesses.
 
@@ -257,9 +257,9 @@ See [Integrations](/ai/integrations/) for detailed implementation guides for eac
 
 ## Prerequisites
 
-- A running Hisaabo instance ([self-hosting guide](/getting-started/self-hosting/))
+- A running Rohadas instance ([self-hosting guide](/getting-started/self-hosting/))
 - Node.js 20+ on the machine where the MCP client (Claude Desktop) runs
-- The Hisaabo CLI installed (`npm install -g @hisaabo/cli`) for getting credentials
+- The Rohadas CLI installed (`npm install -g @hisaabo/cli`) for getting credentials
 
 ---
 
@@ -271,7 +271,7 @@ The MCP server is configured entirely through environment variables passed in th
 
 | Variable | Where to find it | Description |
 |---|---|---|
-| `HISAABO_API_URL` | Your deployment URL | Base URL of your Hisaabo API, e.g. `https://your-hisaabo-instance.com` |
+| `HISAABO_API_URL` | Your deployment URL | Base URL of your Rohadas API, e.g. `https://your-hisaabo-instance.com` |
 | `HISAABO_API_KEY` | `hisaabo whoami --json` → `token` | Session token (same as Bearer token used by the mobile app) |
 | `HISAABO_TENANT_ID` | `hisaabo whoami --json` → `tenantId` | Your organization/tenant UUID |
 | `HISAABO_BUSINESS_ID` | `hisaabo whoami --json` → `businessId` | The business to operate on |
@@ -314,7 +314,7 @@ hisaabo login
   </TabItem>
 </Tabs>
 
-3. Add the Hisaabo MCP server to the `mcpServers` section:
+3. Add the Rohadas MCP server to the `mcpServers` section:
 
 ```json
 {
@@ -351,7 +351,7 @@ Claude will call the `dashboard_summary` tool and return a structured response w
 
 ## Connecting to OpenClaw
 
-OpenClaw agents connect to stdio-based MCP servers by launching them as a subprocess. Configure the Hisaabo MCP server in your OpenClaw agent definition with the same environment variables used for Claude Desktop:
+OpenClaw agents connect to stdio-based MCP servers by launching them as a subprocess. Configure the Rohadas MCP server in your OpenClaw agent definition with the same environment variables used for Claude Desktop:
 
 ```yaml
 # openclaw-agent.yaml
@@ -364,7 +364,7 @@ mcp_servers:
       HISAABO_API_KEY: "sess_VbK2mQ9xP4nR7wA1..."
       HISAABO_TENANT_ID: "tenant-uuid-here"
       HISAABO_BUSINESS_ID: "business-uuid-here"
-    description: "Hisaabo business management — invoices, parties, inventory, GST, shipping, banking"
+    description: "Rohadas business management — invoices, parties, inventory, GST, shipping, banking"
 ```
 
 OpenClaw starts and stops the MCP server process as needed. No separate server daemon is required.
@@ -1707,7 +1707,7 @@ Permanently revoke an API key by its ID. Revoked keys stop working immediately. 
 
 ## Available Resources
 
-MCP resources are read-only data snapshots that AI agents can load into their context window without making a tool call. Hisaabo exposes the following resources:
+MCP resources are read-only data snapshots that AI agents can load into their context window without making a tool call. Rohadas exposes the following resources:
 
 | Resource URI | Description |
 |---|---|
@@ -1727,13 +1727,13 @@ MCP resources are read-only data snapshots that AI agents can load into their co
 
 ## Security Considerations
 
-**Use a limited-privilege account** — Create a dedicated Hisaabo user account for MCP access with the lowest role needed (e.g. `accountant` for read-only reporting, `seller` for invoice creation). The MCP server inherits the permissions of the authenticated user.
+**Use a limited-privilege account** — Create a dedicated Rohadas user account for MCP access with the lowest role needed (e.g. `accountant` for read-only reporting, `seller` for invoice creation). The MCP server inherits the permissions of the authenticated user.
 
 **Token rotation** — The `HISAABO_API_KEY` is a session token with a 30-day expiry. Set a calendar reminder to refresh it before it expires: `hisaabo login && hisaabo whoami --json` to get a new token.
 
 **Do not share tokens** — Each Claude Desktop instance or OpenClaw agent should use its own session token tied to a purpose-specific user account. This makes it possible to revoke one agent's access without affecting others.
 
-**Audit log** — All tool calls made through the MCP server are recorded in Hisaabo's audit log under `x-client-type: mcp`. You can review them under **Settings > Audit Log**.
+**Audit log** — All tool calls made through the MCP server are recorded in Rohadas's audit log under `x-client-type: mcp`. You can review them under **Settings > Audit Log**.
 
 ---
 

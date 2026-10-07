@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * maintenance.ts — Interactive TUI for managing Hisaabo's maintenance mode.
+ * maintenance.ts — Interactive TUI for managing Rohadas's maintenance mode.
  *
  * This is the ONLY way to set maintenance mode — there is no API mutation.
  *
@@ -115,7 +115,7 @@ function handleCancel<T>(value: T | symbol): asserts value is T {
 // ── Main ────────────────────────────────────────────────────────
 
 async function main() {
-  p.intro(color.bgCyan(color.black(" Hisaabo Maintenance Mode ")));
+  p.intro(color.bgCyan(color.black(" Rohadas Maintenance Mode ")));
 
   // Fetch and display current status
   const current = await fetchCurrentValue();

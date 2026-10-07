@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { trpc } from "../../../../src/lib/trpc";
+import { utcMidnightIso } from "../../../../src/lib/utils";
 import { makeStyles } from "../../../../src/lib/makeStyles";
 import { useColors } from "../../../../src/contexts/ThemeContext";
 import { DatePickerField } from "../../../../src/components/ui";
@@ -227,8 +228,8 @@ export default function CreateShipmentScreen() {
       shippingCity: shippingCity.trim() || undefined,
       shippingPincode: shippingPincode.trim() || undefined,
       status: "pending",
-      shipmentDate: shipmentDate?.toISOString(),
-      estimatedDelivery: estimatedDelivery?.toISOString(),
+      shipmentDate: shipmentDate ? utcMidnightIso(shipmentDate) : undefined,
+      estimatedDelivery: estimatedDelivery ? utcMidnightIso(estimatedDelivery) : undefined,
       notes: notes.trim() || undefined,
     });
   };

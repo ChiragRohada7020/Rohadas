@@ -1,6 +1,6 @@
 # @hisaabo/mobile
 
-The Hisaabo mobile app. Built with Expo SDK 52 and React Native 0.76, it runs on Android and iOS using the same tRPC API as the web dashboard.
+The Rohadas mobile app. Built with Expo SDK 52 and React Native 0.76, it runs on Android and iOS using the same tRPC API as the web dashboard.
 
 [![Expo](https://img.shields.io/badge/Expo-SDK_52-000020?logo=expo&logoColor=white)](https://expo.dev/)
 [![React Native](https://img.shields.io/badge/React_Native-0.76-61DAFB?logo=react&logoColor=black)](https://reactnative.dev/)
@@ -10,15 +10,15 @@ The Hisaabo mobile app. Built with Expo SDK 52 and React Native 0.76, it runs on
 
 ## Cloud vs. self-hosted
 
-The mobile app is a **Hisaabo Cloud** feature. It connects to `https://api.hisaabo.in` by default and is available free with basic features on the App Store and Google Play.
+The mobile app is a **Rohadas Cloud** feature. It connects to `https://api.hisaabo.in` by default and is available free with basic features on the App Store and Google Play.
 
-If you are self-hosting Hisaabo, you do not need the mobile app. The web app (`apps/web`) is fully responsive and works on any mobile browser.
+If you are self-hosting Rohadas, you do not need the mobile app. The web app (`apps/web`) is fully responsive and works on any mobile browser.
 
-**Advanced:** Self-hosted users can point the mobile app at their own server by setting `EXPO_PUBLIC_API_URL` to their API URL before building. This requires building from source — pre-built store binaries connect to Hisaabo Cloud only.
+**Advanced:** Self-hosted users can point the mobile app at their own server by setting `EXPO_PUBLIC_API_URL` to their API URL before building. This requires building from source — pre-built store binaries connect to Rohadas Cloud only.
 
 ## What this app does
 
-The mobile app gives business owners and their teams on-the-go access to core Hisaabo features. It uses Expo Router for file-based navigation and communicates with the same Hono + tRPC API as the web app, authenticated via Bearer tokens stored in `expo-secure-store`.
+The mobile app gives business owners and their teams on-the-go access to core Rohadas features. It uses Expo Router for file-based navigation and communicates with the same Hono + tRPC API as the web app, authenticated via Bearer tokens stored in `expo-secure-store`.
 
 Feature coverage vs. the web app is tracked in [feature-parity.yaml](../../feature-parity.yaml) at the monorepo root.
 
@@ -85,7 +85,7 @@ This runs `apps/mobile/scripts/build-apk.sh`, which handles the Expo prebuild an
 
 ### EAS Build (cloud, recommended for release)
 
-Hisaabo uses [Expo Application Services](https://expo.dev/eas) for CI/CD builds. Three profiles are defined in `eas.json`:
+Rohadas uses [Expo Application Services](https://expo.dev/eas) for CI/CD builds. Three profiles are defined in `eas.json`:
 
 | Profile | Distribution | Android output |
 |---|---|---|
@@ -177,8 +177,8 @@ The Expo config reads environment variables prefixed with `EXPO_PUBLIC_`:
 
 | Variable | Description | Default |
 |---|---|---|
-| `EXPO_PUBLIC_API_URL` | API server base URL | `https://api.hisaabo.in` (Hisaabo Cloud) |
+| `EXPO_PUBLIC_API_URL` | API server base URL | `https://api.hisaabo.in` (Rohadas Cloud) |
 
 For local development the `dev:android` script sets this automatically to your WSL IP.
 
-For production Hisaabo Cloud builds, `EXPO_PUBLIC_API_URL` is set to `https://api.hisaabo.in` in the EAS project environment variables on [expo.dev](https://expo.dev). If you are building a custom binary targeting your own self-hosted server, set this variable to your API's public URL instead.
+For production Rohadas Cloud builds, `EXPO_PUBLIC_API_URL` is set to `https://api.hisaabo.in` in the EAS project environment variables on [expo.dev](https://expo.dev). If you are building a custom binary targeting your own self-hosted server, set this variable to your API's public URL instead.

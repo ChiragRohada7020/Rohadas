@@ -200,7 +200,7 @@ export function ShippingTab({ biz }: ShippingTabProps) {
         </div>
         <p className="text-xs text-text-tertiary mb-3">
           Connect carrier accounts for automatic tracking updates and label generation.
-          Available as part of Hisaabo Pro.
+          Available as part of Rohadas Pro.
         </p>
         <div className="space-y-2">
           {KNOWN_CARRIERS.map((carrier) => (

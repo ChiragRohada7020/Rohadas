@@ -13,14 +13,15 @@
  *   - generateGSTR1()  → Part II outward supply tables (4, 5)
  *   - generateGSTR3B() → Part III ITC tables (6, 7, 8) + Part IV tax paid (9)
  *
- * Money: all numeric values are JS numbers internally; the return type exposes
- * them as numbers so the caller can format/serialise as needed. No DB NUMERIC
+ * Money: all numeric values are accumulated as integer paise internally; the return type exposes
+ * are divided by 100 to produce rupee values. No DB NUMERIC
  * casting is required here — we read from the same invoice tables that
  * generateGSTR1/3B use.
  */
 
 import type { TenantDatabase } from "@hisaabo/db";
 import { generateGSTR1, generateGSTR3B, type GSTR1Report, type GSTR3BReport } from "./gst-reports.js";
+import { toPaise } from "@hisaabo/shared";
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -164,40 +165,57 @@ function zeroRow(): TaxRow {
 }
 
 function addRow(a: TaxRow, b: TaxRow): TaxRow {
+  const tv = toPaise(a.taxableValue) + toPaise(b.taxableValue);
+  const cg = toPaise(a.cgst) + toPaise(b.cgst);
+  const sg = toPaise(a.sgst) + toPaise(b.sgst);
+  const ig = toPaise(a.igst) + toPaise(b.igst);
+  const ce = toPaise(a.cess) + toPaise(b.cess);
   return {
-    taxableValue: a.taxableValue + b.taxableValue,
-    cgst: a.cgst + b.cgst,
-    sgst: a.sgst + b.sgst,
-    igst: a.igst + b.igst,
-    cess: a.cess + b.cess,
+    taxableValue: tv / 100,
+    cgst: cg / 100,
+    sgst: sg / 100,
+    igst: ig / 100,
+    cess: ce / 100,
   };
 }
 
 /** Sum credit notes from a GSTR-1 report into a TaxRow */
 function sumCreditNotes(gstr1: GSTR1Report): TaxRow {
-  const row = zeroRow();
+  let tv = 0, cgst = 0, sgst = 0, igst = 0;
   for (const cn of gstr1.creditNotes) {
-    const tax = parseFloat(cn.taxAmount);
-    const taxable = parseFloat(cn.taxableAmount);
+    const taxPaise = toPaise(cn.taxAmount);
+    const taxablePaise = toPaise(cn.taxableAmount);
     // We don't have per-note CGST/SGST/IGST split stored — use half each as approximation
-    row.taxableValue += taxable;
-    row.cgst += tax / 2;
-    row.sgst += tax / 2;
+    tv += taxablePaise;
+    cgst += Math.floor(taxPaise / 2);
+    sgst += taxPaise - Math.floor(taxPaise / 2);
   }
-  return row;
+  return {
+    taxableValue: tv / 100,
+    cgst: cgst / 100,
+    sgst: sgst / 100,
+    igst: igst / 100,
+    cess: 0,
+  };
 }
 
 /** Sum debit notes from a GSTR-1 report into a TaxRow */
 function sumDebitNotes(gstr1: GSTR1Report): TaxRow {
-  const row = zeroRow();
+  let tv = 0, cgst = 0, sgst = 0, igst = 0;
   for (const dn of gstr1.debitNotes) {
-    const tax = parseFloat(dn.taxAmount);
-    const taxable = parseFloat(dn.taxableAmount);
-    row.taxableValue += taxable;
-    row.cgst += tax / 2;
-    row.sgst += tax / 2;
+    const taxPaise = toPaise(dn.taxAmount);
+    const taxablePaise = toPaise(dn.taxableAmount);
+    tv += taxablePaise;
+    cgst += Math.floor(taxPaise / 2);
+    sgst += taxPaise - Math.floor(taxPaise / 2);
   }
-  return row;
+  return {
+    taxableValue: tv / 100,
+    cgst: cgst / 100,
+    sgst: sgst / 100,
+    igst: igst / 100,
+    cess: 0,
+  };
 }
 
 /** Build GSTR-9 portal JSON (simplified structure for upload) */
@@ -438,10 +456,10 @@ export async function generateGSTR9(
 
     // RCM ITC from rcmSupplies tax amounts
     itcRcm = addRow(itcRcm, {
-      taxableValue: parseFloat(gstr3b.rcmSupplies.taxableValue),
-      cgst: parseFloat(gstr3b.rcmSupplies.cgst),
-      sgst: parseFloat(gstr3b.rcmSupplies.sgst),
-      igst: parseFloat(gstr3b.rcmSupplies.igst),
+      taxableValue: toPaise(gstr3b.rcmSupplies.taxableValue) / 100,
+      cgst: toPaise(gstr3b.rcmSupplies.cgst) / 100,
+      sgst: toPaise(gstr3b.rcmSupplies.sgst) / 100,
+      igst: toPaise(gstr3b.rcmSupplies.igst) / 100,
       cess: 0,
     });
   }
@@ -449,9 +467,9 @@ export async function generateGSTR9(
   // 6D: other inward supplies = total ITC minus RCM ITC
   const itcOtherInward: TaxRow = {
     taxableValue: 0,
-    cgst: Math.max(0, itcTotal.cgst - itcRcm.cgst),
-    sgst: Math.max(0, itcTotal.sgst - itcRcm.sgst),
-    igst: Math.max(0, itcTotal.igst - itcRcm.igst),
+    cgst: Math.max(0, toPaise(itcTotal.cgst) - toPaise(itcRcm.cgst)) / 100,
+    sgst: Math.max(0, toPaise(itcTotal.sgst) - toPaise(itcRcm.sgst)) / 100,
+    igst: Math.max(0, toPaise(itcTotal.igst) - toPaise(itcRcm.igst)) / 100,
     cess: 0,
   };
 
@@ -484,31 +502,31 @@ export async function generateGSTR9(
   // ── Part IV: Tax paid (Table 9) ────────────────────────────
 
   // Aggregate total output tax and net tax from GSTR-3B
-  let totalOutputIgst = 0;
-  let totalOutputCgst = 0;
-  let totalOutputSgst = 0;
-  let totalItcIgst = 0;
-  let totalItcCgst = 0;
-  let totalItcSgst = 0;
+  let totalOutputIgstPaise = 0;
+  let totalOutputCgstPaise = 0;
+  let totalOutputSgstPaise = 0;
+  let totalItcIgstPaise = 0;
+  let totalItcCgstPaise = 0;
+  let totalItcSgstPaise = 0;
 
   for (const { gstr3b } of monthlyData) {
-    totalOutputIgst += gstr3b.taxPayable.igst;
-    totalOutputCgst += gstr3b.taxPayable.cgst;
-    totalOutputSgst += gstr3b.taxPayable.sgst;
-    totalItcIgst += gstr3b.itc.igst;
-    totalItcCgst += gstr3b.itc.cgst;
-    totalItcSgst += gstr3b.itc.sgst;
+    totalOutputIgstPaise += toPaise(gstr3b.taxPayable.igst);
+    totalOutputCgstPaise += toPaise(gstr3b.taxPayable.cgst);
+    totalOutputSgstPaise += toPaise(gstr3b.taxPayable.sgst);
+    totalItcIgstPaise += toPaise(gstr3b.itc.igst);
+    totalItcCgstPaise += toPaise(gstr3b.itc.cgst);
+    totalItcSgstPaise += toPaise(gstr3b.itc.sgst);
   }
 
   // Cash paid = output tax minus ITC (clamped at 0; negative = credit carryforward)
-  const cashIgst = Math.max(0, totalOutputIgst - totalItcIgst);
-  const cashCgst = Math.max(0, totalOutputCgst - totalItcCgst);
-  const cashSgst = Math.max(0, totalOutputSgst - totalItcSgst);
+  const cashIgst = Math.max(0, totalOutputIgstPaise - totalItcIgstPaise) / 100;
+  const cashCgst = Math.max(0, totalOutputCgstPaise - totalItcCgstPaise) / 100;
+  const cashSgst = Math.max(0, totalOutputSgstPaise - totalItcSgstPaise) / 100;
 
   // ITC utilised = min(output tax, ITC available)
-  const utilIgst = Math.min(totalOutputIgst, totalItcIgst);
-  const utilCgst = Math.min(totalOutputCgst, totalItcCgst);
-  const utilSgst = Math.min(totalOutputSgst, totalItcSgst);
+  const utilIgst = Math.min(totalOutputIgstPaise, totalItcIgstPaise) / 100;
+  const utilCgst = Math.min(totalOutputCgstPaise, totalItcCgstPaise) / 100;
+  const utilSgst = Math.min(totalOutputSgstPaise, totalItcSgstPaise) / 100;
 
   const table9: GSTR9Table9 = {
     igstThroughCash: cashIgst,

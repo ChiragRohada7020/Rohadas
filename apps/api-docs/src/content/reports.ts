@@ -45,7 +45,7 @@ export const reportsEndpoints: EndpointGroup = {
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/reports.daybook?input=%7B%22json%22%3A%7B%22fromDate%22%3A%222026-03-01%22%2C%22toDate%22%3A%222026-03-31%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/reports.daybook?input=%7B%22json%22%3A%7B%22fromDate%22%3A%222026-03-01%22%2C%22toDate%22%3A%222026-03-31%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const daybook = await trpc.reports.daybook.query({
@@ -60,7 +60,7 @@ params = urllib.parse.quote(json.dumps({
     "json": {"fromDate": "2026-03-01", "toDate": "2026-03-31"}
 }))
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/reports.daybook?input={params}",
+    f"https://api.rohadas.app/api/trpc/reports.daybook?input={params}",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
 )`,
       },
@@ -104,13 +104,13 @@ resp = httpx.get(
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/reports.outstanding?input=%7B%22json%22%3A%7B%22type%22%3A%22both%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/reports.outstanding?input=%7B%22json%22%3A%7B%22type%22%3A%22both%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const { receivables, payables } = await trpc.reports.outstanding.query({ type: "both" });
 const totalReceivable = receivables?.summary.total ?? "0";`,
         python: `params = urllib.parse.quote(json.dumps({"json": {"type": "both"}}))
-resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.outstanding?input={params}", ...)`,
+resp = httpx.get(f"https://api.rohadas.app/api/trpc/reports.outstanding?input={params}", ...)`,
       },
       gotchas: [
         "Only invoices with `status NOT IN ('paid', 'cancelled', 'draft')` and a positive outstanding balance are included.",
@@ -155,7 +155,7 @@ resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.outstanding?input={pa
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/reports.salesRegister?input=%7B%22json%22%3A%7B%22fromDate%22%3A%222026-04-01T00%3A00%3A00.000Z%22%2C%22toDate%22%3A%222027-03-31T23%3A59%3A59.999Z%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/reports.salesRegister?input=%7B%22json%22%3A%7B%22fromDate%22%3A%222026-04-01T00%3A00%3A00.000Z%22%2C%22toDate%22%3A%222027-03-31T23%3A59%3A59.999Z%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const register = await trpc.reports.salesRegister.query({
@@ -166,7 +166,7 @@ console.log("Total sales:", register.summary.totalAmount);`,
         python: `params = urllib.parse.quote(json.dumps({
     "json": {"fromDate": "2026-04-01T00:00:00.000Z", "toDate": "2027-03-31T23:59:59.999Z"}
 }))
-resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.salesRegister?input={params}", ...)`,
+resp = httpx.get(f"https://api.rohadas.app/api/trpc/reports.salesRegister?input={params}", ...)`,
       },
       gotchas: [
         "Includes `credit_note` and `debit_note` document types in addition to `invoice`. Filter on `documentType` in your UI if you want only invoices.",
@@ -208,7 +208,7 @@ resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.salesRegister?input={
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/reports.purchaseRegister?input=%7B%22json%22%3A%7B%22fromDate%22%3A%222026-04-01T00%3A00%3A00.000Z%22%2C%22toDate%22%3A%222027-03-31T23%3A59%3A59.999Z%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/reports.purchaseRegister?input=%7B%22json%22%3A%7B%22fromDate%22%3A%222026-04-01T00%3A00%3A00.000Z%22%2C%22toDate%22%3A%222027-03-31T23%3A59%3A59.999Z%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const register = await trpc.reports.purchaseRegister.query({
@@ -218,7 +218,7 @@ resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.salesRegister?input={
         python: `params = urllib.parse.quote(json.dumps({
     "json": {"fromDate": "2026-04-01T00:00:00.000Z", "toDate": "2027-03-31T23:59:59.999Z"}
 }))
-resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.purchaseRegister?input={params}", ...)`,
+resp = httpx.get(f"https://api.rohadas.app/api/trpc/reports.purchaseRegister?input={params}", ...)`,
       },
       gotchas: [
         "Only `documentType = 'invoice'` purchase documents are included (not purchase orders or challans).",
@@ -255,7 +255,7 @@ resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.purchaseRegister?inpu
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/reports.taxSummary?input=%7B%22json%22%3A%7B%22fromDate%22%3A%222026-01-01T00%3A00%3A00.000Z%22%2C%22toDate%22%3A%222026-03-31T23%3A59%3A59.999Z%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/reports.taxSummary?input=%7B%22json%22%3A%7B%22fromDate%22%3A%222026-01-01T00%3A00%3A00.000Z%22%2C%22toDate%22%3A%222026-03-31T23%3A59%3A59.999Z%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const tax = await trpc.reports.taxSummary.query({
@@ -270,7 +270,7 @@ console.log("GST payable:", tax.summary.netTaxLiability);`,
         "type": "both",
     }
 }))
-resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.taxSummary?input={params}", ...)`,
+resp = httpx.get(f"https://api.rohadas.app/api/trpc/reports.taxSummary?input={params}", ...)`,
       },
       gotchas: [
         "Only `documentType = 'invoice'` documents are counted — quotations, challans, and proformas are excluded.",
@@ -311,14 +311,14 @@ resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.taxSummary?input={par
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/reports.cashFlowForecast" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/reports.cashFlowForecast" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const forecast = await trpc.reports.cashFlowForecast.query();
 const next30 = forecast.forecast.find(f => f.label === "+30d");
 console.log("Expected balance in 30 days:", next30?.expected);`,
         python: `resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/reports.cashFlowForecast",
+    "https://api.rohadas.app/api/trpc/reports.cashFlowForecast",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
 )`,
       },
@@ -359,7 +359,7 @@ console.log("Expected balance in 30 days:", next30?.expected);`,
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/reports.collectionEfficiency?input=%7B%22json%22%3A%7B%22fromDate%22%3A%222026-04-01T00%3A00%3A00.000Z%22%2C%22toDate%22%3A%222027-03-31T23%3A59%3A59.999Z%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/reports.collectionEfficiency?input=%7B%22json%22%3A%7B%22fromDate%22%3A%222026-04-01T00%3A00%3A00.000Z%22%2C%22toDate%22%3A%222027-03-31T23%3A59%3A59.999Z%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const eff = await trpc.reports.collectionEfficiency.query({
@@ -370,7 +370,7 @@ if (eff.dso.isWarning) console.warn("DSO is high:", eff.dso.dsoDays, "days");`,
         python: `params = urllib.parse.quote(json.dumps({
     "json": {"fromDate": "2026-04-01T00:00:00.000Z", "toDate": "2027-03-31T23:59:59.999Z"}
 }))
-resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.collectionEfficiency?input={params}", ...)`,
+resp = httpx.get(f"https://api.rohadas.app/api/trpc/reports.collectionEfficiency?input={params}", ...)`,
       },
       gotchas: [
         "Only invoices with `dueDate` set are counted for on-time rate — invoices without a due date are excluded from the efficiency calculation.",
@@ -417,7 +417,7 @@ resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.collectionEfficiency?
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/reports.itemSales?input=%7B%22json%22%3A%7B%22fromDate%22%3A%222026-04-01T00%3A00%3A00.000Z%22%2C%22toDate%22%3A%222027-03-31T23%3A59%3A59.999Z%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/reports.itemSales?input=%7B%22json%22%3A%7B%22fromDate%22%3A%222026-04-01T00%3A00%3A00.000Z%22%2C%22toDate%22%3A%222027-03-31T23%3A59%3A59.999Z%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const items = await trpc.reports.itemSales.query({
@@ -439,7 +439,7 @@ items.rows.forEach(r => {
         "compareToPrevious": False,
     }
 }))
-resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.itemSales?input={params}", ...)`,
+resp = httpx.get(f"https://api.rohadas.app/api/trpc/reports.itemSales?input={params}", ...)`,
       },
       gotchas: [
         "`grossMarginPct` uses the item's `purchasePrice` as a cost proxy. If `purchasePrice` is null, cost is treated as zero — making the margin 100%.",
@@ -498,14 +498,14 @@ resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.itemSales?input={para
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/reports.stockSummary" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/reports.stockSummary" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const stock = await trpc.reports.stockSummary.query({ showZeroStock: false });
 const lowStockItems = stock.simpleItems.filter(i => i.isLowStock);
 console.log("Low stock alerts:", stock.summary.lowStockCount);`,
         python: `resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/reports.stockSummary",
+    "https://api.rohadas.app/api/trpc/reports.stockSummary",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
 )`,
       },
@@ -571,7 +571,7 @@ console.log("Low stock alerts:", stock.summary.lowStockCount);`,
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/reports.partyStatement?input=%7B%22json%22%3A%7B%22partyId%22%3A%22party-uuid%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/reports.partyStatement?input=%7B%22json%22%3A%7B%22partyId%22%3A%22party-uuid%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const statement = await trpc.reports.partyStatement.query({ partyId: "party-uuid" });
@@ -579,7 +579,7 @@ if (statement) {
   console.log("Closing balance:", statement.summary.closingBalance);
 }`,
         python: `params = urllib.parse.quote(json.dumps({"json": {"partyId": "party-uuid"}}))
-resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.partyStatement?input={params}", ...)`,
+resp = httpx.get(f"https://api.rohadas.app/api/trpc/reports.partyStatement?input={params}", ...)`,
       },
       gotchas: [
         "Returns `null` (not an error) if the party doesn't exist or belongs to a different business.",
@@ -636,7 +636,7 @@ resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.partyStatement?input=
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/reports.paymentSummary?input=%7B%22json%22%3A%7B%22fromDate%22%3A%222026-03-01T00%3A00%3A00.000Z%22%2C%22toDate%22%3A%222026-03-31T23%3A59%3A59.999Z%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/reports.paymentSummary?input=%7B%22json%22%3A%7B%22fromDate%22%3A%222026-03-01T00%3A00%3A00.000Z%22%2C%22toDate%22%3A%222026-03-31T23%3A59%3A59.999Z%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const summary = await trpc.reports.paymentSummary.query({
@@ -651,7 +651,7 @@ const cashReceived = summary.byMode.find(m => m.mode === "cash");`,
         "toDate": "2026-03-31T23:59:59.999Z",
     }
 }))
-resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.paymentSummary?input={params}", ...)`,
+resp = httpx.get(f"https://api.rohadas.app/api/trpc/reports.paymentSummary?input={params}", ...)`,
       },
       gotchas: [
         "`recentPayments` is capped at 200 records. For a full export, use `payment.list` with pagination instead.",
@@ -683,7 +683,7 @@ resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.paymentSummary?input=
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/reports.trialBalance?input=%7B%22json%22%3A%7B%22asOfDate%22%3A%222027-03-31T23%3A59%3A59.999Z%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/reports.trialBalance?input=%7B%22json%22%3A%7B%22asOfDate%22%3A%222027-03-31T23%3A59%3A59.999Z%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const tb = await trpc.reports.trialBalance.query({
@@ -694,7 +694,7 @@ console.log("Total Debit:", tb.totalDebit, "Total Credit:", tb.totalCredit);
         python: `params = urllib.parse.quote(json.dumps({
     "json": {"asOfDate": "2027-03-31T23:59:59.999Z"}
 }))
-resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.trialBalance?input={params}", ...)`,
+resp = httpx.get(f"https://api.rohadas.app/api/trpc/reports.trialBalance?input={params}", ...)`,
       },
       gotchas: [
         "Accounts with zero debits and zero credits are excluded from the result.",
@@ -727,7 +727,7 @@ resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.trialBalance?input={p
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/reports.balanceSheet?input=%7B%22json%22%3A%7B%22asOfDate%22%3A%222027-03-31T23%3A59%3A59.999Z%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/reports.balanceSheet?input=%7B%22json%22%3A%7B%22asOfDate%22%3A%222027-03-31T23%3A59%3A59.999Z%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const bs = await trpc.reports.balanceSheet.query({
@@ -739,7 +739,7 @@ console.log("L+E:", money.add(bs.totalLiabilities, bs.totalEquity));`,
         python: `params = urllib.parse.quote(json.dumps({
     "json": {"asOfDate": "2027-03-31T23:59:59.999Z"}
 }))
-resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.balanceSheet?input={params}", ...)`,
+resp = httpx.get(f"https://api.rohadas.app/api/trpc/reports.balanceSheet?input={params}", ...)`,
       },
       gotchas: [
         "The balance sheet is cumulative from the beginning of time \u2014 not just the current financial year.",
@@ -774,7 +774,7 @@ resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.balanceSheet?input={p
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/reports.profitAndLoss?input=%7B%22json%22%3A%7B%22fromDate%22%3A%222026-04-01T00%3A00%3A00.000Z%22%2C%22toDate%22%3A%222027-03-31T23%3A59%3A59.999Z%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/reports.profitAndLoss?input=%7B%22json%22%3A%7B%22fromDate%22%3A%222026-04-01T00%3A00%3A00.000Z%22%2C%22toDate%22%3A%222027-03-31T23%3A59%3A59.999Z%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const pl = await trpc.reports.profitAndLoss.query({
@@ -785,7 +785,7 @@ console.log("Net Profit:", pl.netProfit);`,
         python: `params = urllib.parse.quote(json.dumps({
     "json": {"fromDate": "2026-04-01T00:00:00.000Z", "toDate": "2027-03-31T23:59:59.999Z"}
 }))
-resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.profitAndLoss?input={params}", ...)`,
+resp = httpx.get(f"https://api.rohadas.app/api/trpc/reports.profitAndLoss?input={params}", ...)`,
       },
       gotchas: [
         "Income accounts: `amount = credit - debit` (credit-normal). Expense accounts: `amount = debit - credit` (debit-normal).",
@@ -820,7 +820,7 @@ resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.profitAndLoss?input={
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/reports.generalLedger?input=%7B%22json%22%3A%7B%22accountId%22%3A%22acc-uuid%22%2C%22fromDate%22%3A%222026-04-01T00%3A00%3A00.000Z%22%2C%22toDate%22%3A%222027-03-31T23%3A59%3A59.999Z%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/reports.generalLedger?input=%7B%22json%22%3A%7B%22accountId%22%3A%22acc-uuid%22%2C%22fromDate%22%3A%222026-04-01T00%3A00%3A00.000Z%22%2C%22toDate%22%3A%222027-03-31T23%3A59%3A59.999Z%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const gl = await trpc.reports.generalLedger.query({
@@ -832,7 +832,7 @@ console.log("Account:", gl.accountName, "Closing:", gl.closingBalance);`,
         python: `params = urllib.parse.quote(json.dumps({
     "json": {"accountId": "acc-uuid", "fromDate": "2026-04-01T00:00:00.000Z", "toDate": "2027-03-31T23:59:59.999Z"}
 }))
-resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.generalLedger?input={params}", ...)`,
+resp = httpx.get(f"https://api.rohadas.app/api/trpc/reports.generalLedger?input={params}", ...)`,
       },
       gotchas: [
         "Returns NOT_FOUND if the account does not belong to the active business.",
@@ -865,7 +865,7 @@ resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.generalLedger?input={
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/reports.comparativeTrialBalance?input=..." \\
+        curl: `curl "https://api.rohadas.app/api/trpc/reports.comparativeTrialBalance?input=..." \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const ctb = await trpc.reports.comparativeTrialBalance.query({
@@ -885,7 +885,7 @@ ctb.accounts.forEach(a => {
     "previousFYStart": "2025-04-01T00:00:00.000Z",
     "previousFYEnd": "2026-03-31T23:59:59.999Z",
 }}))
-resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.comparativeTrialBalance?input={params}", ...)`,
+resp = httpx.get(f"https://api.rohadas.app/api/trpc/reports.comparativeTrialBalance?input={params}", ...)`,
       },
       gotchas: [
         "`variancePercent` is `'N/A'` when the previous period balance is zero (division by zero).",
@@ -916,7 +916,7 @@ resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.comparativeTrialBalan
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/reports.comparativeBalanceSheet?input=..." \\
+        curl: `curl "https://api.rohadas.app/api/trpc/reports.comparativeBalanceSheet?input=..." \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const cbs = await trpc.reports.comparativeBalanceSheet.query({
@@ -927,7 +927,7 @@ resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.comparativeTrialBalan
     "currentAsOf": "2027-03-31T23:59:59.999Z",
     "previousAsOf": "2026-03-31T23:59:59.999Z",
 }}))
-resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.comparativeBalanceSheet?input={params}", ...)`,
+resp = httpx.get(f"https://api.rohadas.app/api/trpc/reports.comparativeBalanceSheet?input={params}", ...)`,
       },
       relatedEndpoints: ["reports-balance-sheet"],
     },
@@ -956,7 +956,7 @@ resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.comparativeBalanceShe
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/reports.comparativeProfitAndLoss?input=..." \\
+        curl: `curl "https://api.rohadas.app/api/trpc/reports.comparativeProfitAndLoss?input=..." \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const cpl = await trpc.reports.comparativeProfitAndLoss.query({
@@ -972,7 +972,7 @@ console.log("Net profit growth:", cpl.netProfitVariancePercent + "%");`,
     "previousFYStart": "2025-04-01T00:00:00.000Z",
     "previousFYEnd": "2026-03-31T23:59:59.999Z",
 }}))
-resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.comparativeProfitAndLoss?input={params}", ...)`,
+resp = httpx.get(f"https://api.rohadas.app/api/trpc/reports.comparativeProfitAndLoss?input={params}", ...)`,
       },
       relatedEndpoints: ["reports-profit-and-loss"],
     },
@@ -995,7 +995,7 @@ resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.comparativeProfitAndL
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/reports.tallyExport?input=%7B%22json%22%3A%7B%22fromDate%22%3A%222026-04-01T00%3A00%3A00.000Z%22%2C%22toDate%22%3A%222027-03-31T23%3A59%3A59.999Z%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/reports.tallyExport?input=%7B%22json%22%3A%7B%22fromDate%22%3A%222026-04-01T00%3A00%3A00.000Z%22%2C%22toDate%22%3A%222027-03-31T23%3A59%3A59.999Z%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const tally = await trpc.reports.tallyExport.query({
@@ -1008,7 +1008,7 @@ const blob = new Blob([tally.xml], { type: "application/xml" });
     "fromDate": "2026-04-01T00:00:00.000Z",
     "toDate": "2027-03-31T23:59:59.999Z",
 }}))
-resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.tallyExport?input={params}", ...)
+resp = httpx.get(f"https://api.rohadas.app/api/trpc/reports.tallyExport?input={params}", ...)
 data = resp.json()["result"]["data"]["json"]
 with open(data["filename"], "w") as f:
     f.write(data["xml"])`,
@@ -1055,7 +1055,7 @@ with open(data["filename"], "w") as f:
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/reports.cashFlowStatement?input=%7B%22json%22%3A%7B%22fromDate%22%3A%222026-04-01T00%3A00%3A00.000Z%22%2C%22toDate%22%3A%222027-03-31T23%3A59%3A59.999Z%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/reports.cashFlowStatement?input=%7B%22json%22%3A%7B%22fromDate%22%3A%222026-04-01T00%3A00%3A00.000Z%22%2C%22toDate%22%3A%222027-03-31T23%3A59%3A59.999Z%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const cf = await trpc.reports.cashFlowStatement.query({
@@ -1068,7 +1068,7 @@ console.log("Net cash change:", cf.netCashChange);`,
     "fromDate": "2026-04-01T00:00:00.000Z",
     "toDate": "2027-03-31T23:59:59.999Z",
 }}))
-resp = httpx.get(f"https://api.hisaabo.in/api/trpc/reports.cashFlowStatement?input={params}", ...)`,
+resp = httpx.get(f"https://api.rohadas.app/api/trpc/reports.cashFlowStatement?input={params}", ...)`,
       },
       gotchas: [
         "Uses the indirect method: starts with net income and adjusts for non-cash items.",

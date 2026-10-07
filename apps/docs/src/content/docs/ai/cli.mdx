@@ -1,13 +1,13 @@
 ---
 title: CLI Tool
-description: The Hisaabo CLI for terminal-based business management. Built with Ink 5 and Commander.js. Full command reference, power user workflows, and copy-paste ready automation scripts.
+description: The Rohadas CLI for terminal-based business management. Built with Ink 5 and Commander.js. Full command reference, power user workflows, and copy-paste ready automation scripts.
 sidebar:
   order: 3
 ---
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-The Hisaabo CLI (`hisaabo`) brings your entire business management workflow to the terminal. Built with [Ink 5](https://github.com/vadimdemedes/ink) (React for the terminal) and Commander.js, it renders rich interactive tables, colored status badges, and INR-formatted numbers directly in your shell.
+The Rohadas CLI (`hisaabo`) brings your entire business management workflow to the terminal. Built with [Ink 5](https://github.com/vadimdemedes/ink) (React for the terminal) and Commander.js, it renders rich interactive tables, colored status badges, and INR-formatted numbers directly in your shell.
 
 It is useful for three things: quick lookups without opening a browser, automation scripts and cron jobs, and AI agent workflows that execute shell commands as part of a broader pipeline.
 
@@ -39,7 +39,7 @@ hisaabo --version
 
 ### Login with API key (recommended)
 
-Generate an API key in the Hisaabo web app under **Settings → API Keys** (available on paid plans), then:
+Generate an API key in the Rohadas web app under **Settings → API Keys** (available on paid plans), then:
 
 ```bash
 hisaabo login --token hisaabo_key_xxxxxxxxxxxxxxxxxx
@@ -1086,7 +1086,7 @@ hisaabo tenant revoke-invitation <invitationId>
 
 ### Document types
 
-Beyond standard invoices, Hisaabo supports six additional document types. Each type has the same five operations: `list`, `get`, `create`, `status`, and `delete`.
+Beyond standard invoices, Rohadas supports six additional document types. Each type has the same five operations: `list`, `get`, `create`, `status`, and `delete`.
 
 #### Quotation
 
@@ -1567,4 +1567,4 @@ Priority order (highest to lowest): command-line flags → environment variables
 - [MCP Server](/ai/mcp-server/) — For interactive AI agents and Claude Desktop
 - [Integrations](/ai/integrations/) — WhatsApp, Slack, Google Sheets, and more
 - [API Reference](https://api-docs.hisaabo.in)
-- [Self-Hosting](/self-hosting/) — Running Hisaabo on your own infrastructure
+- [Self-Hosting](/self-hosting/) — Running Rohadas on your own infrastructure

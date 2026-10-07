@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError, type ShipmentSummary } from "../../client.js";
+import { RohadasClient, RohadasApiError, type ShipmentSummary } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import {
   fatalError, outputJSON, outputTable, paginationFooter, EXIT, success, type ColumnDef,
@@ -15,7 +15,7 @@ interface ListOpts {
 
 export async function shipmentListCommand(opts: ListOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
   const page = opts.page ?? 1;
   const limit = opts.limit ?? 20;
 
@@ -47,7 +47,7 @@ export async function shipmentListCommand(opts: ListOpts): Promise<void> {
     paginationFooter(result.page, result.limit, result.total);
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "network_error") fatalError(err.message, EXIT.NETWORK);
@@ -58,7 +58,7 @@ export async function shipmentListCommand(opts: ListOpts): Promise<void> {
 
 export async function shipmentGetCommand(id: string, opts: { json?: boolean }): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const shipment = await client.shipment.get(id);
@@ -83,7 +83,7 @@ export async function shipmentGetCommand(id: string, opts: { json?: boolean }): 
     console.log();
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "network_error") fatalError(err.message, EXIT.NETWORK);
@@ -102,7 +102,7 @@ export async function shipmentCreateCommand(opts: {
   date?: string;
 }): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const shipment = await client.shipment.create({
@@ -124,7 +124,7 @@ export async function shipmentCreateCommand(opts: {
     console.log();
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "validation_failed") fatalError(e.message, EXIT.VALIDATION);
@@ -141,7 +141,7 @@ export async function shipmentUpdateCommand(id: string, opts: {
   carrier?: string;
 }): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const shipment = await client.shipment.update({
@@ -159,7 +159,7 @@ export async function shipmentUpdateCommand(id: string, opts: {
     success(`Shipment updated: ${formatStatus(shipment.status)}`);
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "not_found") fatalError(`Shipment not found: ${id}`, EXIT.NOT_FOUND);
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);

@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, success, outputJSON, EXIT } from "../../output.js";
 
@@ -8,7 +8,7 @@ interface RevokeSessionOpts {
 
 export async function revokeSessionCommand(sessionId: string, opts: RevokeSessionOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const result = await client.auth.revokeSession({ sessionId });
@@ -20,7 +20,7 @@ export async function revokeSessionCommand(sessionId: string, opts: RevokeSessio
 
     success("Session revoked successfully.");
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "not_found") fatalError(`Session not found: ${sessionId}`, EXIT.NOT_FOUND);
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);

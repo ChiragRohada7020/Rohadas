@@ -2,11 +2,17 @@ import { eq, and, sql, inArray, isNull } from "drizzle-orm";
 import { invoices, invoiceItems, parties, businesses, items as itemsTable } from "@hisaabo/db";
 import type { TenantDatabase } from "@hisaabo/db";
 import { buildBusinessDateFilter } from "./business-date.js";
+import { toPaise } from "@hisaabo/shared";
 
-// Split a tax amount exactly in half using paise-level integer arithmetic
-// to avoid floating-point rounding errors on odd amounts (e.g. ₹1.01).
-function splitTax(amount: number): number {
-  return Math.round(amount * 100 / 2) / 100;
+// Split tax in paise: CGST = floor(taxPaise/2), SGST = taxPaise - floor(taxPaise/2)
+// Ensures CGST + SGST = exact tax (no rounding loss on odd paise amounts).
+function splitTaxPaise(taxPaise: number, sameState: boolean): { cgstPaise: number; sgstPaise: number; igstPaise: number } {
+  if (sameState) {
+    const cgstPaise = Math.floor(taxPaise / 2);
+    const sgstPaise = taxPaise - cgstPaise;
+    return { cgstPaise, sgstPaise, igstPaise: 0 };
+  }
+  return { cgstPaise: 0, sgstPaise: 0, igstPaise: taxPaise };
 }
 
 // ── Types ──────────────────────────────────────────────────────
@@ -28,8 +34,11 @@ export interface GSTR1Report {
     igst: number;
     totalInvoiceValue: number;
   }>;
-  // B2C Large - to unregistered (> ₹2.5L inter-state)
+  // B2C Large - to unregistered (> ₹2.5L inter-state) — per-invoice rows
   b2cLarge: Array<{
+    invoiceNumber: string;
+    invoiceDate: string;
+    partyGstin: string | null;
     state: string;
     taxableValue: number;
     cgst: number;
@@ -205,32 +214,31 @@ export async function generateGSTR1(
   };
 
   const b2b: GSTR1Report["b2b"] = [];
-  const b2cLargeMap = new Map<string, GSTR1Report["b2cLarge"][0]>();
+  const b2cLarge: GSTR1Report["b2cLarge"] = [];
   const b2cSmallMap = new Map<number, GSTR1Report["b2cSmall"][0]>();
   const hsnSummaryMap = new Map<string, GSTR1Report["hsn"][0]>();
 
-  let totalTaxableValue = 0;
-  let totalCgst = 0;
-  let totalSgst = 0;
-  let totalIgst = 0;
-  let totalInvoiceValue = 0;
+  // Accumulate totals in integer paise to avoid floating-point drift
+  let totalTaxableValuePaise = 0;
+  let totalCgstPaise = 0;
+  let totalSgstPaise = 0;
+  let totalIgstPaise = 0;
+  let totalInvoiceValuePaise = 0;
 
   for (const inv of saleInvoices) {
     const lineItems = lineItemsByInvoice.get(inv.id) || [];
     const sameState = isSameState(inv.partyState, inv.partyStateCode);
-    const taxable = parseFloat(inv.subtotal);
-    const tax = parseFloat(inv.taxAmount);
-    const total = parseFloat(inv.totalAmount);
+    const taxablePaise = toPaise(inv.subtotal);
+    const taxPaise = toPaise(inv.taxAmount);
+    const totalPaise = toPaise(inv.totalAmount);
 
-    const cgst = sameState ? splitTax(tax) : 0;
-    const sgst = sameState ? splitTax(tax) : 0;
-    const igst = sameState ? 0 : tax;
+    const { cgstPaise, sgstPaise, igstPaise } = splitTaxPaise(taxPaise, !!sameState);
 
-    totalTaxableValue += taxable;
-    totalCgst += cgst;
-    totalSgst += sgst;
-    totalIgst += igst;
-    totalInvoiceValue += total;
+    totalTaxableValuePaise += taxablePaise;
+    totalCgstPaise += cgstPaise;
+    totalSgstPaise += sgstPaise;
+    totalIgstPaise += igstPaise;
+    totalInvoiceValuePaise += totalPaise;
 
     // B2B: party has GSTIN
     if (inv.partyGstin) {
@@ -240,57 +248,63 @@ export async function generateGSTR1(
         invoiceNumber: inv.invoiceNumber,
         invoiceDate: inv.invoiceDate.toISOString(),
         invoiceType: "Regular",
-        taxableValue: taxable,
-        cgst, sgst, igst,
-        totalInvoiceValue: total,
+        taxableValue: taxablePaise / 100,
+        cgst: cgstPaise / 100,
+        sgst: sgstPaise / 100,
+        igst: igstPaise / 100,
+        totalInvoiceValue: totalPaise / 100,
       });
-    } else if (!sameState && total > 250000) {
-      // B2C Large: inter-state > ₹2.5L
-      const state = inv.partyState || "Unknown";
-      const existing = b2cLargeMap.get(state) || { state, taxableValue: 0, cgst: 0, sgst: 0, igst: 0 };
-      existing.taxableValue += taxable;
-      existing.igst += igst;
-      b2cLargeMap.set(state, existing);
+    } else if (!sameState && totalPaise > 25000000) {
+      // B2C Large: inter-state, total > ₹2.5L — per-invoice row
+      b2cLarge.push({
+        invoiceNumber: inv.invoiceNumber,
+        invoiceDate: inv.invoiceDate.toISOString(),
+        partyGstin: inv.partyGstin,
+        state: inv.partyState || "Unknown",
+        taxableValue: taxablePaise / 100,
+        cgst: cgstPaise / 100,
+        sgst: sgstPaise / 100,
+        igst: igstPaise / 100,
+      });
     } else {
       // B2C Small
       for (const li of lineItems) {
         const rate = parseFloat(li.taxPercent);
         const existing = b2cSmallMap.get(rate) || { taxRate: rate, taxableValue: 0, cgst: 0, sgst: 0, igst: 0 };
-        const itemTaxable = parseFloat(li.totalAmount) - parseFloat(li.taxAmount);
-        const itemTax = parseFloat(li.taxAmount);
-        existing.taxableValue += itemTaxable;
+        const itemTaxablePaise = toPaise(li.totalAmount) - toPaise(li.taxAmount);
+        const itemTaxPaise = toPaise(li.taxAmount);
+        existing.taxableValue = (toPaise(existing.taxableValue) + itemTaxablePaise) / 100;
         if (sameState) {
-          existing.cgst += splitTax(itemTax);
-          existing.sgst += splitTax(itemTax);
+          const half = Math.floor(itemTaxPaise / 2);
+          existing.cgst = (toPaise(existing.cgst) + half) / 100;
+          existing.sgst = (toPaise(existing.sgst) + (itemTaxPaise - half)) / 100;
         } else {
-          existing.igst += itemTax;
+          existing.igst = (toPaise(existing.igst) + itemTaxPaise) / 100;
         }
         b2cSmallMap.set(rate, existing);
       }
     }
 
-    // Fix 1: HSN summary using actual HSN from items table
+    // HSN summary using actual HSN from items table
     for (const li of lineItems) {
       const itemHsn = li.itemId
         ? (itemHsnLookup.get(li.itemId) || "0000")
         : "0000";
       const existing = hsnSummaryMap.get(itemHsn) || {
-        // HSN summary description is a human-readable label for the HSN
-        // group — use itemName (required snapshot), not the optional notes
-        // column.
         hsn: itemHsn, description: li.itemName, quantity: 0,
         taxableValue: 0, cgst: 0, sgst: 0, igst: 0, totalValue: 0,
       };
-      const itemTaxable = parseFloat(li.totalAmount) - parseFloat(li.taxAmount);
-      const itemTax = parseFloat(li.taxAmount);
+      const itemTaxablePaise = toPaise(li.totalAmount) - toPaise(li.taxAmount);
+      const itemTaxPaise = toPaise(li.taxAmount);
       existing.quantity += parseFloat(li.quantity);
-      existing.taxableValue += itemTaxable;
-      existing.totalValue += parseFloat(li.totalAmount);
+      existing.taxableValue = (toPaise(existing.taxableValue) + itemTaxablePaise) / 100;
+      existing.totalValue = (toPaise(existing.totalValue) + toPaise(li.totalAmount)) / 100;
       if (sameState) {
-        existing.cgst += splitTax(itemTax);
-        existing.sgst += splitTax(itemTax);
+        const half = Math.floor(itemTaxPaise / 2);
+        existing.cgst = (toPaise(existing.cgst) + half) / 100;
+        existing.sgst = (toPaise(existing.sgst) + (itemTaxPaise - half)) / 100;
       } else {
-        existing.igst += itemTax;
+        existing.igst = (toPaise(existing.igst) + itemTaxPaise) / 100;
       }
       hsnSummaryMap.set(itemHsn, existing);
     }
@@ -380,17 +394,17 @@ export async function generateGSTR1(
     businessGstin: biz?.gstin || "",
     businessName: biz?.name || "",
     b2b,
-    b2cLarge: Array.from(b2cLargeMap.values()),
+    b2cLarge,
     b2cSmall: Array.from(b2cSmallMap.values()),
     hsn: Array.from(hsnSummaryMap.values()),
     creditNotes,
     debitNotes,
-    totalTaxableValue,
-    totalCgst,
-    totalSgst,
-    totalIgst,
-    totalTax: totalCgst + totalSgst + totalIgst,
-    totalInvoiceValue,
+    totalTaxableValue: totalTaxableValuePaise / 100,
+    totalCgst: totalCgstPaise / 100,
+    totalSgst: totalSgstPaise / 100,
+    totalIgst: totalIgstPaise / 100,
+    totalTax: (totalCgstPaise + totalSgstPaise + totalIgstPaise) / 100,
+    totalInvoiceValue: totalInvoiceValuePaise / 100,
     invoiceCount: saleInvoices.length,
   };
 }
@@ -425,13 +439,14 @@ export async function generateGSTR3B(
       ...buildBusinessDateFilter(invoices, { from: startDate, to: endDate }),
     ));
 
-  let itcIgst = 0, itcCgst = 0, itcSgst = 0;
+  let itcIgstPaise = 0, itcCgstPaise = 0, itcSgstPaise = 0;
 
   // RCM accumulators: Table 3.1(d) — inward supplies liable to reverse charge
-  let rcmTaxableValue = 0, rcmCgst = 0, rcmSgst = 0, rcmIgst = 0;
+  let rcmTaxableValuePaise = 0, rcmCgstPaise = 0, rcmSgstPaise = 0, rcmIgstPaise = 0;
 
   for (const inv of purchaseInvoices) {
-    const tax = parseFloat(inv.taxAmount);
+    const taxPaise = toPaise(inv.taxAmount);
+    const taxablePaise = toPaise(inv.subtotal);
     // Prefer state code comparison; fall back to text
     const sameState = (biz?.stateCode && inv.partyStateCode)
       ? biz.stateCode === inv.partyStateCode
@@ -440,25 +455,20 @@ export async function generateGSTR3B(
 
     if (inv.isReverseCharge) {
       // RCM purchases: tracked in 3.1(d) AND generate ITC for the buyer
-      rcmTaxableValue += parseFloat(inv.subtotal);
-      if (sameState) {
-        const half = splitTax(tax);
-        rcmCgst += half;
-        rcmSgst += half;
-        itcCgst += half;
-        itcSgst += half;
-      } else {
-        rcmIgst += tax;
-        itcIgst += tax;
-      }
+      rcmTaxableValuePaise += taxablePaise;
+      const { cgstPaise, sgstPaise, igstPaise } = splitTaxPaise(taxPaise, !!sameState);
+      rcmCgstPaise += cgstPaise;
+      rcmSgstPaise += sgstPaise;
+      rcmIgstPaise += igstPaise;
+      itcCgstPaise += cgstPaise;
+      itcSgstPaise += sgstPaise;
+      itcIgstPaise += igstPaise;
     } else {
       // Normal purchase ITC
-      if (sameState) {
-        itcCgst += splitTax(tax);
-        itcSgst += splitTax(tax);
-      } else {
-        itcIgst += tax;
-      }
+      const { cgstPaise, sgstPaise, igstPaise } = splitTaxPaise(taxPaise, !!sameState);
+      itcCgstPaise += cgstPaise;
+      itcSgstPaise += sgstPaise;
+      itcIgstPaise += igstPaise;
     }
   }
 
@@ -466,9 +476,19 @@ export async function generateGSTR3B(
   // A negative value indicates ITC credit remaining (e.g. when purchase tax
   // exceeds sales tax for a component). This is correct per GST rules —
   // the excess credit carries forward. Do NOT clamp to zero.
-  const netIgst = gstr1.totalIgst - itcIgst;
-  const netCgst = gstr1.totalCgst - itcCgst;
-  const netSgst = gstr1.totalSgst - itcSgst;
+  const netIgst = gstr1.totalIgst - itcIgstPaise / 100;
+  const netCgst = gstr1.totalCgst - itcCgstPaise / 100;
+  const netSgst = gstr1.totalSgst - itcSgstPaise / 100;
+
+  // GSTR-3B Table 3.1(a): aggregate B2C Large (inter-state unregistered) by state
+  const unregisteredByState = new Map<string, { state: string; taxableValue: number; igst: number }>();
+  for (const entry of gstr1.b2cLarge) {
+    const existing = unregisteredByState.get(entry.state)
+      || { state: entry.state, taxableValue: 0, igst: 0 };
+    existing.taxableValue = (toPaise(existing.taxableValue) + toPaise(entry.taxableValue)) / 100;
+    existing.igst = (toPaise(existing.igst) + toPaise(entry.igst)) / 100;
+    unregisteredByState.set(entry.state, existing);
+  }
 
   return {
     period: gstr1.period,
@@ -485,19 +505,17 @@ export async function generateGSTR3B(
       exempt: { taxableValue: 0, igst: 0, cgst: 0, sgst: 0 },
     },
     rcmSupplies: {
-      taxableValue: rcmTaxableValue.toFixed(2),
-      cgst: rcmCgst.toFixed(2),
-      sgst: rcmSgst.toFixed(2),
-      igst: rcmIgst.toFixed(2),
+      taxableValue: (rcmTaxableValuePaise / 100).toFixed(2),
+      cgst: (rcmCgstPaise / 100).toFixed(2),
+      sgst: (rcmSgstPaise / 100).toFixed(2),
+      igst: (rcmIgstPaise / 100).toFixed(2),
     },
-    interStateUnregistered: gstr1.b2cLarge.map((e) => ({
-      state: e.state, taxableValue: e.taxableValue, igst: e.igst,
-    })),
+    interStateUnregistered: Array.from(unregisteredByState.values()),
     itc: {
-      igst: itcIgst,
-      cgst: itcCgst,
-      sgst: itcSgst,
-      total: itcIgst + itcCgst + itcSgst,
+      igst: itcIgstPaise / 100,
+      cgst: itcCgstPaise / 100,
+      sgst: itcSgstPaise / 100,
+      total: (itcIgstPaise + itcCgstPaise + itcSgstPaise) / 100,
     },
     taxPayable: {
       igst: gstr1.totalIgst,
@@ -622,6 +640,8 @@ export function gstr1ToPortalJson(
     const pos = stateNameToCode(entry.state);
     const existing = b2clMap.get(pos) ?? { pos, inv: [] };
     existing.inv.push({
+      inum: entry.invoiceNumber,
+      idt: isoToPortalDate(entry.invoiceDate),
       txval: entry.taxableValue,
       iamt: entry.igst,
       csamt: 0,

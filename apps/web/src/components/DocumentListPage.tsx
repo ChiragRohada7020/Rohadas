@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "@tanstack/react-router";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -43,6 +44,8 @@ export interface DocumentListPageConfig {
   defaultInvoiceType?: "sale" | "purchase";
   /** Show the sale/purchase SegmentedControl (delivery-challans, credit-notes) */
   hasTypeFilter?: boolean;
+  /** Initial type when hasTypeFilter is true. Falls back to "sale". */
+  initialType?: "sale" | "purchase";
 
   // PageHeader
   title: string;
@@ -106,6 +109,7 @@ export function DocumentListPage({ config, initialSelectedId }: DocumentListPage
     documentType,
     defaultInvoiceType = "sale",
     hasTypeFilter = false,
+    initialType,
     title,
     description,
     buttonLabel,
@@ -122,7 +126,7 @@ export function DocumentListPage({ config, initialSelectedId }: DocumentListPage
   } = config;
 
   const [type, setType] = useState<"sale" | "purchase">(
-    hasTypeFilter ? "sale" : defaultInvoiceType
+    hasTypeFilter ? (initialType ?? "sale") : defaultInvoiceType
   );
   const [status, setStatus] = useState("");
   const [showCreate, setShowCreate] = useState(false);
@@ -134,6 +138,35 @@ export function DocumentListPage({ config, initialSelectedId }: DocumentListPage
   useEffect(() => {
     if (initialSelectedId) setSelectedId(initialSelectedId);
   }, [initialSelectedId]);
+
+  const navigate = useNavigate();
+  const { pathname, search: currentSearch } = useLocation();
+
+  // Keep the list's type in sync with the URL. The same route backs two nav
+  // entries — e.g. Credit Notes (/credit-notes) and Debit Notes
+  // (/credit-notes?type=purchase), or Quotations (/quotations) and Purchase
+  // Quotations (/quotations?type=purchase) — so React reuses this component
+  // when moving between them. `useState` only reads the initial type on mount,
+  // so without this effect the list would stay on whichever type was selected
+  // first. `desiredType` also covers routes that drive the type through
+  // `defaultInvoiceType` instead of the Sale/Purchase toggle.
+  const desiredType = hasTypeFilter ? (initialType ?? defaultInvoiceType) : defaultInvoiceType;
+  useEffect(() => {
+    setType(desiredType);
+  }, [desiredType]);
+
+  // Toggling Sale/Purchase rewrites the URL so the page title, button label and
+  // list all stay consistent, and browser back/forward works.
+  function changeType(next: "sale" | "purchase") {
+    setType(next);
+    if (hasTypeFilter) {
+      navigate({
+        to: pathname,
+        search: { ...(currentSearch as Record<string, unknown>), type: next },
+        replace: true,
+      });
+    }
+  }
 
   const utils = trpc.useUtils();
 
@@ -215,7 +248,7 @@ export function DocumentListPage({ config, initialSelectedId }: DocumentListPage
           <SegmentedControl
             tabs={typeOptions}
             value={type}
-            onChange={(v) => setType(v as "sale" | "purchase")}
+            onChange={(v) => changeType(v as "sale" | "purchase")}
           />
         )}
         <div className={hasTypeFilter ? "ml-auto" : undefined}>

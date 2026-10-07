@@ -16,6 +16,7 @@
  */
 
 import { useSyncExternalStore } from "react";
+import { calcLineItem, money } from "@hisaabo/shared";
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -307,19 +308,27 @@ export interface CartTotals {
 }
 
 export function computeCartTotals(lineItems: POSLineItem[]): CartTotals {
+  // Integer-paise arithmetic via the shared `money` module. The previous
+  // implementation used raw float multiplication (`qty * price * ...`), which
+  // drifts (e.g. 3 x 10.15 @18% -> 35.931000000000004) and could disagree with
+  // the server's total on the printed invoice. `money` is the same module the
+  // invoice builder and the API use, so the register total, the invoice total
+  // and the PDF can no longer diverge by a paisa.
   let subtotal = 0;
   let discount = 0;
   let tax = 0;
   for (const li of lineItems) {
-    const qty = parseFloat(li.quantity) || 0;
-    const price = parseFloat(li.unitPrice) || 0;
-    const gross = qty * price;
-    const disc = gross * ((parseFloat(li.discountPercent) || 0) / 100);
-    const net = gross - disc;
-    const lineTax = net * ((parseFloat(li.taxPercent) || 0) / 100);
-    subtotal += gross;
-    discount += disc;
-    tax += lineTax;
+    // calcLineItem applies the same order the server uses: gross, then the
+    // line discount, then tax on the discounted (net) amount.
+    const calc = calcLineItem({
+      quantity: li.quantity || "0",
+      unitPrice: li.unitPrice || "0",
+      taxPercent: li.taxPercent || "0",
+      discountPercent: li.discountPercent || "0",
+    });
+    subtotal += money.toNumber(calc.subtotal);
+    discount += money.toNumber(calc.discountAmount);
+    tax += money.toNumber(calc.taxAmount);
   }
   const total = subtotal - discount + tax;
   return { subtotal, discount, tax, total };

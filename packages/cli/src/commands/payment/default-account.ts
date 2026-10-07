@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, EXIT } from "../../output.js";
 
@@ -9,7 +9,7 @@ interface DefaultAccountOpts {
 
 export async function paymentDefaultAccountCommand(opts: DefaultAccountOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const input = opts.partyId ? { partyId: opts.partyId } : undefined;
@@ -44,7 +44,7 @@ export async function paymentDefaultAccountCommand(opts: DefaultAccountOpts): Pr
     console.log();
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "not_found") fatalError("No bank account configured.", EXIT.NOT_FOUND);
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);

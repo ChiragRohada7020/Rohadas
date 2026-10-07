@@ -37,6 +37,8 @@ import {
   journalEntryLines,
 } from "@hisaabo/db";
 import { buildBusinessDateFilter } from "./business-date.js";
+import { money } from "@hisaabo/shared";
+import { computeInventoryAndCogs } from "./inventory-costing.js";
 
 // ── Public types ────────────────────────────────────────────────
 
@@ -311,13 +313,17 @@ export async function deriveLedger(
       });
     } else if (inv.type === "purchase" && inv.documentType === "invoice") {
       // ── Purchase Invoice ────────────────────────────────────────
-      // Debit Purchases (5000), Cr Payable (2000) for subtotal
-      // Debit Input GST accounts, Cr Payable (2000) for tax
-      const purchases = getAccount(coa, "5000");
+      // Debit INVENTORY (1200) — an ASSET — for the goods received, rather than
+      // expensing them immediately. Only the cost of goods actually SOLD belongs
+      // in the P&L; that reclassification happens in the period-end inventory
+      // valuation (see the block before `return entries`). A custom CoA may lack
+      // Inventory; fall back to 5000 so the books still balance.
+      // Debit Input GST accounts, Cr Payable (2000) for tax.
+      const inventoryAcct = coa.get("1200") ?? getAccount(coa, "5000");
       const payable = getAccount(coa, "2000");
       const totalAmt = inv.totalAmount;
 
-      lines.push(debitLine(purchases, subtotal));
+      lines.push(debitLine(inventoryAcct, subtotal));
 
       if (parseFloat(taxStr) > 0) {
         if (sameState) {
@@ -563,6 +569,47 @@ export async function deriveLedger(
 
   // Sort chronologically
   entries.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  // ── Period-end inventory valuation (COGS reclassification) ────────────────
+  // Purchases now debit Inventory (1200), an asset. To put the right cost of
+  // sales on the P&L, reclassify at period end:
+  //   Opening stock   Dr 1200 Inventory / Cr 3000 Capital
+  //   Cost of sales   Dr 5000 Purchases / Cr 1200 Inventory
+  //   1200 = opening + purchases − COGS = closing stock (a Balance Sheet asset).
+  // Values come from `computeInventoryAndCogs`, the same engine the dashboard
+  // P&L uses, so the ledger P&L, Balance Sheet and dashboard all agree.
+  const costing = await computeInventoryAndCogs(db, businessId, fromDate, toDate);
+  const inventoryAcct = coa.get("1200");
+  const purchasesAcct = coa.get("5000");
+  const capitalAcct = coa.get("3000");
+  if (inventoryAcct && purchasesAcct && capitalAcct && !costing.stockDataIncomplete) {
+    if (money.compare(costing.openingInventory, "0.00") !== 0) {
+      entries.push({
+        date: fromDate,
+        narration: "Opening stock",
+        sourceType: "journal",
+        sourceId: `opening-stock-${businessId}`,
+        sourceNumber: "OPENING-STOCK",
+        lines: [
+          debitLine(inventoryAcct, costing.openingInventory),
+          creditLine(capitalAcct, costing.openingInventory),
+        ],
+      });
+    }
+    if (money.compare(costing.cogs, "0.00") !== 0) {
+      entries.push({
+        date: toDate,
+        narration: "Cost of goods sold",
+        sourceType: "journal",
+        sourceId: `cogs-${businessId}`,
+        sourceNumber: "COGS",
+        lines: [
+          debitLine(purchasesAcct, costing.cogs),
+          creditLine(inventoryAcct, costing.cogs),
+        ],
+      });
+    }
+  }
 
   return entries;
 }

@@ -10,7 +10,7 @@ export const importEndpoints: EndpointGroup = {
       method: "mutation",
       path: "import.importParties",
       title: "Import Parties",
-      description: "Bulk import customers and suppliers from an external source. Each row is transformed through a source-specific adapter (e.g. MyBillBook, Hisaabo) to normalize field names and formats. Validates all rows against the canonical party schema before importing. Deduplicates by name — existing parties are updated, new ones are created.",
+      description: "Bulk import customers and suppliers from an external source. Each row is transformed through a source-specific adapter (e.g. MyBillBook, Rohadas) to normalize field names and formats. Validates all rows against the canonical party schema before importing. Deduplicates by name — existing parties are updated, new ones are created.",
       auth: "business",
       requiredRole: "admin",
       input: [
@@ -28,7 +28,7 @@ export const importEndpoints: EndpointGroup = {
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/import.importParties \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/import.importParties \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -64,7 +64,7 @@ console.log(\`Created: \${result.created}, Updated: \${result.updated}\`);`,
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/import.importParties",
+    "https://api.rohadas.app/api/trpc/import.importParties",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -112,7 +112,7 @@ result = resp.json()["result"]["data"]["json"]`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/import.importItems \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/import.importItems \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -149,7 +149,7 @@ console.log(\`Imported \${result.created} items\`);`,
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/import.importItems",
+    "https://api.rohadas.app/api/trpc/import.importItems",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -200,7 +200,7 @@ result = resp.json()["result"]["data"]["json"]`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/import.importInvoices \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/import.importInvoices \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -246,7 +246,7 @@ console.log(\`Created: \${result.created}, Payments: \${result.paymentsCreated}\
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/import.importInvoices",
+    "https://api.rohadas.app/api/trpc/import.importInvoices",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -310,7 +310,7 @@ result = resp.json()["result"]["data"]["json"]`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/import.importPayments \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/import.importPayments \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -339,7 +339,7 @@ console.log(\`Created: \${result.created}, Auto-created: \${result.autoCreated}\
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/import.importPayments",
+    "https://api.rohadas.app/api/trpc/import.importPayments",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -387,7 +387,7 @@ result = resp.json()["result"]["data"]["json"]`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/import.reconcileDirectPayments \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/import.reconcileDirectPayments \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -400,7 +400,7 @@ console.log(\`Reconciled \${result.reconciled} invoices with missing payments\`)
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/import.reconcileDirectPayments",
+    "https://api.rohadas.app/api/trpc/import.reconcileDirectPayments",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -440,7 +440,7 @@ print(f"Reconciled: {result['reconciled']}")`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/import.importTransfers \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/import.importTransfers \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -472,7 +472,7 @@ console.log(\`Imported \${result.created} transfers\`);`,
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/import.importTransfers",
+    "https://api.rohadas.app/api/trpc/import.importTransfers",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,

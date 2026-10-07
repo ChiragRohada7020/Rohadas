@@ -9,9 +9,9 @@ import { Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
 
 Your competitors are already automating their invoicing. A textile merchant in Jaipur is creating invoices from WhatsApp voice notes. An accountant in Mumbai is reconciling 500 invoices across three businesses before lunch. A Delhi logistics company has an AI agent that files GST prep data every month without a single manual step.
 
-This is not the future. This is happening now, with Hisaabo.
+This is not the future. This is happening now, with Rohadas.
 
-Hisaabo exposes every business operation through a clean, typed API. That design choice was deliberate: it means any AI agent, automation script, or CI/CD pipeline can interact with your business data the same way a human would through the dashboard — without screen-scraping, browser automation, or brittle workarounds.
+Rohadas exposes every business operation through a clean, typed API. That design choice was deliberate: it means any AI agent, automation script, or CI/CD pipeline can interact with your business data the same way a human would through the dashboard — without screen-scraping, browser automation, or brittle workarounds.
 
 ---
 
@@ -21,7 +21,7 @@ Indian small and medium businesses lose 8–12 hours a week to manual bookkeepin
 
 The problem with most accounting software is that it was designed for humans clicking through a UI. The data is locked inside proprietary systems with no programmatic access. An AI agent that could theoretically send your payment reminders or flag GST mismatches cannot, because the software has no API.
 
-Hisaabo is different. The entire product is API-first. The web dashboard, mobile app, and desktop app are all thin clients over the same tRPC API. That means:
+Rohadas is different. The entire product is API-first. The web dashboard, mobile app, and desktop app are all thin clients over the same tRPC API. That means:
 
 - Any AI agent that can make HTTP requests can do anything a human can do in the dashboard
 - The [MCP server](/ai/mcp-server/) gives AI assistants like Claude structured, typed access without writing API code — ~50 tools covering invoicing, parties, inventory, payments, expenses, GST, shipping, banking, reports, store, targets, and bulk import
@@ -32,11 +32,11 @@ The goal is to let you spend your time on decisions — pricing strategy, custom
 
 ---
 
-## Why Hisaabo vs. Building Your Own
+## Why Rohadas vs. Building Your Own
 
-You could build an invoicing API from scratch, wire up a GST calculation engine, handle multi-tenant business isolation, and implement audit logs. Or you could use Hisaabo.
+You could build an invoicing API from scratch, wire up a GST calculation engine, handle multi-tenant business isolation, and implement audit logs. Or you could use Rohadas.
 
-| Capability | Building your own | Hisaabo |
+| Capability | Building your own | Rohadas |
 |---|---|---|
 | **API coverage** | Months of development | 130+ endpoints, ready today |
 | **Business domains** | Build each one manually | 14 domains covered (invoicing, parties, inventory, GST, payments, expenses, banking, reports, and more) |
@@ -48,13 +48,13 @@ You could build an invoicing API from scratch, wire up a GST calculation engine,
 | **Audit trail** | Design and implement | Every API call logged, every MCP tool call recorded |
 | **Time to first AI agent** | 3–6 months | 5 minutes |
 
-The answer is obvious. Use Hisaabo as the backend, build the AI on top.
+The answer is obvious. Use Rohadas as the backend, build the AI on top.
 
 ---
 
 ## What Developers Are Building
 
-These are the kinds of automations Hisaabo makes possible today.
+These are the kinds of automations Rohadas makes possible today.
 
 **A Jaipur textile shop owner uses Claude to create invoices from WhatsApp voice notes.**
 The shop owner forwards a voice note: "Bhai, 50 meters of georgette at 180 per meter for Sharma Fabrics." A WhatsApp bot transcribes the note, passes the text to Claude via the MCP server, and Claude calls `invoice_create` with the resolved party ID, item details, and GST rate. The invoice is ready in under 30 seconds. The owner never opens a browser.
@@ -63,7 +63,7 @@ The shop owner forwards a voice note: "Bhai, 50 meters of georgette at 180 per m
 Every morning at 8 AM, an agent pulls all overdue invoices using `invoice_list`, cross-references payment records, flags discrepancies, and sends a prioritized reconciliation list to the accountant's Slack. What used to take half a day now takes the time it takes to read a Slack message.
 
 **A Delhi delivery fleet manager's agent auto-generates delivery challans and updates Shiprocket.**
-When an order is confirmed in the Hisaabo online store, an agent creates the delivery challan via `invoice_create` (type: challan), pushes the shipment details to Shiprocket's API, and records the tracking number back against the invoice. The fleet manager's job is to manage drivers, not push data between software tabs.
+When an order is confirmed in the Rohadas online store, an agent creates the delivery challan via `invoice_create` (type: challan), pushes the shipment details to Shiprocket's API, and records the tracking number back against the invoice. The fleet manager's job is to manage drivers, not push data between software tabs.
 
 **A Bengaluru CA's firm runs monthly GST prep for 12 clients without opening a single dashboard.**
 A cron job fires on the 28th of every month. For each client, it calls `gst_report` (GSTR-1 and GSTR-3B), formats the output into a structured handoff document, and emails it to the filing team. Twelve clients. Zero manual data exports.
@@ -72,11 +72,11 @@ A cron job fires on the 28th of every month. For each client, it calls `gst_repo
 
 ## MCP Server
 
-The [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) is an open standard that lets AI assistants connect to external tools and data sources through a structured interface. Hisaabo's MCP server exposes your business data as MCP tools and resources, so AI agents can act on your behalf without you writing a single line of integration code.
+The [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) is an open standard that lets AI assistants connect to external tools and data sources through a structured interface. Rohadas's MCP server exposes your business data as MCP tools and resources, so AI agents can act on your behalf without you writing a single line of integration code.
 
 ### What this looks like in practice
 
-Once you connect Hisaabo's MCP server to Claude Desktop or an OpenClaw agent, natural-language requests become real business operations:
+Once you connect Rohadas's MCP server to Claude Desktop or an OpenClaw agent, natural-language requests become real business operations:
 
 ```
 User: "Create an invoice for Montu Arora — 7.3 kg spinach at ₹65/kg"
@@ -147,7 +147,7 @@ Then add this to your Claude Desktop `claude_desktop_config.json`:
 
 ### Available tools (~50 total)
 
-The MCP server exposes tools across all Hisaabo business domains:
+The MCP server exposes tools across all Rohadas business domains:
 
 | Domain | Tools |
 |---|---|
@@ -171,7 +171,7 @@ Full schema documentation is in the [MCP Server reference](/ai/mcp-server/).
 
 ## CLI Tool
 
-The Hisaabo CLI (`hisaabo`) is built with [Ink 5](https://github.com/vadimdemedes/ink) (React for the terminal) and Commander.js. It renders rich interactive tables, colored status badges, and INR-formatted numbers directly in your shell. It is designed for three audiences: developers who want to script business operations, system administrators setting up automation, and AI agents that run shell commands as part of a broader workflow.
+The Rohadas CLI (`hisaabo`) is built with [Ink 5](https://github.com/vadimdemedes/ink) (React for the terminal) and Commander.js. It renders rich interactive tables, colored status badges, and INR-formatted numbers directly in your shell. It is designed for three audiences: developers who want to script business operations, system administrators setting up automation, and AI agents that run shell commands as part of a broader workflow.
 
 ### Quick start
 
@@ -320,11 +320,11 @@ These features are in active development. The goal with each one is the same: th
 
 ### Auto GST Rate Updates
 
-GST rates in India change through government gazette notifications — notifications that most business owners miss until a customer points out the wrong rate on an invoice. Hisaabo will monitor official government sources for rate changes and surface them directly in your dashboard.
+GST rates in India change through government gazette notifications — notifications that most business owners miss until a customer points out the wrong rate on an invoice. Rohadas will monitor official government sources for rate changes and surface them directly in your dashboard.
 
 The workflow:
 1. Government publishes a GST rate change notification
-2. Hisaabo detects the change and identifies which items in your catalog are affected
+2. Rohadas detects the change and identifies which items in your catalog are affected
 3. You receive an in-app notification: "GST rate for HSN 0910 (spices) changes from 5% to 12% effective April 1"
 4. Review the affected items and accept with one click — or make individual adjustments before accepting
 
@@ -335,7 +335,7 @@ You stay in control. The AI handles the monitoring and mapping; you handle the a
 Pricing decisions for Indian SMBs are often made on gut feel because gathering competitive data is time-consuming. This feature aggregates publicly available market pricing data and cross-references it with your own margins to surface actionable pricing suggestions.
 
 The workflow:
-1. Hisaabo collects market price data for categories matching your item catalog
+1. Rohadas collects market price data for categories matching your item catalog
 2. Compares your prices against market ranges and your own cost/margin data
 3. Surfaces items where you may be underpricing (leaving money on the table) or overpricing (losing sales)
 4. Suggests adjusted prices — you accept, modify, or dismiss each suggestion
@@ -347,17 +347,17 @@ Your actual pricing data never leaves your server. The market data feeds are ext
 For businesses that sell physical goods through the online store, the gap between "invoice created" and "shipment dispatched" currently requires manual work in a separate Shiprocket dashboard. This integration closes that gap.
 
 The workflow:
-1. A customer places an order in your Hisaabo online store
+1. A customer places an order in your Rohadas online store
 2. You confirm the order and create an invoice — as you do today
-3. Hisaabo automatically pushes the shipment to Shiprocket: customer address, item weights, dimensions
-4. Shiprocket generates the shipping label; Hisaabo attaches it to the invoice
-5. Tracking updates from Shiprocket sync back to Hisaabo and to the customer via WhatsApp
+3. Rohadas automatically pushes the shipment to Shiprocket: customer address, item weights, dimensions
+4. Shiprocket generates the shipping label; Rohadas attaches it to the invoice
+5. Tracking updates from Shiprocket sync back to Rohadas and to the customer via WhatsApp
 
 ### AI Customer Service (OpenClaw)
 
-Handling inbound customer questions — order status, payment confirmation, product availability — takes time away from running your business. This feature lets you deploy a customer-facing AI agent for your Hisaabo online store, powered by OpenClaw.
+Handling inbound customer questions — order status, payment confirmation, product availability — takes time away from running your business. This feature lets you deploy a customer-facing AI agent for your Rohadas online store, powered by OpenClaw.
 
-The agent reads from your live Hisaabo data via MCP:
+The agent reads from your live Rohadas data via MCP:
 - Order status and tracking information
 - Payment confirmation and receipt generation
 - Product catalog and stock availability
@@ -373,13 +373,13 @@ The agent never takes actions that modify data without your explicit permission.
 
 ### Auto HSN Code Population
 
-Every GST invoice needs HSN/SAC codes — and getting them wrong means compliance headaches. When you create an item, Hisaabo's AI will suggest the correct HSN code from India's 8,000+ code database.
+Every GST invoice needs HSN/SAC codes — and getting them wrong means compliance headaches. When you create an item, Rohadas's AI will suggest the correct HSN code from India's 8,000+ code database.
 
 Type "Basmati Rice 25kg" → AI suggests: `1006 - Rice` (99% confidence). Confirm with one tap. The system learns your business's specific mappings, so subsequent items in the same category auto-fill instantly.
 
 ### Smart Item Catalog from Business Description
 
-New to Hisaabo? Tell the AI what your business does:
+New to Rohadas? Tell the AI what your business does:
 
 > "I run a grocery store in Udaipur selling vegetables, rice, dal, spices, and packaged snacks"
 
@@ -441,7 +441,7 @@ COUNT=$(echo "$LOW_STOCK" | jq 'length')
 
 if [ "$COUNT" -gt 0 ]; then
   echo "$LOW_STOCK" | jq -r '.[] | "REORDER: \(.name) — \(.stockQuantity) \(.unit) remaining (threshold: \(.lowStockThreshold))"' \
-    | mail -s "Hisaabo: $COUNT items need reordering" owner@yourbusiness.com
+    | mail -s "Rohadas: $COUNT items need reordering" owner@yourbusiness.com
 fi
 ```
 

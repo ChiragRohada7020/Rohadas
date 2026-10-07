@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, success, outputJSON, EXIT } from "../../output.js";
 
@@ -15,7 +15,7 @@ interface BusinessUpdateOpts {
 
 export async function businessUpdateCommand(opts: BusinessUpdateOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   // Build update payload — only include provided fields
   const payload: Record<string, unknown> = {};
@@ -47,7 +47,7 @@ export async function businessUpdateCommand(opts: BusinessUpdateOpts): Promise<v
 
     success("Business settings updated.");
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "forbidden") fatalError(err.message, EXIT.FORBIDDEN);

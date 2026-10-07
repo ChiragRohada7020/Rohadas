@@ -5,7 +5,16 @@ import { router, viewerProcedure } from "../trpc.js";
 import { requireCan } from "../lib/permissions.js";
 import { generateGSTR1, generateGSTR3B, gstr1ToCSV, gstr1ToPortalJson } from "../lib/gst-reports.js";
 import { generateGSTR9, gstr9ToPortalJson } from "../lib/gstr9-generator.js";
+import { buildGSTR4 } from "../lib/gstr4-generator.js";
 import { buildBusinessDateFilter } from "../lib/business-date.js";
+
+// Generate 12 months of an Indian financial year (April → March).
+function fyMonths(financialYear: number): Array<{ year: number; month: number }> {
+  const months: Array<{ year: number; month: number }> = [];
+  for (let m = 4; m <= 12; m++) months.push({ year: financialYear, month: m });
+  for (let m = 1; m <= 3; m++) months.push({ year: financialYear + 1, month: m });
+  return months;
+}
 
 export const gstRouter = router({
   // Reports are available for ALL businesses — GST-registered get GST terminology,
@@ -148,4 +157,179 @@ export const gstRouter = router({
         quarterEnd: quarterEnd.toISOString(),
       };
     }),
+
+  // Annual GSTR-1: the twelve monthly returns summed, for CA reconciliation.
+  gstr1Annual: viewerProcedure
+    .input(z.object({ financialYear: z.number().int().min(2020).max(2099) }))
+    .query(async ({ input, ctx }) => {
+      requireCan(ctx.ability, "read", "Report");
+      const months = fyMonths(input.financialYear);
+      const reports = await Promise.all(
+        months.map(({ year, month }) => generateGSTR1(ctx.businessId, year, month, ctx.db)),
+      );
+
+      const totals = reports.reduce(
+        (acc, r) => ({
+          invoiceCount: acc.invoiceCount + r.invoiceCount,
+          taxableValue: acc.taxableValue + r.totalTaxableValue,
+          cgst: acc.cgst + r.totalCgst,
+          sgst: acc.sgst + r.totalSgst,
+          igst: acc.igst + r.totalIgst,
+          totalTax: acc.totalTax + r.totalTax,
+          totalInvoiceValue: acc.totalInvoiceValue + r.totalInvoiceValue,
+        }),
+        { invoiceCount: 0, taxableValue: 0, cgst: 0, sgst: 0, igst: 0, totalTax: 0, totalInvoiceValue: 0 },
+      );
+
+      const monthlyBreakdown = reports.map((r, i) => ({
+        period: `${months[i]!.year}-${String(months[i]!.month).padStart(2, "0")}`,
+        invoiceCount: r.invoiceCount,
+        taxableValue: r.totalTaxableValue,
+        cgst: r.totalCgst,
+        sgst: r.totalSgst,
+        igst: r.totalIgst,
+        totalTax: r.totalTax,
+        empty: r.invoiceCount === 0,
+      }));
+
+      const b2bMap = new Map<string, { partyGstin: string; partyName: string; invoiceCount: number; taxableValue: number; cgst: number; sgst: number; igst: number }>();
+      for (const r of reports) {
+        for (const b of r.b2b) {
+          const e = b2bMap.get(b.partyGstin) ?? { partyGstin: b.partyGstin, partyName: b.partyName, invoiceCount: 0, taxableValue: 0, cgst: 0, sgst: 0, igst: 0 };
+          e.invoiceCount += 1;
+          e.taxableValue += b.taxableValue;
+          e.cgst += b.cgst;
+          e.sgst += b.sgst;
+          e.igst += b.igst;
+          b2bMap.set(b.partyGstin, e);
+        }
+      }
+
+      const b2cMap = new Map<number, { taxRate: number; taxableValue: number; cgst: number; sgst: number; igst: number }>();
+      for (const r of reports) {
+        for (const b of r.b2cSmall) {
+          const e = b2cMap.get(b.taxRate) ?? { taxRate: b.taxRate, taxableValue: 0, cgst: 0, sgst: 0, igst: 0 };
+          e.taxableValue += b.taxableValue;
+          e.cgst += b.cgst;
+          e.sgst += b.sgst;
+          e.igst += b.igst;
+          b2cMap.set(b.taxRate, e);
+        }
+      }
+
+      const hsnMap = new Map<string, { hsn: string; description: string; quantity: number; taxableValue: number; cgst: number; sgst: number; igst: number }>();
+      for (const r of reports) {
+        for (const h of r.hsn) {
+          const e = hsnMap.get(h.hsn) ?? { hsn: h.hsn, description: h.description, quantity: 0, taxableValue: 0, cgst: 0, sgst: 0, igst: 0 };
+          e.quantity += h.quantity;
+          e.taxableValue += h.taxableValue;
+          e.cgst += h.cgst;
+          e.sgst += h.sgst;
+          e.igst += h.igst;
+          hsnMap.set(h.hsn, e);
+        }
+      }
+
+      return {
+        financialYear: input.financialYear,
+        totals,
+        monthlyBreakdown,
+        b2b: [...b2bMap.values()],
+        b2cSmall: [...b2cMap.values()].sort((a, b) => a.taxRate - b.taxRate),
+        hsn: [...hsnMap.values()],
+      };
+    }),
+
+  gstr1AnnualCsv: viewerProcedure
+    .input(z.object({ financialYear: z.number().int().min(2020).max(2099) }))
+    .query(async ({ input, ctx }) => {
+      requireCan(ctx.ability, "read", "Report");
+      const months = fyMonths(input.financialYear);
+      const reports = await Promise.all(
+        months.map(({ year, month }) => generateGSTR1(ctx.businessId, year, month, ctx.db)),
+      );
+      const header = ["Period", "Invoice Count", "Taxable Value", "CGST", "SGST", "IGST", "Total Tax", "Total Invoice Value"];
+      const body = reports.map((r, i) =>
+        [`${months[i]!.year}-${String(months[i]!.month).padStart(2, "0")}`,
+          String(r.invoiceCount), r.totalTaxableValue.toFixed(2), r.totalCgst.toFixed(2),
+          r.totalSgst.toFixed(2), r.totalIgst.toFixed(2), r.totalTax.toFixed(2), r.totalInvoiceValue.toFixed(2)].join(","),
+      );
+      return { csv: [header.join(","), ...body].join("\n"), filename: `GSTR1_Annual_FY${input.financialYear}.csv` };
+    }),
+
+
+  // Annual GSTR-3B: twelve months added up.
+  gstr3bAnnual: viewerProcedure
+    .input(z.object({ financialYear: z.number().int().min(2020).max(2099) }))
+    .query(async ({ input, ctx }) => {
+      requireCan(ctx.ability, "read", "Report");
+      const months = fyMonths(input.financialYear);
+      const reports = await Promise.all(
+        months.map(({ year, month }) => generateGSTR3B(ctx.businessId, year, month, ctx.db)),
+      );
+
+      const sum3 = (get: (r: (typeof reports)[number]) => { taxableValue: number; igst: number; cgst: number; sgst: number }) =>
+        reports.reduce(
+          (acc, r) => {
+            const v = get(r);
+            return { taxableValue: acc.taxableValue + v.taxableValue, igst: acc.igst + v.igst, cgst: acc.cgst + v.cgst, sgst: acc.sgst + v.sgst };
+          },
+          { taxableValue: 0, igst: 0, cgst: 0, sgst: 0 },
+        );
+
+      const outwardSupplies = {
+        taxable: sum3((r) => r.outwardSupplies.taxable),
+        zeroRated: sum3((r) => r.outwardSupplies.zeroRated),
+        exempt: sum3((r) => r.outwardSupplies.exempt),
+      };
+      const itc = reports.reduce(
+        (acc, r) => ({ igst: acc.igst + r.itc.igst, cgst: acc.cgst + r.itc.cgst, sgst: acc.sgst + r.itc.sgst, total: acc.total + r.itc.total }),
+        { igst: 0, cgst: 0, sgst: 0, total: 0 },
+      );
+      const taxPayable = reports.reduce(
+        (acc, r) => ({ igst: acc.igst + r.taxPayable.igst, cgst: acc.cgst + r.taxPayable.cgst, sgst: acc.sgst + r.taxPayable.sgst }),
+        { igst: 0, cgst: 0, sgst: 0 },
+      );
+      const netTax = {
+        igst: taxPayable.igst - itc.igst,
+        cgst: taxPayable.cgst - itc.cgst,
+        sgst: taxPayable.sgst - itc.sgst,
+        total: taxPayable.igst + taxPayable.cgst + taxPayable.sgst - itc.total,
+      };
+      const monthlyBreakdown = reports.map((r, i) => ({
+        period: `${months[i]!.year}-${String(months[i]!.month).padStart(2, "0")}`,
+        outwardTaxable: r.outwardSupplies.taxable.taxableValue,
+        igst: r.outwardSupplies.taxable.igst,
+        cgst: r.outwardSupplies.taxable.cgst,
+        sgst: r.outwardSupplies.taxable.sgst,
+        itcTotal: r.itc.total,
+      }));
+
+      return { financialYear: input.financialYear, outwardSupplies, itc, taxPayable, netTax, monthlyBreakdown };
+    }),
+
+  // GSTR-4: quarterly return for composition-scheme dealers.
+  gstr4: viewerProcedure
+    .input(z.object({
+      year: z.number().int().min(2020).max(2099),
+      quarter: z.number().int().min(1).max(4),
+      compositionRate: z.number().min(0).max(20),
+    }))
+    .query(async ({ input, ctx }) => {
+      requireCan(ctx.ability, "read", "Report");
+      return buildGSTR4(ctx, input.year, input.quarter, input.compositionRate);
+    }),
+
+  gstr4Json: viewerProcedure
+    .input(z.object({
+      year: z.number().int().min(2020).max(2099),
+      quarter: z.number().int().min(1).max(4),
+      compositionRate: z.number().min(0).max(20),
+    }))
+    .query(async ({ input, ctx }) => {
+      requireCan(ctx.ability, "read", "Report");
+      const data = await buildGSTR4(ctx, input.year, input.quarter, input.compositionRate);
+      return { json: JSON.stringify(data), filename: `GSTR4_${data.period}.json` };
+    }),
+
 });

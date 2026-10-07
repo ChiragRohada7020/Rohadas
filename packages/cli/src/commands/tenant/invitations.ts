@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, outputTable, EXIT, hasColor } from "../../output.js";
 import type { ColumnDef } from "../../output.js";
@@ -10,7 +10,7 @@ interface ListInvitationsOpts {
 
 export async function listInvitationsCommand(opts: ListInvitationsOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const invitations = await client.tenant.pendingInvitations();
@@ -51,7 +51,7 @@ export async function listInvitationsCommand(opts: ListInvitationsOpts): Promise
     outputTable(rows, columns);
     process.stdout.write("\n");
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "forbidden") fatalError(err.message, EXIT.FORBIDDEN);

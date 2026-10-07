@@ -1,5 +1,5 @@
 /**
- * Invoice tools — the core of Hisaabo's invoicing workflow.
+ * Invoice tools — the core of Rohadas's invoicing workflow.
  *
  * Tools registered:
  *   invoice_list          — search and filter invoices with pagination
@@ -13,14 +13,14 @@
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { HisaaboClient } from "../client.js";
+import type { RohadasClient } from "../client.js";
 import { wrapTool } from "../lib/errors.js";
 import { MAX_PAGE_SIZE, withPaginationMeta } from "../lib/pagination.js";
 
 const INVOICE_STATUS = ["draft", "unfulfilled", "sent", "paid", "partial", "overdue", "cancelled"] as const;
 const DOCUMENT_TYPE = ["invoice", "quotation", "credit_note", "debit_note", "delivery_challan", "proforma", "sales_return", "purchase_return"] as const;
 
-export function registerInvoiceTools(server: McpServer, client: HisaaboClient) {
+export function registerInvoiceTools(server: McpServer, client: RohadasClient) {
 
   server.tool(
     "invoice_list",

@@ -14,7 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { trpc } from "../../../src/lib/trpc";
-import { formatCurrency, formatDateShort } from "../../../src/lib/utils";
+import { formatCurrency, formatDateShort, utcMidnightIso } from "../../../src/lib/utils";
 import { makeStyles } from "../../../src/lib/makeStyles";
 import { useColors } from "../../../src/contexts/ThemeContext";
 import { haptic } from "../../../src/lib/haptics";
@@ -342,7 +342,7 @@ export default function CreatePaymentScreen() {
       bankAccountId: selectedAccountId ?? undefined,
       referenceNumber: referenceNumber.trim() || undefined,
       notes: notes.trim() || undefined,
-      paymentDate: paymentDate.toISOString(),
+      paymentDate: utcMidnightIso(paymentDate),
       allocations: activeAllocations.length > 0 ? activeAllocations : undefined,
     });
   }, [selectedParty, amount, selectedAccount, selectedAccountId, isGatewayAccount, gatewayMode, computedAllocations, referenceNumber, notes, paymentDate, createPayment]);

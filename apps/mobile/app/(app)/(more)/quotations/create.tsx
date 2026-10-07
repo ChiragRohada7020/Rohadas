@@ -16,7 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { trpc } from "../../../../src/lib/trpc";
-import { formatCurrency } from "../../../../src/lib/utils";
+import { formatCurrency, utcMidnightIso } from "../../../../src/lib/utils";
 import { calcInvoiceTotals } from "@hisaabo/shared";
 import { makeStyles } from "../../../../src/lib/makeStyles";
 import { useColors } from "../../../../src/contexts/ThemeContext";
@@ -359,8 +359,8 @@ export default function QuotationCreateScreen() {
       partyId: selectedParty.id,
       type: "sale",
       documentType: "quotation",
-      invoiceDate: invoiceDate.toISOString(),
-      dueDate: dueDate.toISOString(),
+      invoiceDate: utcMidnightIso(invoiceDate),
+      dueDate: utcMidnightIso(dueDate),
       notes: notes.trim() || undefined,
       additionalCharges: "0",
       invoiceDiscount: "0",

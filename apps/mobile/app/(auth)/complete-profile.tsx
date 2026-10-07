@@ -86,7 +86,7 @@ export default function CompleteProfileScreen() {
           <Text style={styles.heading}>Welcome!</Text>
           <Text style={styles.subheading}>What's your name?</Text>
           <Text style={styles.description}>
-            This helps personalize your Hisaabo experience and appears on your documents.
+            This helps personalize your Rohadas experience and appears on your documents.
           </Text>
 
           {/* Input */}

@@ -1,6 +1,6 @@
 ---
 title: Self-Hosting Reference
-description: Reference guide for self-hosting Hisaabo in production — Docker setup, environment variables, backup strategy, updates, multi-tenancy, and troubleshooting.
+description: Reference guide for self-hosting Rohadas in production — Docker setup, environment variables, backup strategy, updates, multi-tenancy, and troubleshooting.
 sidebar:
   order: 1
 ---
@@ -14,7 +14,7 @@ This page is a reference for ongoing self-hosting operations. For initial instal
 │  Your server                                     │
 │                                                  │
 │  ┌──────────┐      ┌──────────────────────────┐  │
-│  │  Caddy   │─────▶│  Hisaabo API (port 3000) │  │
+│  │  Caddy   │─────▶│  Rohadas API (port 3000) │  │
 │  │  (HTTPS) │      │  Node.js / Hono          │  │
 │  └──────────┘      └──────────┬───────────────┘  │
 │                               │                  │
@@ -27,7 +27,7 @@ This page is a reference for ongoing self-hosting operations. For initial instal
 
 The API serves the backend tRPC endpoints. The web frontend is deployed separately (hosted on a CDN, Vercel, or any static hosting) and is the primary interface for self-hosted users — accessible from any browser, including on phones and tablets.
 
-The native mobile app (Android/iOS) and desktop app (macOS/Windows/Linux) are **Hisaabo Cloud** features and connect to Hisaabo Cloud by default. Self-hosted users have full access to every feature through the web app.
+The native mobile app (Android/iOS) and desktop app (macOS/Windows/Linux) are **Rohadas Cloud** features and connect to Rohadas Cloud by default. Self-hosted users have full access to every feature through the web app.
 
 ## Environment variable reference
 
@@ -105,7 +105,7 @@ Check the container logs after update to confirm migrations succeeded.
 
 ## Multi-tenancy (cloud SaaS mode)
 
-When `MULTI_TENANT=true`, Hisaabo provisions a separate PostgreSQL database per tenant (organisation) with a dedicated database user. A separate **control database** stores users, tenants, sessions, and tenant members. Tenant database credentials are encrypted at rest using `ENCRYPTION_KEY`.
+When `MULTI_TENANT=true`, Rohadas provisions a separate PostgreSQL database per tenant (organisation) with a dedicated database user. A separate **control database** stores users, tenants, sessions, and tenant members. Tenant database credentials are encrypted at rest using `ENCRYPTION_KEY`.
 
 Required when `MULTI_TENANT=true`:
 - `CONTROL_DATABASE_URL` — connection string to the control database
@@ -114,7 +114,7 @@ In single-tenant mode (the default), all data is stored in one schema in one dat
 
 ## ONCE deployment
 
-Hisaabo supports deployment via [Basecamp ONCE](https://once.com/) for easy self-hosting with zero-downtime deploys. The ONCE image (`Dockerfile.once`) bundles PostgreSQL 16 and the Node API into a single container managed by s6-overlay.
+Rohadas supports deployment via [Basecamp ONCE](https://once.com/) for easy self-hosting with zero-downtime deploys. The ONCE image (`Dockerfile.once`) bundles PostgreSQL 16 and the Node API into a single container managed by s6-overlay.
 
 Key features of the ONCE deployment:
 - **Single container**: PostgreSQL and the API run together, managed by s6-overlay process supervision
@@ -127,7 +127,7 @@ Persistent data is stored in `/storage/pgdata` (database), `/storage/run` (socke
 
 ## Rate limiting
 
-The API applies rate limiting at 120 requests per minute per IP address. If you are running Hisaabo behind a reverse proxy, ensure the `X-Forwarded-For` header is set correctly so the rate limiter sees the real client IP rather than the proxy IP.
+The API applies rate limiting at 120 requests per minute per IP address. If you are running Rohadas behind a reverse proxy, ensure the `X-Forwarded-For` header is set correctly so the rate limiter sees the real client IP rather than the proxy IP.
 
 Example Nginx configuration:
 

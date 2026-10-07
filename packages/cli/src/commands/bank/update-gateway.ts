@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError, type GatewayChargeConfig } from "../../client.js";
+import { RohadasClient, RohadasApiError, type GatewayChargeConfig } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, EXIT, success } from "../../output.js";
 
@@ -26,7 +26,7 @@ export async function bankUpdateGatewayCommand(
   opts: UpdateGatewayOpts,
 ): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     // Fetch existing config to merge with updates
@@ -72,7 +72,7 @@ export async function bankUpdateGatewayCommand(
     success(`Gateway configuration updated for account: ${accountId}`);
     console.log(`  Settlement Account: ${result.settlementAccountId}\n`);
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "validation_failed") fatalError(e.message, EXIT.VALIDATION);

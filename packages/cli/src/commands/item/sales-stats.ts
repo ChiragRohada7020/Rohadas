@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, EXIT } from "../../output.js";
 import { formatINR, formatAmount } from "../../format.js";
@@ -9,7 +9,7 @@ interface SalesStatsOpts {
 
 export async function itemSalesStatsCommand(id: string, opts: SalesStatsOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const result = await client.item.salesStats({ itemId: id });
@@ -33,7 +33,7 @@ export async function itemSalesStatsCommand(id: string, opts: SalesStatsOpts): P
     console.log();
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "not_found") fatalError(`Item not found: ${id}`, EXIT.NOT_FOUND);
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);

@@ -10,13 +10,13 @@
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { HisaaboClient } from "../client.js";
+import type { RohadasClient } from "../client.js";
 import { wrapTool } from "../lib/errors.js";
 
 const TARGET_TYPES = ["order_count", "order_value", "item_quantity"] as const;
 const PERIOD_TYPES = ["daily", "weekly", "monthly", "quarterly", "custom"] as const;
 
-export function registerTargetTools(server: McpServer, client: HisaaboClient) {
+export function registerTargetTools(server: McpServer, client: RohadasClient) {
 
   server.tool(
     "target_list",

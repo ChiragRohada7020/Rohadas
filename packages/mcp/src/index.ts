@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * Hisaabo MCP Server
+ * Rohadas MCP Server
  *
- * Exposes Hisaabo invoicing data and operations as MCP tools and resources.
+ * Exposes Rohadas invoicing data and operations as MCP tools and resources.
  * Designed for use with Claude Desktop, OpenClaw, and any MCP-compatible host.
  *
  * Required environment variables:
- *   HISAABO_API_URL     — Base URL of the Hisaabo API (default: http://localhost:3000)
+ *   HISAABO_API_URL     — Base URL of the Rohadas API (default: http://localhost:3000)
  *   HISAABO_API_KEY       — Session ID obtained from `hisaabo login` (Bearer token)
  *   HISAABO_TENANT_ID   — Tenant (organization) UUID
  *   HISAABO_BUSINESS_ID — Active business UUID
@@ -30,7 +30,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { HisaaboClient } from "./client.js";
+import { RohadasClient } from "./client.js";
 import { registerTools } from "./server.js";
 
 function requireEnv(name: string): string {
@@ -70,7 +70,7 @@ const config = {
 declare const __MCP_VERSION__: string | undefined;
 const mcpVersion = typeof __MCP_VERSION__ !== "undefined" ? __MCP_VERSION__ : "dev";
 
-const client = new HisaaboClient(config);
+const client = new RohadasClient(config);
 const server = new McpServer({
   name: "hisaabo",
   version: mcpVersion,

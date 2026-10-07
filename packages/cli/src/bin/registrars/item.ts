@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { requireAuth } from "../../config.js";
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { fatalError, EXIT, outputJSON } from "../../output.js";
 import { itemListCommand } from "../../commands/item/list.js";
 import { itemCreateCommand } from "../../commands/item/create.js";
@@ -42,7 +42,7 @@ export function registerItemCommands(program: Command): void {
     .option("--json", "JSON output")
     .action(async (id, opts) => {
       const cfg = requireAuth();
-      const client = new HisaaboClient(cfg);
+      const client = new RohadasClient(cfg);
       try {
         const it = await client.item.get(id);
         if (opts.json) { outputJSON(it); return; }
@@ -57,7 +57,7 @@ export function registerItemCommands(program: Command): void {
         if (it.itemType === "product") console.log(`  Stock:    ${it.stockQuantity}`);
         console.log();
       } catch (e) {
-        if (e instanceof HisaaboApiError && e.hisaaboError.code === "not_found") fatalError(`Item not found: ${id}`, EXIT.NOT_FOUND);
+        if (e instanceof RohadasApiError && e.hisaaboError.code === "not_found") fatalError(`Item not found: ${id}`, EXIT.NOT_FOUND);
         fatalError(String(e instanceof Error ? e.message : e));
       }
     });

@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { trpc } from "../../../../src/lib/trpc";
+import { utcMidnightIso } from "../../../../src/lib/utils";
 import { makeStyles } from "../../../../src/lib/makeStyles";
 import { useColors } from "../../../../src/contexts/ThemeContext";
 import { haptic } from "../../../../src/lib/haptics";
@@ -74,7 +75,7 @@ export default function CreateExpenseScreen() {
       return;
     }
 
-    const dateStr = expenseDate.toISOString();
+    const dateStr = utcMidnightIso(expenseDate);
 
     haptic.success();
     createExpense.mutate({

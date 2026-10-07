@@ -32,7 +32,7 @@ import { Combobox } from "../Combobox";
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-// Party options matching real Hisaabo data model.
+// Party options matching real Rohadas data model.
 const PARTY_OPTIONS = [
   { value: "p1", label: "Ramesh Traders", description: "GSTIN: 27ABCDE1234F1Z5" },
   { value: "p2", label: "Suresh Industries", description: "GSTIN: 29FGHIJ5678K2Y6" },

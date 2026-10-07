@@ -79,8 +79,16 @@ function TargetIcon() {
 
 function TruckIcon() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px]">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px]">
       <path d="M1 3h15v13H1z" /><path d="M16 8h4l3 3v5h-7V8z" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" />
+    </svg>
+  );
+}
+
+function WhatsAppIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px]">
+      <path d="M12 0C5.385 0 0 5.15 0 11.7c0 2.56.92 4.94 2.462 6.803a.81.81 0 0 0 1.078.15l2.7-1.7a.81.81 0 0 1 1.078.15 8.43 8.43 0 0 0 12.34-2.77.81.81 0 0 0-.64-1.31L17.9 14.6a.81.81 0 0 1-.27-1.13 8.35 8.35 0 0 0-.94-6.48 8.36 8.36 0 0 0-6.48.94.81.81 0 0 1-1.13-.27l-1.7-2.7a.81.81 0 0 0-1.31-.64A11.93 11.93 0 0 0 0 11.7c0 3.37 1.5 6.45 3.96 8.54l.04.03c1.89 1.69 4.29 2.75 6.88 2.75 2.77 0 5.29-1.13 7.17-2.97.04-.04.08-.08.12-.12a8.38 8.38 0 0 0 2.3-5.81c0-.35.02-.7.02-1.05a.81.81 0 0 1 1.21-.72 10.5 10.5 0 0 1 2.33 1.85.81.81 0 0 1-1.05 1.2 8.36 8.36 0 0 1-1.66-1.28.81.81 0 0 1 0-1.13c.03-.04.07-.08.1-.13A11.94 11.94 0 0 0 24 11.7c0-6.55-5.38-11.7-12-11.7z" />
     </svg>
   );
 }
@@ -99,6 +107,7 @@ const SETTINGS_TABS: SettingsTab[] = [
   { value: "business", label: "Business", icon: <BuildingIcon /> },
   { value: "documents", label: "Documents", icon: <DocumentIcon /> },
   { value: "shipping", label: "Shipping", icon: <TruckIcon /> },
+  { value: "communications", label: "Communications", icon: <WhatsAppIcon /> },
   { value: "team", label: "Team", icon: <UsersIcon /> },
   { value: "targets", label: "Sales Targets", icon: <TargetIcon /> },
   { value: "data", label: "Data", icon: <DatabaseIcon /> },

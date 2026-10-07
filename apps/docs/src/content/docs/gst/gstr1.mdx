@@ -1,6 +1,6 @@
 ---
 title: GSTR-1 Report
-description: Generate and export your GSTR-1 report in Hisaabo. Understand the B2B, B2CS, B2CL, and HSN summary sections and how to prepare for GST portal filing.
+description: Generate and export your GSTR-1 report in Rohadas. Understand the B2B, B2CS, B2CL, and HSN summary sections and how to prepare for GST portal filing.
 sidebar:
   order: 2
 ---
@@ -8,7 +8,7 @@ sidebar:
 import ForCA from '../../../components/ForCA.astro';
 import ForBusiness from '../../../components/ForBusiness.astro';
 
-GSTR-1 is the monthly return you file with the GST portal listing all your outward supplies (sales). Hisaabo generates this report automatically from your invoice data.
+GSTR-1 is the monthly return you file with the GST portal listing all your outward supplies (sales). Rohadas generates this report automatically from your invoice data.
 
 ## Generating the report
 
@@ -33,7 +33,7 @@ Two sanity checks before exporting: (1) confirm no invoices are still in `draft`
 
 ### B2B — Outward supplies to registered persons
 
-This section lists every sale invoice to a party that has a **GSTIN** in Hisaabo.
+This section lists every sale invoice to a party that has a **GSTIN** in Rohadas.
 
 | Column | Meaning |
 |---|---|
@@ -133,7 +133,7 @@ Click **Export CSV** to download the report as a comma-separated values file nam
 The CSV includes all sections (B2B, B2CS, B2CL, HSN summary) separated by blank lines and section headers.
 
 **To upload to the GST portal:**
-1. Download the CSV from Hisaabo.
+1. Download the CSV from Rohadas.
 2. Open the GST Offline Utility (available from the GST portal).
 3. Import the CSV (or manually enter the data from the CSV into the utility).
 4. Validate and generate the JSON file.
@@ -157,10 +157,10 @@ Draft invoices **are** included in the GSTR-1 report if their date falls within 
 ## Frequently asked questions
 
 **I filed GSTR-1 but then found a mistake. Can I amend it?**
-GSTR-1 amendments are handled on the GST portal directly. Correct the invoice in Hisaabo, re-generate the GSTR-1, and use the amended figures when filing your next month's return or an amendment return on the portal.
+GSTR-1 amendments are handled on the GST portal directly. Correct the invoice in Rohadas, re-generate the GSTR-1, and use the amended figures when filing your next month's return or an amendment return on the portal.
 
-**Why is my total in Hisaabo's GSTR-1 different from my GSTR-2A/2B on the portal?**
-GSTR-2A/2B reflects your suppliers' filings, not your own. The discrepancy is normal if your suppliers are yet to file or if there are timing differences. Hisaabo's GSTR-1 only covers your outward supplies.
+**Why is my total in Rohadas's GSTR-1 different from my GSTR-2A/2B on the portal?**
+GSTR-2A/2B reflects your suppliers' filings, not your own. The discrepancy is normal if your suppliers are yet to file or if there are timing differences. Rohadas's GSTR-1 only covers your outward supplies.
 
 **A large B2C invoice is not appearing in B2CL. Why?**
 Check that the party's state code is different from your business's state code (it must be inter-state) and that the party has no GSTIN (unregistered). Also confirm the invoice total exceeds ₹2,50,000.

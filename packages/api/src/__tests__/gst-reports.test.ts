@@ -1182,6 +1182,9 @@ describe("gstr1ToPortalJson — B2CL section", () => {
     const json = gstr1ToPortalJson(
       makePortalReport({
         b2cLarge: [{
+          invoiceNumber: "INV-00001",
+          invoiceDate: new Date("2025-08-15").toISOString(),
+          partyGstin: null,
           state: "Karnataka",
           taxableValue: 254237.29,
           cgst: 0,
@@ -1198,6 +1201,9 @@ describe("gstr1ToPortalJson — B2CL section", () => {
     const json = gstr1ToPortalJson(
       makePortalReport({
         b2cLarge: [{
+          invoiceNumber: "INV-00001",
+          invoiceDate: new Date("2025-08-15").toISOString(),
+          partyGstin: null,
           state: "Karnataka",
           taxableValue: 254237.29,
           cgst: 0,
@@ -1212,9 +1218,34 @@ describe("gstr1ToPortalJson — B2CL section", () => {
     expect(entry.pos).toBeDefined();
     expect(typeof entry.pos).toBe("string");
   });
+
+  it("b2cl entry includes per-invoice inum and idt fields", () => {
+    const json = gstr1ToPortalJson(
+      makePortalReport({
+        b2cLarge: [{
+          invoiceNumber: "INV-B2CL-001",
+          invoiceDate: new Date("2025-08-25").toISOString(),
+          partyGstin: null,
+          state: "Karnataka",
+          taxableValue: 300000,
+          cgst: 0,
+          sgst: 0,
+          igst: 54000,
+        }],
+      }),
+      "27AABCA0000R1ZM", "2025-26", "082025"
+    );
+    type B2CLEntry = { pos: string; inv: Array<{ inum: string; idt: string; txval: number; iamt: number; csamt: number }> };
+    const entry = (json.b2cl as B2CLEntry[])[0];
+    expect(entry.inv[0].inum).toBe("INV-B2CL-001");
+    expect(entry.inv[0].idt).toBe("25-08-2025");
+    expect(entry.inv[0].txval).toBe(300000);
+    expect(entry.inv[0].iamt).toBe(54000);
+  });
 });
 
 describe("gstr1ToPortalJson — B2CS section", () => {
+
   /**
    * B2C Small entries use sply_ty (INTRA/INTER), pos, rt (tax rate),
    * and aggregated tax amounts.
@@ -1292,6 +1323,7 @@ describe("gstr1ToPortalJson — B2CS section", () => {
     expect(entry.txval).toBe(30000);
     expect(entry.rt).toBe(12);
   });
+
 });
 
 describe("gstr1ToPortalJson — CDNR section (credit/debit notes)", () => {

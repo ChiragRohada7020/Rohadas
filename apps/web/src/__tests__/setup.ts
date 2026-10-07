@@ -1,5 +1,5 @@
 /**
- * Global test setup for Hisaabo web app.
+ * Global test setup for Rohadas web app.
  *
  * Loaded before every test file via vitest's `setupFiles` config.
  * It extends Vitest's `expect` with:

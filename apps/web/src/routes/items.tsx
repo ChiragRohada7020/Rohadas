@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useEffect, useMemo } from "react";
-import { trpc } from "@/lib/trpc";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { trpc, getBusinessId } from "@/lib/trpc";
+import { apiUrl } from "@/lib/api-url";
 import { formatCurrency, formatDate, cn, downloadCSV, todayISODate, toISOString } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { toast } from "@/hooks/useToast";
@@ -8,6 +9,23 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useHotkeys } from "@/hooks/useHotkeys";
 import { useDeleteConfirmation } from "@/hooks/useDeleteConfirmation";
 import type { ItemType, ItemMode } from "@hisaabo/shared";
+
+/**
+ * How an item's stock is tracked.
+ *
+ * "none" is the default and must stay the default: it preserves the existing
+ * single-number stock model exactly, so switching a product on is an explicit,
+ * reversible decision rather than something a form does behind your back.
+ */
+type TrackingMode = "none" | "batch" | "serial" | "expiry";
+
+/** Plain-language explanation shown under the tracking-mode picker. */
+const TRACKING_MODE_HELP: Record<TrackingMode, string> = {
+  none: "Simple quantity only. Stock is one number, with no batch or serial detail.",
+  batch: "Stock is grouped by batch number, so you can trace which consignment a unit came from.",
+  serial: "Every unit is individually identified. Pick the exact serial when you sell it.",
+  expiry: "Stock is tracked by expiry date and sold earliest-first, so nothing expires on the shelf.",
+};
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Modal } from "@/components/ui/Modal";
 import { SlideOver } from "@/components/ui/SlideOver";
@@ -378,6 +396,14 @@ function ItemsPage() {
                   <tr key={item.id} className="group cursor-pointer" onClick={() => setSelectedItemId(item.id)}>
                     <td>
                       <div className="flex items-center gap-2">
+                        {item.hasImage && (
+                          <img
+                            src={itemThumbSrc(item.id, item.imageUpdatedAt)}
+                            alt=""
+                            loading="lazy"
+                            className="h-9 w-9 shrink-0 rounded-lg border border-border-light bg-surface-2 object-cover"
+                          />
+                        )}
                         {item.itemType === "service" && (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400 shrink-0">
                             SVC
@@ -491,6 +517,154 @@ function ItemsPage() {
   );
 }
 
+// ── Item image picker ────────────────────────────────────────────
+
+/** Build the authenticated URL for an item's image (thumbnail / preview). */
+function itemThumbSrc(itemId: string, imageUpdatedAt?: string | Date | null): string {
+  const v = imageUpdatedAt ? encodeURIComponent(new Date(imageUpdatedAt).toISOString()) : "0";
+  return `${apiUrl(`/api/items/${itemId}/image`)}?b=${encodeURIComponent(getBusinessId() ?? "")}&v=${v}`;
+}
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Upload / replace / remove an item's image.
+ *
+ * Edit mode (itemId set): uploads immediately via item.uploadImage.
+ * Create mode (no itemId): stages the picked data URL; the caller uploads it
+ * once the item exists (after create returns an id).
+ */
+function ItemImagePicker({
+  itemId,
+  hasImage,
+  imageUpdatedAt,
+  stagedDataUrl,
+  onChange,
+}: {
+  itemId?: string;
+  hasImage?: boolean;
+  imageUpdatedAt?: string | null;
+  stagedDataUrl?: string | null;
+  onChange?: (dataUrl: string | null) => void;
+}) {
+  const utils = trpc.useUtils();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+
+  const upload = trpc.item.uploadImage.useMutation({
+    onSuccess: () => {
+      utils.item.list.invalidate();
+      if (itemId) utils.item.getById.invalidate({ id: itemId });
+      toast.success("Image updated");
+    },
+    onError: (err) => toast.error("Upload failed", err.message),
+  });
+  const remove = trpc.item.removeImage.useMutation({
+    onSuccess: () => {
+      utils.item.list.invalidate();
+      if (itemId) utils.item.getById.invalidate({ id: itemId });
+      toast.success("Image removed");
+    },
+    onError: (err) => toast.error("Could not remove image", err.message),
+  });
+
+  async function handleFile(file: File) {
+    if (!/^image\/(png|jpeg)$/.test(file.type)) {
+      toast.error("Choose a PNG or JPEG image");
+      return;
+    }
+    if (file.size > 1_048_576) {
+      toast.error("Image must be 1 MB or smaller");
+      return;
+    }
+    const dataUrl = await fileToDataUrl(file);
+    if (itemId) {
+      setBusy(true);
+      try {
+        await upload.mutateAsync({ id: itemId, dataUrl });
+      } finally {
+        setBusy(false);
+      }
+    } else {
+      onChange?.(dataUrl);
+    }
+  }
+
+  async function handleRemove() {
+    if (itemId) {
+      setBusy(true);
+      try {
+        await remove.mutateAsync({ id: itemId });
+      } finally {
+        setBusy(false);
+      }
+    } else {
+      onChange?.(null);
+    }
+  }
+
+  const previewSrc = stagedDataUrl
+    ? stagedDataUrl
+    : itemId && hasImage
+      ? `${apiUrl(`/api/items/${itemId}/image`)}?b=${encodeURIComponent(getBusinessId() ?? "")}&v=${encodeURIComponent(imageUpdatedAt ?? "0")}`
+      : null;
+
+  return (
+    <div className="flex items-center gap-4">
+      <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border-light bg-surface-2">
+        {previewSrc ? (
+          <img src={previewSrc} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <svg className="h-7 w-7 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+          </svg>
+        )}
+      </div>
+      <div className="space-y-1.5">
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/png,image/jpeg"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void handleFile(f);
+            e.target.value = "";
+          }}
+        />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={busy}
+            className="btn-secondary px-3 py-1.5 text-xs"
+          >
+            {busy ? "Uploading…" : previewSrc ? "Change image" : "Upload image"}
+          </button>
+          {previewSrc && (
+            <button
+              type="button"
+              onClick={handleRemove}
+              disabled={busy}
+              className="text-xs font-medium text-red-500 hover:text-red-600 transition-colors"
+            >
+              Remove
+            </button>
+          )}
+        </div>
+        <p className="text-[11px] text-text-tertiary">PNG or JPEG, up to 1 MB.</p>
+      </div>
+    </div>
+  );
+}
+
 function AddItemModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [itemType, setItemType] = useState<ItemType>("product");
   const [name, setName] = useState("");
@@ -503,6 +677,7 @@ function AddItemModal({ open, onClose }: { open: boolean; onClose: () => void })
   const [taxInclusive, setTaxInclusive] = useState(false);
   const [stockQuantity, setStockQuantity] = useState("0");
   const [lowStockAlert, setLowStockAlert] = useState("");
+  const [trackingMode, setTrackingMode] = useState<TrackingMode>("none");
   const [unit, setUnit] = useState("pcs");
   const [unitVariants, setUnitVariants] = useState<UiUnitVariant[]>([]);
   const [variantAttributes, setVariantAttributes] = useState<string[]>([]);
@@ -510,6 +685,7 @@ function AddItemModal({ open, onClose }: { open: boolean; onClose: () => void })
   const [newAttrName, setNewAttrName] = useState("");
   const [attrValues, setAttrValues] = useState<Record<string, string[]>>({});
   const [newAttrValue, setNewAttrValue] = useState<Record<string, string>>({});
+  const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
 
   // Changing the base price re-derives every non-manual alt-unit row.
   // Manual rows get a "stale base price" marker so the editor can show
@@ -588,9 +764,17 @@ function AddItemModal({ open, onClose }: { open: boolean; onClose: () => void })
 
   const utils = trpc.useUtils();
 
+  const uploadImageMutation = trpc.item.uploadImage.useMutation({
+    onSuccess: () => utils.item.list.invalidate(),
+  });
+
   const createMutation = trpc.item.create.useMutation({
-    onSuccess: () => {
+    onSuccess: (item) => {
       utils.item.list.invalidate();
+      // Upload the staged image (if any) now that the item has an id.
+      if (imageDataUrl) {
+        uploadImageMutation.mutate({ id: item.id, dataUrl: imageDataUrl });
+      }
       toast.success("Item created");
       onClose();
     },
@@ -611,6 +795,7 @@ function AddItemModal({ open, onClose }: { open: boolean; onClose: () => void })
     setTaxInclusive(false);
     setStockQuantity("0");
     setLowStockAlert("");
+    setTrackingMode("none");
     setUnit("pcs");
     setUnitVariants([]);
     setVariantAttributes([]);
@@ -618,6 +803,7 @@ function AddItemModal({ open, onClose }: { open: boolean; onClose: () => void })
     setNewAttrName("");
     setAttrValues({});
     setNewAttrValue({});
+    setImageDataUrl(null);
   }
 
   function handleClose() {
@@ -649,6 +835,7 @@ function AddItemModal({ open, onClose }: { open: boolean; onClose: () => void })
       taxInclusive,
       stockQuantity: effectiveMode === "variants" ? "0" : stockQuantity,
       lowStockAlert: lowStockAlert || undefined,
+      trackingMode,
       unit: unit as any,
       unitVariants: effectiveMode === "alt_units" && validUnitVariants.length > 0 ? validUnitVariants : undefined,
       variantAttributes: effectiveMode === "variants" && variantAttributes.length > 0 ? variantAttributes : undefined,
@@ -695,6 +882,12 @@ function AddItemModal({ open, onClose }: { open: boolean; onClose: () => void })
           value={itemType}
           onChange={(v) => setItemType(v as ItemType)}
         />
+
+        {/* Item image */}
+        <div>
+          <p className="label">Item image</p>
+          <ItemImagePicker stagedDataUrl={imageDataUrl} onChange={setImageDataUrl} />
+        </div>
 
         {/* Base fields */}
         <InputField
@@ -747,6 +940,27 @@ function AddItemModal({ open, onClose }: { open: boolean; onClose: () => void })
             options={UNIT_OPTIONS}
             placeholder="Select unit"
           />
+        )}
+
+        {/* Stock tracking — how this product's quantity is broken down.
+            Only meaningful for a product: a service is billed but never held,
+            so tracking it by batch or serial would be meaningless. */}
+        {itemType === "product" && derivedMode !== "variants" && (
+          <div>
+            <Listbox
+              label="Track stock by"
+              value={trackingMode}
+              onChange={(v) => setTrackingMode(v as TrackingMode)}
+              options={[
+                { value: "none", label: "No tracking" },
+                { value: "batch", label: "Batch number" },
+                { value: "serial", label: "Serial number" },
+                { value: "expiry", label: "Expiry date" },
+              ]}
+              placeholder="No tracking"
+            />
+            <p className="mt-1 text-xs text-text-tertiary">{TRACKING_MODE_HELP[trackingMode]}</p>
+          </div>
         )}
 
         {/* Section divider */}
@@ -1061,6 +1275,7 @@ function EditItemModal({ itemId, onClose }: { itemId: string; onClose: () => voi
   const [taxInclusive, setTaxInclusive] = useState(false);
   const [stockQuantity, setStockQuantity] = useState("0");
   const [lowStockAlert, setLowStockAlert] = useState("");
+  const [trackingMode, setTrackingMode] = useState<TrackingMode>("none");
   const [unit, setUnit] = useState("pcs");
   const [unitVariants, setUnitVariants] = useState<UiUnitVariant[]>([]);
   const [itemMode, setItemMode] = useState<ItemMode>("simple");
@@ -1088,6 +1303,7 @@ function EditItemModal({ itemId, onClose }: { itemId: string; onClose: () => voi
     setTaxInclusive(item.taxInclusive ?? false);
     setStockQuantity(item.stockQuantity ?? "0");
     setLowStockAlert(item.lowStockAlert ?? "");
+    setTrackingMode((item.trackingMode ?? "none") as TrackingMode);
     setUnit(item.unit ?? "pcs");
     setUnitVariants((item.unitVariants as any[]) ?? []);
     setItemMode((item.itemMode as ItemMode) ?? "simple");
@@ -1205,6 +1421,7 @@ function EditItemModal({ itemId, onClose }: { itemId: string; onClose: () => voi
         taxPercent,
         taxInclusive,
         lowStockAlert: lowStockAlert || undefined,
+        trackingMode,
         unit: unit as any,
         unitVariants: itemMode === "alt_units" && validVariants.length > 0 ? validVariants : undefined,
       },
@@ -1244,6 +1461,16 @@ function EditItemModal({ itemId, onClose }: { itemId: string; onClose: () => voi
           value={itemType}
           onChange={(v) => setItemType(v as ItemType)}
         />
+
+        {/* Item image */}
+        <div>
+          <p className="label">Item image</p>
+          <ItemImagePicker
+            itemId={itemId}
+            hasImage={item?.hasImage}
+            imageUpdatedAt={item?.imageUpdatedAt ? new Date(item.imageUpdatedAt).toISOString() : null}
+          />
+        </div>
 
         {/* Item Mode display (read-only for existing items) */}
         {itemType === "product" && itemMode !== "simple" && (
@@ -1394,6 +1621,27 @@ function EditItemModal({ itemId, onClose }: { itemId: string; onClose: () => voi
                   onChange={(e) => setLowStockAlert(e.target.value)}
                   placeholder="Alert threshold"
                 />
+              </div>
+
+              {/* Editing the tracking mode on an item that already has stock
+                  leaves the existing quantity as "unattributed" — the totals
+                  still agree, but godown/batch reporting needs a stock receipt
+                  or a physical count to attribute it. Changing the mode is
+                  therefore reversible and never silently rewrites history. */}
+              <div className="mt-3">
+                <Listbox
+                  label="Track stock by"
+                  value={trackingMode}
+                  onChange={(v) => setTrackingMode(v as TrackingMode)}
+                  options={[
+                    { value: "none", label: "No tracking" },
+                    { value: "batch", label: "Batch number" },
+                    { value: "serial", label: "Serial number" },
+                    { value: "expiry", label: "Expiry date" },
+                  ]}
+                  placeholder="No tracking"
+                />
+                <p className="mt-1 text-xs text-text-tertiary">{TRACKING_MODE_HELP[trackingMode]}</p>
               </div>
             </Disclosure>
           )}
@@ -1664,7 +1912,7 @@ function PriceHistoryTab({
 
       {chartData.length > 1 ? (
         <div className="rounded-xl border border-border-light bg-surface-0 p-4">
-          <ResponsiveContainer width="100%" height={180}>
+          <ResponsiveContainer width="100%" height={180} minWidth={1} minHeight={1}>
             <LineChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
               <XAxis
                 dataKey="date"
@@ -1840,7 +2088,7 @@ function StockMovementsTab({
 
       {chartData.length > 1 ? (
         <div className="rounded-xl border border-border-light bg-surface-0 p-4">
-          <ResponsiveContainer width="100%" height={180}>
+          <ResponsiveContainer width="100%" height={180} minWidth={1} minHeight={1}>
             <LineChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
               <XAxis
                 dataKey="date"

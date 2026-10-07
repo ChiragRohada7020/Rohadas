@@ -52,7 +52,7 @@ describe("StatusBadge — invoice/order status indicator", () => {
   it("renders 'Paid' badge with green text colour (#34d399)", () => {
     // WHAT: Green is the universal indicator of success/completion.
     // WHY: If paid is red or amber, merchants will chase already-paid invoices,
-    //      damaging customer relationships and Hisaabo's credibility as a
+    //      damaging customer relationships and Rohadas's credibility as a
     //      replacement for manual ledger books.
     render(<StatusBadge status="paid" />);
 

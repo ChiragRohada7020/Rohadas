@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, outputTable, outputTSV, outputCSV, EXIT, hasColor, termWidth } from "../../output.js";
 import { formatAmount, fyStart, todayISO, monthStart, monthEnd } from "../../format.js";
@@ -25,7 +25,7 @@ function rateBar(rate: number, width: number): string {
 
 export async function dashboardCollectionEfficiencyCommand(opts: CollectionEfficiencyOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   let fromDate = opts.from;
   let toDate = opts.to;
@@ -154,7 +154,7 @@ export async function dashboardCollectionEfficiencyCommand(opts: CollectionEffic
     }
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "network_error") fatalError(err.message, EXIT.NETWORK);

@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, EXIT, termWidth, hasColor } from "../../output.js";
 import { formatAmount, formatDate, formatStatus, deliveryMethodLabel } from "../../format.js";
@@ -6,7 +6,7 @@ import chalk from "chalk";
 
 export async function invoiceGetCommand(id: string, opts: { json?: boolean }): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const inv = await client.invoice.get(id);
@@ -102,7 +102,7 @@ export async function invoiceGetCommand(id: string, opts: { json?: boolean }): P
     process.stdout.write(` Actions: [e] Edit  [p] PDF  [d] Delete  [pay] Record Payment\n\n`);
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "not_found") fatalError(`Invoice not found: ${id}`, EXIT.NOT_FOUND);
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);

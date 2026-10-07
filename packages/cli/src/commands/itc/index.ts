@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, EXIT } from "../../output.js";
 import { formatAmount } from "../../format.js";
@@ -10,7 +10,7 @@ interface ItcOpts {
 }
 
 function handleError(e: unknown): never {
-  if (e instanceof HisaaboApiError) {
+  if (e instanceof RohadasApiError) {
     const err = e.hisaaboError;
     if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
     if (err.code === "network_error") fatalError(err.message, EXIT.NETWORK);
@@ -20,7 +20,7 @@ function handleError(e: unknown): never {
 
 export async function itcDashboardCommand(opts: ItcOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const result = await client.itc.dashboard({ fromDate: opts.from, toDate: opts.to });
@@ -52,7 +52,7 @@ export async function itcDashboardCommand(opts: ItcOpts): Promise<void> {
 
 export async function itcLedgerCommand(opts: ItcOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const result = await client.itc.ledger({ fromDate: opts.from, toDate: opts.to });
@@ -88,7 +88,7 @@ export async function itcLedgerCommand(opts: ItcOpts): Promise<void> {
 
 export async function itcAgingCommand(opts: { json?: boolean }): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const result = await client.itc.agingAlerts();
@@ -126,7 +126,7 @@ export async function itcAgingCommand(opts: { json?: boolean }): Promise<void> {
 
 export async function itcBlockCommand(invoiceId: string, opts: { json?: boolean }): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const result = await client.itc.markBlocked({ invoiceId });
@@ -145,7 +145,7 @@ export async function itcBlockCommand(invoiceId: string, opts: { json?: boolean 
 
 export async function itcUnblockCommand(invoiceId: string, opts: { json?: boolean }): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const result = await client.itc.markEligible({ invoiceId });

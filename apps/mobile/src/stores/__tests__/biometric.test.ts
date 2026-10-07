@@ -2,7 +2,7 @@
  * Tests for the biometric Zustand store (`src/stores/biometric.ts`)
  *
  * WHY these tests matter for contributors:
- * Hisaabo stores confidential GST data, bank account details, and party
+ * Rohadas stores confidential GST data, bank account details, and party
  * (customer/supplier) financials. The biometric/PIN lock is the user-facing
  * security layer that prevents anyone who picks up an unlocked phone from
  * instantly accessing sensitive business data.
@@ -192,7 +192,7 @@ describe("biometric store — fingerprint/PIN lock management", () => {
     // WHAT: User has never configured any lock — or has disabled them all.
     //       The app should open straight to the home screen after restart.
     // WHY: Unnecessarily locking a user who chose not to use the feature
-    //      damages retention and makes Hisaabo feel broken compared to
+    //      damages retention and makes Rohadas feel broken compared to
     //      alternatives like Khatabook that don't force lock screens.
     mockGet
       .mockResolvedValueOnce(null)  // biometric = off
@@ -486,7 +486,7 @@ describe("biometric store — fingerprint/PIN lock management", () => {
 
     expect(result).toEqual({ success: true, cancelled: false });
     expect(mockAuthenticate).toHaveBeenCalledWith({
-      promptMessage: "Unlock Hisaabo",
+      promptMessage: "Unlock Rohadas",
       cancelLabel: "Use PIN",
       disableDeviceFallback: true,
       fallbackLabel: "Use PIN",

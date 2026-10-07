@@ -1,7 +1,7 @@
 /**
  * Unit variant price derivation helpers.
  *
- * Hisaabo standardises on Direction A for alternate-unit conversions:
+ * Rohadas standardises on Direction A for alternate-unit conversions:
  *   conversionFactor = "base units per 1 alt unit"
  * so for rice priced at ₹100/kg with 1 packet = 0.2 kg:
  *   - user types 0.2 as the conversion factor

@@ -2,7 +2,7 @@ import { Command } from "commander";
 import * as readline from "readline";
 import { login, loginWithToken, logout, whoami } from "../../auth.js";
 import { setConfig, requireAuth } from "../../config.js";
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { fatalError, success, EXIT, outputJSON } from "../../output.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -82,7 +82,7 @@ export function registerAuthCommands(program: Command): void {
 
   program
     .command("login")
-    .description("Authenticate and configure your Hisaabo server")
+    .description("Authenticate and configure your Rohadas server")
     .option("--api-url <url>", "Server URL")
     .option("--email <email>", "Email address")
     .option("--password <password>", "Password (visible in shell history — prefer interactive prompt)")
@@ -94,7 +94,7 @@ export function registerAuthCommands(program: Command): void {
       if (opts.token) {
         if (!apiUrl) {
           const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-          console.log("\n  Hisaabo CLI\n  " + "─".repeat(11) + "\n");
+          console.log("\n  Rohadas CLI\n  " + "─".repeat(11) + "\n");
           const u = await ask(rl, "  Server URL [http://localhost:3000]: ");
           rl.close();
           apiUrl = u.trim() || "http://localhost:3000";
@@ -109,7 +109,7 @@ export function registerAuthCommands(program: Command): void {
 
       if (!apiUrl || !email || !password) {
         const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-        console.log("\n  Hisaabo CLI\n  " + "─".repeat(11) + "\n");
+        console.log("\n  Rohadas CLI\n  " + "─".repeat(11) + "\n");
         if (!apiUrl) {
           const u = await ask(rl, "  Server URL [http://localhost:3000]: ");
           apiUrl = u.trim() || "http://localhost:3000";
@@ -134,13 +134,13 @@ export function registerAuthCommands(program: Command): void {
     .action(async (opts) => {
       if (opts.all) {
         const cfg = requireAuth();
-        const client = new HisaaboClient(cfg);
+        const client = new RohadasClient(cfg);
         try {
           await client.auth.logoutAll();
           await logout();
           success("Logged out from all sessions.");
         } catch (e) {
-          if (e instanceof HisaaboApiError) {
+          if (e instanceof RohadasApiError) {
             if (e.hisaaboError.code === "unauthorized") {
               // Session already invalid — still clear local config
               await logout();
@@ -174,12 +174,12 @@ export function registerAuthCommands(program: Command): void {
     .description("Update your display name")
     .action(async (name: string) => {
       const cfg = requireAuth();
-      const client = new HisaaboClient(cfg);
+      const client = new RohadasClient(cfg);
       try {
         await client.auth.updateName({ name });
         success(`Name updated to: ${name}`);
       } catch (e) {
-        if (e instanceof HisaaboApiError) {
+        if (e instanceof RohadasApiError) {
           const err = e.hisaaboError;
           if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
           if (err.code === "validation_failed") fatalError(String(err.fields?.["name"]?.[0] ?? "Validation failed."), EXIT.VALIDATION);
@@ -196,7 +196,7 @@ export function registerAuthCommands(program: Command): void {
     .option("--json", "JSON output")
     .action(async (opts) => {
       const cfg = requireAuth();
-      const client = new HisaaboClient(cfg);
+      const client = new RohadasClient(cfg);
       try {
         const businesses = await client.business.list();
         if (opts.json) { outputJSON(businesses); return; }
@@ -213,7 +213,7 @@ export function registerAuthCommands(program: Command): void {
         setConfig({ businessId: selected.id, businessName: selected.name });
         success(`Switched to: ${selected.name}`);
       } catch (e) {
-        if (e instanceof HisaaboApiError) {
+        if (e instanceof RohadasApiError) {
           if (e.hisaaboError.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
         }
         fatalError(String(e instanceof Error ? e.message : e));

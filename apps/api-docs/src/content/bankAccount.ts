@@ -48,7 +48,7 @@ export const bankAccountEndpoints: EndpointGroup = {
         ],
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/bankAccount.list" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/bankAccount.list" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const accounts = await trpc.bankAccount.list.query();
@@ -58,7 +58,7 @@ const totalBalance = accounts.reduce(
 );
 console.log(\`Total across \${accounts.length} accounts: \u20B9\${totalBalance}\`);`,
         python: `resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/bankAccount.list",
+    "https://api.rohadas.app/api/trpc/bankAccount.list",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -111,7 +111,7 @@ accounts = resp.json()["result"]["data"]["json"]`,
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/bankAccount.getById?input=%7B%22json%22%3A%7B%22id%22%3A%22ba-uuid-1%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/bankAccount.getById?input=%7B%22json%22%3A%7B%22id%22%3A%22ba-uuid-1%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const account = await trpc.bankAccount.getById.query({ id: "ba-uuid-1" });
@@ -127,7 +127,7 @@ console.log(\`Recent txns: \${account.recentTransactions.length}\`);`,
 
 params = urllib.parse.quote(json.dumps({"json": {"id": "ba-uuid-1"}}))
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/bankAccount.getById?input={params}",
+    f"https://api.rohadas.app/api/trpc/bankAccount.getById?input={params}",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -176,7 +176,7 @@ account = resp.json()["result"]["data"]["json"]`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/bankAccount.create \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/bankAccount.create \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -203,7 +203,7 @@ account = resp.json()["result"]["data"]["json"]`,
 
 console.log("Created:", account.accountName);`,
         python: `resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/bankAccount.create",
+    "https://api.rohadas.app/api/trpc/bankAccount.create",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -258,7 +258,7 @@ account = resp.json()["result"]["data"]["json"]`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/bankAccount.update \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/bankAccount.update \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -276,7 +276,7 @@ account = resp.json()["result"]["data"]["json"]`,
   },
 });`,
         python: `resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/bankAccount.update",
+    "https://api.rohadas.app/api/trpc/bankAccount.update",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
     json={"json": {
         "id": "ba-uuid-1",
@@ -306,14 +306,14 @@ account = resp.json()["result"]["data"]["json"]`,
         example: { success: true },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/bankAccount.delete \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/bankAccount.delete \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
   -d '{"json":{"id":"ba-uuid-1"}}'`,
         javascript: `await trpc.bankAccount.delete.mutate({ id: "ba-uuid-1" });`,
         python: `httpx.post(
-    "https://api.hisaabo.in/api/trpc/bankAccount.delete",
+    "https://api.rohadas.app/api/trpc/bankAccount.delete",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
     json={"json": {"id": "ba-uuid-1"}},
 )`,
@@ -364,7 +364,7 @@ account = resp.json()["result"]["data"]["json"]`,
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/bankAccount.listTransactions?input=%7B%22json%22%3A%7B%22bankAccountId%22%3A%22ba-uuid-1%22%2C%22page%22%3A1%2C%22limit%22%3A20%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/bankAccount.listTransactions?input=%7B%22json%22%3A%7B%22bankAccountId%22%3A%22ba-uuid-1%22%2C%22page%22%3A1%2C%22limit%22%3A20%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const { data, total } = await trpc.bankAccount.listTransactions.query({
@@ -387,7 +387,7 @@ params = urllib.parse.quote(json.dumps({"json": {
     "limit": 20,
 }}))
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/bankAccount.listTransactions?input={params}",
+    f"https://api.rohadas.app/api/trpc/bankAccount.listTransactions?input={params}",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -434,7 +434,7 @@ result = resp.json()["result"]["data"]["json"]`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/bankAccount.addTransaction \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/bankAccount.addTransaction \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -461,7 +461,7 @@ result = resp.json()["result"]["data"]["json"]`,
 
 console.log("Transaction recorded:", txn.id);`,
         python: `resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/bankAccount.addTransaction",
+    "https://api.rohadas.app/api/trpc/bankAccount.addTransaction",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -527,7 +527,7 @@ txn = resp.json()["result"]["data"]["json"]`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/bankAccount.transfer \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/bankAccount.transfer \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -549,7 +549,7 @@ txn = resp.json()["result"]["data"]["json"]`,
 console.log("Withdrawn:", withdrawal.id);
 console.log("Deposited:", deposit.id);`,
         python: `resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/bankAccount.transfer",
+    "https://api.rohadas.app/api/trpc/bankAccount.transfer",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -593,7 +593,7 @@ print("Deposit:", result["deposit"]["id"])`,
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/bankAccount.summary" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/bankAccount.summary" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const summary = await trpc.bankAccount.summary.query();
@@ -603,7 +603,7 @@ console.log(\`Cash: \u20B9\${summary.cashInHand}\`);
 console.log(\`Bank: \u20B9\${summary.bankBalance}\`);
 console.log(\`Accounts: \${summary.accountCount}\`);`,
         python: `resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/bankAccount.summary",
+    "https://api.rohadas.app/api/trpc/bankAccount.summary",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -644,7 +644,7 @@ print(f"Total: {summary['totalBalance']}")`,
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/bankAccount.getGatewayConfig?input=%7B%22json%22%3A%7B%22bankAccountId%22%3A%22ba-razorpay-uuid%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/bankAccount.getGatewayConfig?input=%7B%22json%22%3A%7B%22bankAccountId%22%3A%22ba-razorpay-uuid%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const config = await trpc.bankAccount.getGatewayConfig.query({
@@ -659,7 +659,7 @@ if (config) {
 
 params = urllib.parse.quote(json.dumps({"json": {"bankAccountId": "ba-razorpay-uuid"}}))
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/bankAccount.getGatewayConfig?input={params}",
+    f"https://api.rohadas.app/api/trpc/bankAccount.getGatewayConfig?input={params}",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -703,7 +703,7 @@ config = resp.json()["result"]["data"]["json"]`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/bankAccount.upsertGatewayConfig \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/bankAccount.upsertGatewayConfig \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -727,7 +727,7 @@ config = resp.json()["result"]["data"]["json"]`,
   autoSettle: true,
 });`,
         python: `resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/bankAccount.upsertGatewayConfig",
+    "https://api.rohadas.app/api/trpc/bankAccount.upsertGatewayConfig",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -765,7 +765,7 @@ config = resp.json()["result"]["data"]["json"]`,
         example: { success: true },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/bankAccount.deleteGatewayConfig \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/bankAccount.deleteGatewayConfig \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -774,7 +774,7 @@ config = resp.json()["result"]["data"]["json"]`,
   bankAccountId: "ba-razorpay-uuid",
 });`,
         python: `httpx.post(
-    "https://api.hisaabo.in/api/trpc/bankAccount.deleteGatewayConfig",
+    "https://api.rohadas.app/api/trpc/bankAccount.deleteGatewayConfig",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
     json={"json": {"bankAccountId": "ba-razorpay-uuid"}},
 )`,

@@ -121,7 +121,7 @@ export function Footer({ config }: FooterProps) {
                 className="font-semibold hover:underline"
                 style={{ color: "var(--store-text-secondary)" }}
               >
-                Hisaabo
+                Rohadas
               </a>
             </p>
           </div>
@@ -232,7 +232,7 @@ function PrivacyPolicy({
       </h2>
 
       <p className="text-sm mb-4" style={{ color: "var(--store-text-secondary)" }}>
-        This store is powered by Hisaabo.{" "}
+        This store is powered by Rohadas.{" "}
         <strong style={{ color: "var(--store-text)" }}>{businessName}</strong> ("we", "us")
         operates this online store.
       </p>
@@ -265,7 +265,7 @@ function PrivacyPolicy({
               className="underline"
               style={{ color: "var(--store-accent)" }}
             >
-              Hisaabo
+              Rohadas
             </a>
           </li>
         </ul>
@@ -352,7 +352,7 @@ function TermsOfService({
           className="underline"
           style={{ color: "var(--store-accent)" }}
         >
-          Hisaabo
+          Rohadas
         </a>
       </p>
     </div>

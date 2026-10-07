@@ -1,7 +1,7 @@
 /**
  * SlideOver — right-side panel for forms and detail views
  *
- * The SlideOver is the primary UI surface for data entry in Hisaabo — party
+ * The SlideOver is the primary UI surface for data entry in Rohadas — party
  * creation, item editing, payment recording, and expense entry all live
  * inside SlideOver panels.  Because users spend significant time inside these
  * panels, the accessibility and focus-management requirements are even higher

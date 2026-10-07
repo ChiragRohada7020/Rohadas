@@ -1,5 +1,5 @@
 import * as readline from "readline";
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import {
   fatalError, outputJSON, outputTable, outputTSV, outputCSV, outputIds,
@@ -19,8 +19,8 @@ export interface DocTypeConfig {
   cmd: string;
   /** Human-readable label, e.g. "Credit Note" */
   label: string;
-  /** camelCase key on HisaaboClient, e.g. "creditNote" */
-  nsKey: keyof HisaaboClient;
+  /** camelCase key on RohadasClient, e.g. "creditNote" */
+  nsKey: keyof RohadasClient;
   /** Valid status values for this document type */
   statuses: string[];
 }
@@ -75,7 +75,7 @@ type DocNamespace = {
   delete(input: any): Promise<any>;
 };
 
-function getNs(client: HisaaboClient, nsKey: keyof HisaaboClient): DocNamespace {
+function getNs(client: RohadasClient, nsKey: keyof RohadasClient): DocNamespace {
   return client[nsKey] as unknown as DocNamespace;
 }
 
@@ -87,7 +87,7 @@ async function promptLine(rl: readline.Interface, question: string): Promise<str
 
 export async function docListCommand(dt: DocTypeConfig, opts: ListOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
   const ns = getNs(client, dt.nsKey);
 
   let from = opts.from;
@@ -163,7 +163,7 @@ export async function docListCommand(dt: DocTypeConfig, opts: ListOpts): Promise
       paginationFooter(result.page, result.limit, result.total);
     }
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "network_error") fatalError(err.message, EXIT.NETWORK);
@@ -176,7 +176,7 @@ export async function docListCommand(dt: DocTypeConfig, opts: ListOpts): Promise
 
 export async function docGetCommand(dt: DocTypeConfig, id: string, opts: GetOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
   const ns = getNs(client, dt.nsKey);
 
   try {
@@ -259,7 +259,7 @@ export async function docGetCommand(dt: DocTypeConfig, id: string, opts: GetOpts
     process.stdout.write(` └${"─".repeat(inner + 2)}┘\n\n`);
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "not_found") fatalError(`${dt.label} not found: ${id}`, EXIT.NOT_FOUND);
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
@@ -273,7 +273,7 @@ export async function docGetCommand(dt: DocTypeConfig, id: string, opts: GetOpts
 
 export async function docCreateCommand(dt: DocTypeConfig, opts: CreateOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
   const ns = getNs(client, dt.nsKey);
 
   const isNonInteractive = !process.stdin.isTTY || opts.yes;
@@ -486,7 +486,7 @@ export async function docCreateCommand(dt: DocTypeConfig, opts: CreateOpts): Pro
     console.log(`  View:    hisaabo ${dt.cmd} get ${doc.id}\n`);
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "validation_failed") fatalError(e.message, EXIT.VALIDATION);
@@ -505,7 +505,7 @@ export async function docStatusCommand(
   opts: StatusOpts,
 ): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
   const ns = getNs(client, dt.nsKey);
 
   if (!dt.statuses.includes(status)) {
@@ -526,7 +526,7 @@ export async function docStatusCommand(
     console.log(`  ${id} status updated: ${fromBadge} -> ${toBadge}`);
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "not_found") fatalError(`${dt.label} not found: ${id}`, EXIT.NOT_FOUND);
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
@@ -546,7 +546,7 @@ export async function docDeleteCommand(
   opts: DeleteOpts,
 ): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
   const ns = getNs(client, dt.nsKey);
 
   try {
@@ -578,7 +578,7 @@ export async function docDeleteCommand(
     success(`Deleted: ${docNum}`);
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "not_found") fatalError(`${dt.label} not found: ${id}`, EXIT.NOT_FOUND);
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);

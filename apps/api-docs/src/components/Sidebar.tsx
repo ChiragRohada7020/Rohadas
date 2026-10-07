@@ -99,7 +99,7 @@ export function Sidebar({ onNavigate }: Props) {
             H
           </div>
           <div>
-            <div className="text-[13px] font-semibold text-white leading-tight">Hisaabo</div>
+            <div className="text-[13px] font-semibold text-white leading-tight">Rohadas</div>
             <div className="text-[10px] leading-tight" style={{ color: "var(--text-muted)" }}>API Reference</div>
           </div>
         </Link>
@@ -319,7 +319,7 @@ export function Sidebar({ onNavigate }: Props) {
         </div>
         <div className="flex items-center gap-4">
           <a
-            href="https://github.com/hisaabo"
+            href="https://github.com/rohadas"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-[11px] transition-colors"
@@ -333,7 +333,7 @@ export function Sidebar({ onNavigate }: Props) {
             GitHub
           </a>
           <a
-            href="https://hisaabo.in"
+            href="https://rohadas.app"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-[11px] transition-colors"
@@ -344,7 +344,7 @@ export function Sidebar({ onNavigate }: Props) {
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
             </svg>
-            Hisaabo.in
+            Rohadas.in
           </a>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError, type LedgerEntry } from "../../client.js";
+import { RohadasClient, RohadasApiError, type LedgerEntry } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import {
   fatalError, outputJSON, outputTable, outputTSV, outputCSV,
@@ -17,7 +17,7 @@ interface LedgerOpts {
 
 export async function partyLedgerCommand(partyId: string, opts: LedgerOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const result = await client.party.ledger(partyId, {
@@ -52,7 +52,7 @@ export async function partyLedgerCommand(partyId: string, opts: LedgerOpts): Pro
     console.log(`\n  Closing Balance: ${formatINR(result.closingBalance)}\n`);
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "not_found") fatalError(`Party not found: ${partyId}`, EXIT.NOT_FOUND);
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);

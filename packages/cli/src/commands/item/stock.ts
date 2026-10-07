@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, EXIT, success } from "../../output.js";
 import { formatAmount } from "../../format.js";
@@ -10,7 +10,7 @@ interface StockOpts {
 
 export async function itemStockCommand(id: string, adjustment: string, opts: StockOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   // Validate adjustment format
   if (!/^[+-]?\d+(\.\d+)?$/.test(adjustment)) {
@@ -34,7 +34,7 @@ export async function itemStockCommand(id: string, adjustment: string, opts: Sto
     success(`Stock adjusted: ${updated.name}  ${dir}${formatAmount(adjustment)} → ${formatAmount(updated.stockQuantity)}`);
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "not_found") fatalError(`Item not found: ${id}`, EXIT.NOT_FOUND);
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);

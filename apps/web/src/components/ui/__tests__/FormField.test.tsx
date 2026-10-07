@@ -1,7 +1,7 @@
 /**
  * FormField, InputField, SelectField, TextareaField — form primitives
  *
- * These are the atomic building blocks of all forms in Hisaabo.  Every
+ * These are the atomic building blocks of all forms in Rohadas.  Every
  * data-entry panel (party creation, item editing, expense recording, settings)
  * is composed of these primitives.  Getting their accessibility right ensures
  * every form in the app inherits correct label associations, error

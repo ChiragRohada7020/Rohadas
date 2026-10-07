@@ -1,5 +1,5 @@
 import * as readline from "readline";
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, EXIT, success } from "../../output.js";
 import { formatINR, formatAmount, todayISO } from "../../format.js";
@@ -23,7 +23,7 @@ async function prompt(rl: readline.Interface, q: string): Promise<string> {
 
 export async function paymentCreateCommand(opts: CreateOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
   const isNonInteractive = !process.stdin.isTTY || opts.yes;
 
   let partyId = opts.partyId;
@@ -120,7 +120,7 @@ export async function paymentCreateCommand(opts: CreateOpts): Promise<void> {
     success(`Recorded: ${payment.paymentNumber} for ${formatINR(payment.amount)}`);
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "validation_failed") fatalError(e.message, EXIT.VALIDATION);

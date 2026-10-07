@@ -3,7 +3,7 @@
  *
  * WHY these tests matter for contributors:
  * The Card component is the visual container for nearly every data item in
- * Hisaabo: invoice summary cards, party rows, dashboard metric tiles, and
+ * Rohadas: invoice summary cards, party rows, dashboard metric tiles, and
  * payment records. It establishes the visual language of the app —
  * dark surface background, rounded corners, and a subtle border that
  * separates content from the dark app background.
@@ -12,7 +12,7 @@
  * load-bearing for the design system:
  *   - `backgroundColor: colors.surface` — differentiates the card from the
  *     page background (dark: #141417 → #1a1a1f; light: #ffffff → #f8f9fa)
- *   - `borderRadius: 16` — the signature rounded corner of the Hisaabo design
+ *   - `borderRadius: 16` — the signature rounded corner of the Rohadas design
  *   - `borderWidth: 1` + `borderColor: colors.border` — subtle definition
  *   - `padding: 16` — consistent content spacing
  *
@@ -96,7 +96,7 @@ describe("Card — surface container for invoice, party, and dashboard data", ()
   // -------------------------------------------------------------------------
   it("applies borderRadius: 16 for the signature rounded corners", () => {
     // WHAT: The Card's rounded corners (16pt radius) are the signature visual
-    //       element of the Hisaabo design system.
+    //       element of the Rohadas design system.
     // WHY: If borderRadius is changed or removed, every card in the app
     //      becomes a square — a significant visual regression that would
     //      require a designer review to catch and reverse.

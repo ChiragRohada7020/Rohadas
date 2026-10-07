@@ -100,6 +100,72 @@ export interface InvoicePDFData {
 
 export type PDFFormat = "a5" | "a4" | "thermal";
 
+// ── Invoice templates ──────────────────────────────────────────
+//
+// A template is a GST-compliant visual theme for the A4 / A5 invoice. The
+// layout and every mandatory GST field (GSTIN, HSN, CGST/SGST/IGST split,
+// place of supply, amount in words, signature) are identical across
+// templates — only the palette, the title-banner treatment and the page
+// border differ. The business picks one in Settings; it is applied to every
+// generated PDF (download and WhatsApp send).
+export type InvoiceTemplate = "classic" | "modern" | "minimal" | "bold";
+
+export interface InvoiceTemplateTheme {
+  primary: string;
+  secondary: string;
+  muted: string;
+  light: string;
+  accent: string;
+  accentBg: string;
+  border: string;
+  bg: string;
+  headerBg: string;
+  /** A4 title banner treatment. */
+  bannerStyle: "filled" | "plain" | "underline";
+  /** Draw the A4 page outer border. */
+  outerBorder: boolean;
+  /**
+   * A4 structural layout:
+   *  - "standard": open layout — light section fills, no grid.
+   *  - "boxed": framed cards — a bordered invoice-details card and a fully
+   *    gridded items table (vertical separators).
+   */
+  layout: "standard" | "boxed";
+}
+
+export const INVOICE_TEMPLATES: InvoiceTemplate[] = ["classic", "modern", "minimal", "bold"];
+
+export const TEMPLATE_THEMES: Record<InvoiceTemplate, InvoiceTemplateTheme> = {
+  // Indigo · bordered · filled title band (the original layout).
+  classic: {
+    primary: "#111827", secondary: "#374151", muted: "#6b7280", light: "#9ca3af",
+    accent: "#4f46e5", accentBg: "#eef2ff", border: "#d1d5db", bg: "#f9fafb", headerBg: "#f3f4f6",
+    bannerStyle: "filled", outerBorder: true, layout: "standard",
+  },
+  // Teal · borderless · white title with a teal rule.
+  modern: {
+    primary: "#0f172a", secondary: "#334155", muted: "#64748b", light: "#94a3b8",
+    accent: "#0d9488", accentBg: "#ccfbf1", border: "#e2e8f0", bg: "#f8fafc", headerBg: "#f1f5f9",
+    bannerStyle: "plain", outerBorder: false, layout: "boxed",
+  },
+  // Mono · no fills · thin rules, black title with a hairline underline.
+  minimal: {
+    primary: "#111827", secondary: "#4b5563", muted: "#9ca3af", light: "#d1d5db",
+    accent: "#111827", accentBg: "#f3f4f6", border: "#e5e7eb", bg: "#ffffff", headerBg: "#ffffff",
+    bannerStyle: "underline", outerBorder: false, layout: "standard",
+  },
+  // Slate · high-contrast dark banner.
+  bold: {
+    primary: "#111827", secondary: "#374151", muted: "#6b7280", light: "#9ca3af",
+    accent: "#1e293b", accentBg: "#e2e8f0", border: "#94a3b8", bg: "#f8fafc", headerBg: "#e5e7eb",
+    bannerStyle: "filled", outerBorder: true, layout: "boxed",
+  },
+};
+
+export function resolveTemplateTheme(template?: string | null): InvoiceTemplateTheme {
+  return TEMPLATE_THEMES[(template as InvoiceTemplate) ?? "classic"] ?? TEMPLATE_THEMES.classic;
+}
+
 // ── Helpers ────────────────────────────────────────────────────
 
 function fmt(amount: string | number): string {
@@ -222,6 +288,21 @@ function hLine(
   doc.restore();
 }
 
+/** Draw a vertical rule — used for the "boxed" template's table grid. */
+function vLine(
+  doc: InstanceType<typeof PDFDocument>,
+  x: number,
+  y1: number,
+  y2: number,
+  color: string,
+  weight = 0.5
+) {
+  doc.save();
+  doc.strokeColor(color).lineWidth(weight)
+    .moveTo(x, y1).lineTo(x, y2).stroke();
+  doc.restore();
+}
+
 function filledRect(
   doc: InstanceType<typeof PDFDocument>,
   x: number,
@@ -286,35 +367,56 @@ function drawLogo(
 // ── A4 GST Invoice ─────────────────────────────────────────────
 // Full GST-compliant Tax Invoice layout for registered businesses
 
-function generateA4Invoice(doc: InstanceType<typeof PDFDocument>, data: InvoicePDFData) {
+function generateA4Invoice(
+  doc: InstanceType<typeof PDFDocument>,
+  data: InvoicePDFData,
+  theme: InvoiceTemplateTheme,
+) {
   const pageW = 595.28; // A4
   const pageH = 841.89;
   const margin = 36;
   const contentW = pageW - margin * 2;
   let y = margin;
 
-  // Design tokens
-  const cPrimary   = "#111827"; // near-black for headings/body
-  const cSecondary = "#374151"; // dark gray for content
-  const cMuted     = "#6b7280"; // mid gray for labels
-  const cLight     = "#9ca3af"; // light gray for fine print
-  const cAccent    = "#4f46e5"; // indigo accent
-  const cBorder    = "#d1d5db"; // light gray border
-  const cBg        = "#f9fafb"; // near-white background fill
-  const cHeaderBg  = "#f3f4f6"; // section header background
+  // Design tokens (template-driven)
+  const cPrimary   = theme.primary;   // near-black for headings/body
+  const cSecondary = theme.secondary; // dark gray for content
+  const cMuted     = theme.muted;     // mid gray for labels
+  const cLight     = theme.light;     // light gray for fine print
+  const cAccent    = theme.accent;    // template accent
+  const cBorder    = theme.border;    // border
+  const cBg        = theme.bg;        // near-white background fill
+  const cHeaderBg  = theme.headerBg;  // section header background
 
   const gstMode = isGstRegistered(data);
   const sameState = isSameState(data);
   const titleLabel = getInvoiceTitle(data);
 
-  // ── Page outer border ──────────────────────────────────────
-  borderedRect(doc, margin - 4, margin - 4, contentW + 8, pageH - margin * 2 + 8, cBorder, 0.75);
+  // ── Page outer border (template-dependent) ─────────────────
+  if (theme.outerBorder) {
+    borderedRect(doc, margin - 4, margin - 4, contentW + 8, pageH - margin * 2 + 8, cBorder, 0.75);
+  }
 
-  // ── Title banner ──────────────────────────────────────────
-  filledRect(doc, margin - 4, y - 4, contentW + 8, 28, cAccent);
-  doc.fontSize(13).fillColor("#ffffff").font("NotoSans-Bold")
-    .text(titleLabel, margin - 4, y + 4, { width: contentW + 8, align: "center" });
-  y += 32;
+  // ── Title banner (template-dependent) ──────────────────────
+  if (theme.bannerStyle === "filled") {
+    filledRect(doc, margin - 4, y - 4, contentW + 8, 28, cAccent);
+    doc.fontSize(13).fillColor("#ffffff").font("NotoSans-Bold")
+      .text(titleLabel, margin - 4, y + 4, { width: contentW + 8, align: "center" });
+    y += 32;
+  } else if (theme.bannerStyle === "plain") {
+    doc.fontSize(15).fillColor(cAccent).font("NotoSans-Bold")
+      .text(titleLabel, margin - 4, y, { width: contentW + 8, align: "center" });
+    y += 22;
+    hLine(doc, margin - 4, y, contentW + 8, cAccent, 1.5);
+    y += 10;
+  } else {
+    // "underline"
+    doc.fontSize(15).fillColor(cPrimary).font("NotoSans-Bold")
+      .text(titleLabel, margin - 4, y, { width: contentW + 8, align: "center" });
+    y += 22;
+    hLine(doc, margin - 4, y, contentW + 8, cBorder, 0.75);
+    y += 10;
+  }
 
   // ── Top section: Seller | Invoice Details ─────────────────
   const topSectionH = 120;
@@ -334,6 +436,14 @@ function generateA4Invoice(doc: InstanceType<typeof PDFDocument>, data: InvoiceP
 
   // Bottom border for the top section
   hLine(doc, margin - 4, y + topSectionH, contentW + 8, cBorder);
+
+  // "Boxed" layout: frame the invoice-details column and give its heading a
+  // filled strip so it reads like a labelled card rather than a plain column.
+  if (theme.layout === "boxed") {
+    borderedRect(doc, rightX, y, rightW + 4, topSectionH, cBorder, 0.75);
+    filledRect(doc, rightX, y, rightW + 4, 14, cHeaderBg);
+    hLine(doc, rightX, y + 14, rightW + 4, cBorder);
+  }
 
   // Left: Seller details
   let ly = y + 8;
@@ -524,6 +634,7 @@ function generateA4Invoice(doc: InstanceType<typeof PDFDocument>, data: InvoiceP
   const DESCW = COL_QTY - COL_DESC - 8;
 
   // Table header row
+  const tableTop = y;
   const tableHeaderH = 20;
   filledRect(doc, margin - 4, y, contentW + 8, tableHeaderH, cHeaderBg);
 
@@ -582,6 +693,15 @@ function generateA4Invoice(doc: InstanceType<typeof PDFDocument>, data: InvoiceP
   });
 
   hLine(doc, margin - 4, y, contentW + 8, cBorder, 0.75);
+
+  // "Boxed" layout: draw vertical column separators across the whole table so
+  // it reads as a bordered grid rather than open rows.
+  if (theme.layout === "boxed") {
+    const separators = [COL_IDX - 4];
+    if (showHsn) separators.push(COL_HSN - 6);
+    separators.push(COL_QTY - 6, COL_RATE - 6, COL_TAXPCT - 6, COL_TAXAMT - 6, margin + contentW + 4);
+    for (const sx of separators) vLine(doc, sx, tableTop, y, cBorder);
+  }
   y += 1;
 
   // ── GST Breakdown table (only for registered, when tax > 0) ──
@@ -838,22 +958,26 @@ function generateA4Invoice(doc: InstanceType<typeof PDFDocument>, data: InvoiceP
 // Clean, two-column design for A5 landscape (595.28 x 419.53 pt)
 // Sections flow top-to-bottom with clear visual hierarchy
 
-function generateA5Invoice(doc: InstanceType<typeof PDFDocument>, data: InvoicePDFData) {
+function generateA5Invoice(
+  doc: InstanceType<typeof PDFDocument>,
+  data: InvoicePDFData,
+  theme: InvoiceTemplateTheme,
+) {
   const pageW   = 595.28; // A5 landscape width
   const pageH   = 419.53; // A5 landscape height
   const margin  = 28;
   const contentW = pageW - margin * 2;
   let y = margin;
 
-  // Design tokens
-  const cPrimary   = "#111827";
-  const cSecondary = "#374151";
-  const cMuted     = "#6b7280";
-  const cLight     = "#9ca3af";
-  const cAccent    = "#5b5bd6"; // indigo
-  const cBorder    = "#e8e8f0";
-  const cBg        = "#f4f4f8"; // very light lavender-grey
-  const _cAccentBg = "#ededfb"; // lightest indigo wash
+  // Design tokens (template-driven)
+  const cPrimary   = theme.primary;
+  const cSecondary = theme.secondary;
+  const cMuted     = theme.muted;
+  const cLight     = theme.light;
+  const cAccent    = theme.accent;
+  const cBorder    = theme.border;
+  const cBg        = theme.bg;
+  const _cAccentBg = theme.accentBg;
 
   const gstMode  = isGstRegistered(data);
   const titleLabel = getInvoiceTitle(data);
@@ -1528,7 +1652,11 @@ function renderStatusStamp(
 
 // ── Public API ─────────────────────────────────────────────────
 
-export function generateInvoicePDF(data: InvoicePDFData, format: PDFFormat = "a5"): InstanceType<typeof PDFDocument> {
+export function generateInvoicePDF(
+  data: InvoicePDFData,
+  format: PDFFormat = "a5",
+  template: InvoiceTemplate = "classic",
+): InstanceType<typeof PDFDocument> {
   let docSize: string | number[];
   let docMargin: number;
 
@@ -1576,12 +1704,13 @@ export function generateInvoicePDF(data: InvoicePDFData, format: PDFFormat = "a5
   doc.registerFont("NotoSans", FONT_REGULAR);
   doc.registerFont("NotoSans-Bold", FONT_BOLD);
 
+  const theme = resolveTemplateTheme(template);
   if (format === "a4") {
-    generateA4Invoice(doc, data);
+    generateA4Invoice(doc, data, theme);
   } else if (format === "thermal") {
     generateThermalReceipt(doc, data);
   } else {
-    generateA5Invoice(doc, data);
+    generateA5Invoice(doc, data, theme);
   }
 
   // Add status stamp on A5 and thermal only — A4 is a formal GST document, no watermark

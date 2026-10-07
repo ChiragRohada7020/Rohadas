@@ -15,7 +15,7 @@ const FAQ_ITEMS: FAQItem[] = [
   // --- Universal ---
   {
     question: "How does authentication work?",
-    answer: "Hisaabo uses session-based auth. Call `auth.login` or `auth.register` to get a session. Web clients receive an HttpOnly `session_id` cookie (30-day expiry, SameSite=Lax) that's sent automatically. Mobile and server clients use the returned `sessionToken` as a Bearer token in the `Authorization` header. No JWTs — sessions are stored server-side and revokable instantly.",
+    answer: "Rohadas uses session-based auth. Call `auth.login` or `auth.register` to get a session. Web clients receive an HttpOnly `session_id` cookie (30-day expiry, SameSite=Lax) that's sent automatically. Mobile and server clients use the returned `sessionToken` as a Bearer token in the `Authorization` header. No JWTs — sessions are stored server-side and revokable instantly.",
     relatedGroups: ["auth"],
     personas: ["developer", "agent-builder"],
   },
@@ -99,7 +99,7 @@ const FAQ_ITEMS: FAQItem[] = [
   },
   {
     question: "How do I reconcile bank statements?",
-    answer: "1) Upload the CSV via `bankRecon.uploadCSV` — Hisaabo auto-detects the bank format (10 Indian banks supported). 2) Confirm column mapping via `bankRecon.confirmMapping`. 3) The system runs 4-tier auto-matching: exact (amount + date + ref), strong (amount + 2-day window), narration parse (UPI ID, cheque number), partial (amount only, 7-day window). 4) Review unmatched items and `confirmMatch`, `createExpense`, or `ignoreLine`.",
+    answer: "1) Upload the CSV via `bankRecon.uploadCSV` — Rohadas auto-detects the bank format (10 Indian banks supported). 2) Confirm column mapping via `bankRecon.confirmMapping`. 3) The system runs 4-tier auto-matching: exact (amount + date + ref), strong (amount + 2-day window), narration parse (UPI ID, cheque number), partial (amount only, 7-day window). 4) Review unmatched items and `confirmMatch`, `createExpense`, or `ignoreLine`.",
     relatedGroups: ["bank-recon"],
     personas: ["ca-accountant"],
   },
@@ -137,7 +137,7 @@ const FAQ_ITEMS: FAQItem[] = [
   },
   {
     question: "How do I manage my online store?",
-    answer: "Configure your storefront at `store.hisaabo.in/your-slug` via `store.updateSettings` (logo, colors, minimum order amount, shipping methods). Toggle which items appear in the store via `store.bulkToggleItems`. Set store-specific pricing via `store.updateItemStoreSettings`. Orders arrive with phone verification — confirm them via `store.confirmOrder`, which auto-creates the invoice.",
+    answer: "Configure your storefront at `store.rohadas.app/your-slug` via `store.updateSettings` (logo, colors, minimum order amount, shipping methods). Toggle which items appear in the store via `store.bulkToggleItems`. Set store-specific pricing via `store.updateItemStoreSettings`. Orders arrive with phone verification — confirm them via `store.confirmOrder`, which auto-creates the invoice.",
     relatedGroups: ["store"],
     personas: ["business-owner"],
   },
@@ -258,7 +258,7 @@ export function FAQSection() {
         </h2>
       </div>
       <p className="text-[13px] mb-5" style={{ color: "var(--text-tertiary)" }}>
-        Common questions about integrating with the Hisaabo API.
+        Common questions about integrating with the Rohadas API.
       </p>
 
       {/* Filter tabs */}

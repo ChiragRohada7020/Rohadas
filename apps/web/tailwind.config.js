@@ -95,6 +95,24 @@ export default {
           "80%": { opacity: "1", transform: "translateY(0)" },
           "100%": { opacity: "0", transform: "translateY(-2px)" },
         },
+        // POS: quick press feedback on an item tile when tapped.
+        "pos-tap": {
+          "0%": { transform: "scale(1)" },
+          "45%": { transform: "scale(0.94)" },
+          "100%": { transform: "scale(1)" },
+        },
+        // POS: a cart line slides in from the right when added.
+        "cart-add": {
+          from: { opacity: "0", transform: "translateX(14px)" },
+          to: { opacity: "1", transform: "translateX(0)" },
+        },
+        // POS: green ✓ confirmation that pops and fades over a tapped tile.
+        "check-pop": {
+          "0%": { opacity: "0", transform: "scale(0.5)" },
+          "35%": { opacity: "1", transform: "scale(1.15)" },
+          "70%": { opacity: "1", transform: "scale(1)" },
+          "100%": { opacity: "0", transform: "scale(1)" },
+        },
       },
       animation: {
         "slide-in": "slide-in-right 0.3s ease-out",
@@ -105,6 +123,9 @@ export default {
         "milestone-enter": "milestone-enter 0.35s ease-out both",
         "check-draw": "check-draw 0.4s ease-out both",
         "hint-lifecycle": "hint-lifecycle 3.5s ease-out forwards",
+        "pos-tap": "pos-tap 0.18s ease-out",
+        "cart-add": "cart-add 0.2s ease-out",
+        "check-pop": "check-pop 0.6s ease-out forwards",
       },
     },
   },

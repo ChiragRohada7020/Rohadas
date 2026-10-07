@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { getBusinessId } from "@/lib/trpc";
 import { formatCurrency, formatDate, downloadCSV, cn } from "@/lib/utils";
 import { apiUrl } from "@/lib/api-url";
+import { isDesktop } from "@/lib/isDesktop";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -17,6 +18,9 @@ import { LinkButton } from "@/components/ui/LinkButton";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { DocumentCreator } from "@/components/DocumentCreator";
 import { SearchInput } from "@/components/ui/SearchInput";
+import { FilterDropdown } from "@/components/ui/FilterDropdown";
+import { PartyCombobox } from "@/components/ui/PartyCombobox";
+import { ItemCombobox } from "@/components/ui/ItemCombobox";
 import { DateRangeBar } from "@/components/ui/DateRangeBar";
 import { toast } from "@/hooks/useToast";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -30,6 +34,7 @@ import { RecordPaymentPanel } from "@/components/RecordPaymentPanel";
 const invoicesSearchSchema = z.object({
   id: z.string().uuid().optional(),
   create: z.string().optional(),
+  type: z.enum(["sale", "purchase"]).optional(),
 });
 
 export const Route = createFileRoute("/invoices")({
@@ -169,6 +174,372 @@ function DownloadPDFButton({
                 {opt.label}
               </button>
             ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── WhatsApp Send Button ──────────────────────────────────────────
+
+// ── Share / WhatsApp icons ────────────────────────────────────────
+
+/** Official WhatsApp glyph (single-path, 24×24) — replaces the old doodle. */
+function WhatsAppIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+    </svg>
+  );
+}
+
+/** Share icon (share-nodes) for the share-options dropdown trigger. */
+function ShareIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+    </svg>
+  );
+}
+
+function WhatsAppSendButton({
+  invoiceId,
+  invoiceNumber,
+  partyPhone,
+  partyName,
+  onBack,
+}: {
+  invoiceId: string;
+  invoiceNumber: string;
+  partyPhone: string;
+  partyName: string;
+  onBack?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [phone, setPhone] = useState(partyPhone ?? "");
+  const [message, setMessage] = useState("");
+  const [whatsAppStatus, setWhatsAppStatus] = useState<"idle" | "checking" | "connected" | "disconnected" | "qr" | "console">("idle");
+  const [qrKey, setQrKey] = useState(0);
+  const sendInvoice = trpc.whatsApp.sendInvoice.useMutation();
+  const resetWhatsApp = trpc.whatsApp.reset.useMutation();
+
+  const defaultMessage = `Hello${partyName ? " " + partyName : ""}! Here is your invoice ${invoiceNumber} from Hisaabo.`;
+
+   async function checkWhatsAppStatus() {
+    setWhatsAppStatus("checking");
+    try {
+      const res = await fetch(apiUrl("/api/whatsapp/status"), {
+        credentials: isDesktop() ? "omit" : "include",
+      });
+      if (!res.ok) {
+        setWhatsAppStatus("disconnected");
+        return;
+      }
+      const data = await res.json();
+      if (data.connected) {
+        setWhatsAppStatus("connected");
+      } else if (data.qrAvailable) {
+        setWhatsAppStatus("qr");
+        setQrKey((k) => k + 1);
+      } else if (data.mode === "console") {
+        setWhatsAppStatus("console");
+      } else {
+        setWhatsAppStatus("disconnected");
+      }
+    } catch {
+      setWhatsAppStatus("disconnected");
+    }
+  }
+
+  useEffect(() => {
+    if (whatsAppStatus !== "qr") return;
+    const interval = setInterval(() => {
+      void checkWhatsAppStatus();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [whatsAppStatus]);
+
+  async function send() {
+    if (!phone.trim()) {
+      toast.error("Please enter a phone number");
+      return;
+    }
+    setLoading(true);
+    setOpen(false);
+    try {
+      await sendInvoice.mutateAsync({
+        invoiceId,
+        phoneNumber: phone,
+        message: message || defaultMessage,
+      });
+      toast.success(`Invoice ${invoiceNumber} sent to ${phone}`);
+    } catch (err: any) {
+      toast.error("Failed to send WhatsApp", err?.message ?? "Unknown error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function renderContent() {
+    if (whatsAppStatus === "checking") {
+      return (
+        <div className="p-4 text-center">
+          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+          <p className="text-xs text-text-tertiary">Checking WhatsApp connection…</p>
+        </div>
+      );
+    }
+
+    if (whatsAppStatus === "qr") {
+      return (
+        <div className="p-4 text-center">
+          <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide mb-3">Scan QR Code</p>
+          <img
+            key={qrKey}
+            src={`${apiUrl("/api/whatsapp/qr")}?_t=${Date.now()}`}
+            alt="WhatsApp QR code"
+            className="w-48 h-48 mx-auto rounded-lg border border-border-light bg-white"
+            onError={() => {
+              setTimeout(() => {
+                setWhatsAppStatus("checking");
+                void checkWhatsAppStatus();
+              }, 1000);
+            }}
+          />
+          <p className="text-xs text-text-tertiary mt-2">Open WhatsApp on your phone and scan the QR code</p>
+          <button
+            onClick={() => {
+              setWhatsAppStatus("checking");
+              void checkWhatsAppStatus();
+            }}
+            className="text-xs px-2.5 py-1.5 rounded-lg font-medium text-text-secondary hover:bg-surface-2 border border-border-light mt-3"
+          >
+            Refresh QR
+          </button>
+        </div>
+      );
+    }
+
+    if (whatsAppStatus === "connected") {
+      return (
+        <>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-text-tertiary mb-1">Phone Number</label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-border-light bg-surface-2 focus:ring-1 focus:ring-brand-500 focus:border-transparent outline-none"
+                placeholder="+91 98765 43210"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-text-tertiary mb-1">Message</label>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                rows={3}
+                className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-border-light bg-surface-2 focus:ring-1 focus:ring-brand-500 focus:border-transparent outline-none resize-none"
+                placeholder={defaultMessage}
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={() => setOpen(false)}
+              className="flex-1 text-xs px-2.5 py-1.5 rounded-lg font-medium text-text-secondary hover:bg-surface-2 border border-border-light transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={send}
+              disabled={loading || !phone}
+              className="flex-1 text-xs px-2.5 py-1.5 rounded-lg font-medium text-white bg-emerald-600 hover:bg-emerald-700 transition-colors disabled:opacity-50"
+            >
+              {loading ? "Sending…" : "Send"}
+            </button>
+          </div>
+        </>
+      );
+    }
+
+    if (whatsAppStatus === "console") {
+      return (
+        <div className="p-4 text-center">
+          <p className="text-xs text-text-tertiary mb-3">WhatsApp is in dev (console) mode</p>
+          <p className="text-xs text-text-tertiary mb-3">Set WHATSAPP_ENABLED=true in .env and restart to use QR code</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="p-4 text-center">
+        <p className="text-xs text-text-tertiary mb-3">Not connected to WhatsApp</p>
+        <button
+          onClick={async () => {
+            try {
+              await resetWhatsApp.mutateAsync();
+            } catch {}
+            setWhatsAppStatus("checking");
+            void checkWhatsAppStatus();
+          }}
+          className="text-xs px-2.5 py-1.5 rounded-lg font-medium text-white bg-emerald-600 hover:bg-emerald-700 transition-colors"
+        >
+          Reset &amp; Connect
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative inline-flex">
+      <button
+        onClick={() => {
+          if (!open) {
+            setPhone(partyPhone ?? "");
+            setMessage(defaultMessage);
+            setOpen(true);
+            setWhatsAppStatus("checking");
+            void checkWhatsAppStatus();
+          }
+        }}
+        disabled={loading}
+        title="Send via WhatsApp"
+        className="p-1.5 rounded-lg text-text-tertiary hover:text-emerald-600 hover:bg-emerald-600/[0.08] transition-colors disabled:opacity-50"
+      >
+        {loading ? (
+          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+        ) : (
+          <WhatsAppIcon className="w-4 h-4" />
+        )}
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm" onClick={() => !loading && setOpen(false)} />
+          <div className="fixed top-1/2 left-1/2 z-50 -translate-x-1/2 -translate-y-1/2 w-80 max-h-[90vh] overflow-y-auto rounded-xl border border-border-light bg-surface-1 shadow-xl">
+            <div className="p-4 border-b border-border-light flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {onBack && (
+                  <button
+                    onClick={() => !loading && onBack()}
+                    className="p-0.5 rounded-lg text-text-tertiary hover:text-text-secondary hover:bg-surface-2 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                )}
+                <h3 className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Send via WhatsApp</h3>
+              </div>
+              <button
+                onClick={() => !loading && setOpen(false)}
+                className="p-1 rounded-lg text-text-tertiary hover:text-text-secondary hover:bg-surface-2 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4">
+              {renderContent()}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Share Button (WhatsApp + Email/Download) ──────────────────────
+
+function ShareButton({
+  invoiceId,
+  invoiceNumber,
+  invoiceStatus,
+  partyPhone,
+  partyName,
+  partyEmail,
+  onShared,
+}: {
+  invoiceId: string;
+  invoiceNumber: string;
+  invoiceStatus: string;
+  partyPhone: string;
+  partyName: string;
+  partyEmail?: string;
+  onShared?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [activeShare, setActiveShare] = useState<"whatsapp" | "email" | null>(null);
+
+  // Open the user's mail client with the invoice reference prefilled. The
+  // recipient is the party's email when we have it; otherwise the mail client
+  // opens blank for the user to fill in.
+  function openEmail() {
+    const to = (partyEmail ?? "").trim();
+    const subject = `Invoice ${invoiceNumber}`;
+    const body = `Hi${partyName ? " " + partyName : ""},\n\nPlease find invoice ${invoiceNumber} attached.\n\nThank you.`;
+    window.location.href = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    if (invoiceStatus === "draft") onShared?.();
+  }
+
+  if (activeShare === "whatsapp") {
+    return (
+      <WhatsAppSendButton
+        invoiceId={invoiceId}
+        invoiceNumber={invoiceNumber}
+        partyPhone={partyPhone}
+        partyName={partyName}
+        onBack={() => setActiveShare(null)}
+      />
+    );
+  }
+
+  return (
+    <div className="relative inline-flex">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setActiveShare(null);
+          setOpen((v) => !v);
+        }}
+        title="Share invoice"
+        className="p-1.5 rounded-lg text-text-tertiary hover:text-brand-600 hover:bg-brand-600/[0.08] transition-colors"
+      >
+        <ShareIcon className="w-4 h-4" />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full mt-1 z-20 min-w-[140px] rounded-lg border border-border-light bg-surface-1 shadow-lg py-1">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveShare("whatsapp");
+                setOpen(false);
+              }}
+              className="w-full text-left text-xs px-3 py-2 text-text-primary hover:bg-surface-2 transition-colors flex items-center gap-2"
+            >
+              <WhatsAppIcon className="w-4 h-4 text-emerald-600" />
+              WhatsApp
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpen(false);
+                openEmail();
+              }}
+              className="w-full text-left text-xs px-3 py-2 text-text-primary hover:bg-surface-2 transition-colors flex items-center gap-2"
+            >
+              <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+              </svg>
+              Email
+            </button>
           </div>
         </>
       )}
@@ -594,12 +965,21 @@ function InvoiceDetailPanel({
               )}
             </div>
             <div className="flex gap-2">
-              <DownloadPDFButton
-                invoiceId={invoice.id}
-                invoiceNumber={invoice.invoiceNumber}
-                invoiceStatus={invoice.status}
-                onShared={() => onStatusChange(invoice.id, "sent")}
-              />
+               <DownloadPDFButton
+                 invoiceId={invoice.id}
+                 invoiceNumber={invoice.invoiceNumber}
+                 invoiceStatus={invoice.status}
+                 onShared={() => onStatusChange(invoice.id, "sent")}
+               />
+               <ShareButton
+                 invoiceId={invoice.id}
+                 invoiceNumber={invoice.invoiceNumber}
+                 invoiceStatus={invoice.status}
+                 partyPhone={invoice.party?.phone ?? ""}
+                 partyName={invoice.party?.name ?? ""}
+                 partyEmail={invoice.party?.email ?? ""}
+                 onShared={() => onStatusChange(invoice.id, "sent")}
+               />
               {canRecordPayment && (
                 <button
                   onClick={() =>
@@ -865,16 +1245,17 @@ function InvoicesPage() {
   const [type, setType] = useState<"sale" | "purchase">("sale");
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
+  const [source, setSource] = useState<string>("");
+  const [balanceMin, setBalanceMin] = useState<string>("");
+  const [balanceMax, setBalanceMax] = useState<string>("");
+  const [partyId, setPartyId] = useState<string>("");
+  const [itemId, setItemId] = useState<string>("");
   const [sortBy, setSortBy] = useState<"date" | "amount" | "number">("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
   const [showCreate, setShowCreate] = useState(false);
-  // Show the "Switch to POS" entry button when the active business has POS
-  // mode enabled. Sourced via the existing business.list query that powers
-  // the PDF-download button — no extra network hit.
   const { data: bizRows } = trpc.business.list.useQuery();
   const posEnabled = !!bizRows?.find((b) => b.id === getBusinessId())?.posEnabled;
-  // Tracks the partyId of the last-created invoice so "Create another" can pre-fill it
   const [lastCreatedPartyId, setLastCreatedPartyId] = useState<string | undefined>(undefined);
   const deleteConfirm = useDeleteConfirmation();
   const [paymentPanel, setPaymentPanel] = useState<PaymentPanelState | null>(null);
@@ -885,11 +1266,10 @@ function InvoicesPage() {
   const [exporting, setExporting] = useState(false);
   const dateRange = useDateRange("invoices", "this-month");
 
+  const debouncedSearch = useDebounce(search, 300);
+
   // Open the invoice detail panel when navigated here with ?id=<invoiceId>
-  // or open the create slider when navigated here with ?create=1 (used by
-  // the Dashboard "+ New Invoice" CTA so users land directly in the form
-  // rather than just on the list).
-  const { id: idFromSearch, create: createFromSearch } = useSearch({ from: "/invoices" });
+  const { id: idFromSearch, create: createFromSearch, type: typeFromSearch } = useSearch({ from: "/invoices" });
   useEffect(() => {
     if (idFromSearch) {
       setSelectedInvoiceId(idFromSearch);
@@ -900,8 +1280,11 @@ function InvoicesPage() {
       setShowCreate(true);
     }
   }, [createFromSearch]);
-
-  const debouncedSearch = useDebounce(search, 300);
+  useEffect(() => {
+    if (typeFromSearch) {
+      setType(typeFromSearch);
+    }
+  }, [typeFromSearch]);
 
   // Keyboard shortcut: N to create new invoice
   useHotkeys([
@@ -909,7 +1292,7 @@ function InvoicesPage() {
   ]);
 
   // Reset to page 1 whenever filters or sort change
-  useEffect(() => { setPage(1); }, [type, status, debouncedSearch, dateRange.fromDate, dateRange.toDate, sortBy, sortDir]);
+  useEffect(() => { setPage(1); }, [type, status, debouncedSearch, dateRange.fromDate, dateRange.toDate, sortBy, sortDir, source, balanceMin, balanceMax, partyId, itemId]);
 
   const loadMore = useCallback(() => setPage((p) => p + 1), []);
 
@@ -917,6 +1300,11 @@ function InvoicesPage() {
     type,
     status: (status || undefined) as any,
     search: debouncedSearch || undefined,
+    source: (source || undefined) as string | undefined,
+    balanceMin: balanceMin ? parseFloat(balanceMin) : undefined,
+    balanceMax: balanceMax ? parseFloat(balanceMax) : undefined,
+    partyId: partyId || undefined,
+    itemId: itemId || undefined,
     fromDate: dateRange.fromDate,
     toDate: dateRange.toDate,
     sortBy,
@@ -924,8 +1312,6 @@ function InvoicesPage() {
     page,
     limit: PAGE_SIZE,
   }, {
-    // Keep previous page data visible while next page loads —
-    // prevents flash-to-empty that causes scroll position to reset.
     placeholderData: (prev) => prev,
   });
 
@@ -936,7 +1322,7 @@ function InvoicesPage() {
     page,
     isFetching,
     onLoadMore: loadMore,
-    resetDeps: [type, status, debouncedSearch, dateRange.fromDate, dateRange.toDate, sortBy, sortDir],
+    resetDeps: [type, status, debouncedSearch, dateRange.fromDate, dateRange.toDate, sortBy, sortDir, source, balanceMin, balanceMax, partyId, itemId],
   });
 
   const utils = trpc.useUtils();
@@ -985,6 +1371,11 @@ function InvoicesPage() {
           type,
           status: (status || undefined) as any,
           search: debouncedSearch || undefined,
+          source: (source || undefined) as string | undefined,
+          balanceMin: balanceMin ? parseFloat(balanceMin) : undefined,
+          balanceMax: balanceMax ? parseFloat(balanceMax) : undefined,
+          partyId: partyId || undefined,
+          itemId: itemId || undefined,
           fromDate: dateRange.fromDate,
           toDate: dateRange.toDate,
           page: pg,
@@ -1025,7 +1416,7 @@ function InvoicesPage() {
                 className="btn-secondary inline-flex items-center gap-2"
                 title="Open the fullscreen cashier register in this tab"
               >
-                <span aria-hidden="true">⚡</span>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 15.75V18m-7.5-6.75h.008v.008H8.25v-.008zm0 2.25h.008v.008H8.25V13.5zm0 2.25h.008v.008H8.25v-.008zm0 2.25h.008v.008H8.25V18zm2.498-6.75h.007v.008h-.007v-.008zm0 2.25h.007v.008h-.007V13.5zm0 2.25h.007v.008h-.007v-.008zm0 2.25h.007v.008h-.007V18zm2.504-6.75h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V13.5zm0 2.25h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V18zm2.498-6.75h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V13.5zM8.25 6h7.5v2.25h-7.5V6zM12 2.25c-1.892 0-3.758.11-5.593.322C5.307 2.7 4.5 3.65 4.5 4.757V19.5a2.25 2.25 0 002.25 2.25h10.5a2.25 2.25 0 002.25-2.25V4.757c0-1.108-.806-2.057-1.907-2.185A48.507 48.507 0 0012 2.25z" /></svg>
                 Switch to POS
               </a>
             )}
@@ -1053,6 +1444,62 @@ function InvoicesPage() {
           value={type}
           onChange={(v) => setType(v as "sale" | "purchase")}
         />
+        <FilterDropdown label="More filters">
+          <div>
+            <label className="label text-[11px] mb-1">Source</label>
+            <select
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+              className="input text-xs"
+            >
+              <option value="">All Sources</option>
+              <option value="manual">Manual</option>
+              <option value="pos">POS</option>
+              <option value="online_store">Store</option>
+              <option value="webhook">API</option>
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="label text-[11px] mb-1">Balance min</label>
+              <input
+                type="number"
+                value={balanceMin}
+                onChange={(e) => setBalanceMin(e.target.value)}
+                placeholder="0"
+                min="0"
+                step="0.01"
+                className="input text-xs tabular-nums"
+              />
+            </div>
+            <div>
+              <label className="label text-[11px] mb-1">Balance max</label>
+              <input
+                type="number"
+                value={balanceMax}
+                onChange={(e) => setBalanceMax(e.target.value)}
+                placeholder="∞"
+                min="0"
+                step="0.01"
+                className="input text-xs tabular-nums"
+              />
+            </div>
+          </div>
+          <div className="space-y-3">
+            <PartyCombobox
+              value={partyId}
+              onChange={setPartyId}
+              label="Party"
+              placeholder="Search parties..."
+            />
+            <ItemCombobox
+              value={itemId}
+              onChange={setItemId}
+              label="Item"
+              placeholder="Search items..."
+            />
+          </div>
+        </FilterDropdown>
         <div className="ml-auto">
           <PillTabs
             tabs={statusTabs}
@@ -1095,7 +1542,7 @@ function InvoicesPage() {
           }
           title="No invoices found"
           description={`No ${type === "sale" ? "sales" : "purchase"} invoices${status ? ` with status "${status}"` : ""}.`}
-          encouragement={!search && !status ? "Create your first invoice — it only takes a minute." : undefined}
+          encouragement={!search && !status && !source && !balanceMin && !balanceMax && !partyId && !itemId ? "Create your first invoice — it only takes a minute." : undefined}
           action={
             <button
               className="btn-primary"
@@ -1173,30 +1620,41 @@ function InvoicesPage() {
                       </td>
                       <td onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-0.5">
-                          {/* PDF buttons — always visible, LEFT aligned */}
-                          <DownloadPDFButton
-                            invoiceId={inv.id}
-                            invoiceNumber={inv.invoiceNumber}
-                            invoiceStatus={inv.status}
-                            onShared={() =>
-                              updateStatus.mutate({ id: inv.id, status: "sent" })
-                            }
-                          />
+                          {/* Send, then Document, then Share */}
+                          {(inv.status === "draft" || inv.status === "unfulfilled") && (
+                            <button
+                              onClick={() =>
+                                updateStatus.mutate({ id: inv.id, status: "sent" })
+                              }
+                              title={inv.status === "unfulfilled" ? "Mark fulfilled" : "Mark as sent"}
+                              className="p-1.5 rounded-lg text-orange-500 hover:text-orange-600 hover:bg-orange-500/10 transition-colors"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                              </svg>
+                            </button>
+                          )}
+                           <DownloadPDFButton
+                             invoiceId={inv.id}
+                             invoiceNumber={inv.invoiceNumber}
+                             invoiceStatus={inv.status}
+                             onShared={() =>
+                               updateStatus.mutate({ id: inv.id, status: "sent" })
+                             }
+                           />
+                           <ShareButton
+                             invoiceId={inv.id}
+                             invoiceNumber={inv.invoiceNumber}
+                             invoiceStatus={inv.status}
+                             partyPhone=""
+                             partyName=""
+                             partyEmail=""
+                             onShared={() =>
+                               updateStatus.mutate({ id: inv.id, status: "sent" })
+                             }
+                           />
                           {/* Context actions — always visible at reduced opacity, full on hover */}
                           <div className="flex items-center gap-0.5 opacity-70 group-hover:opacity-100 transition-opacity">
-                            {(inv.status === "draft" || inv.status === "unfulfilled") && (
-                              <button
-                                onClick={() =>
-                                  updateStatus.mutate({ id: inv.id, status: "sent" })
-                                }
-                                title={inv.status === "unfulfilled" ? "Mark fulfilled" : "Mark as sent"}
-                                className="p-1.5 rounded-lg text-text-tertiary hover:text-text-secondary hover:bg-surface-2 transition-colors"
-                              >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-                                </svg>
-                              </button>
-                            )}
                             {inv.status !== "draft" &&
                               inv.status !== "cancelled" &&
                               inv.status !== "paid" &&

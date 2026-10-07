@@ -107,6 +107,12 @@ export const queryClient = new QueryClient({
         // Don't retry UNAUTHORIZED — session is gone
         const trpcError = error as { data?: { code?: string } };
         if (trpcError?.data?.code === "UNAUTHORIZED") return false;
+        // Don't retry TOO_MANY_REQUESTS either. The server tells the client to
+        // wait (Retry-After: 60), so an immediate retry is guaranteed to fail
+        // again and only burns more of the same budget. Retrying here is what
+        // made a rate-limited report look permanently "stuck loading" instead of
+        // showing an honest message the user can act on.
+        if (trpcError?.data?.code === "TOO_MANY_REQUESTS") return false;
         return failureCount < 1;
       },
       refetchOnWindowFocus: false,

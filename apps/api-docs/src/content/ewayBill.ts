@@ -51,7 +51,7 @@ export const ewayBillEndpoints: EndpointGroup = {
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/ewayBill.generate \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/ewayBill.generate \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -70,7 +70,7 @@ console.log("Valid until:", ewb.validUpto);`,
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/ewayBill.generate",
+    "https://api.rohadas.app/api/trpc/ewayBill.generate",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -122,7 +122,7 @@ print("EWB:", ewb["ewbNumber"], "Valid:", ewb["validUpto"])`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/ewayBill.cancel \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/ewayBill.cancel \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -135,7 +135,7 @@ console.log("EWB cancelled:", result.status);`,
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/ewayBill.cancel",
+    "https://api.rohadas.app/api/trpc/ewayBill.cancel",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -183,7 +183,7 @@ print("Status:", result["status"])`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/ewayBill.updateVehicle \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/ewayBill.updateVehicle \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -198,7 +198,7 @@ console.log("New vehicle:", updated.vehicleNumber);`,
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/ewayBill.updateVehicle",
+    "https://api.rohadas.app/api/trpc/ewayBill.updateVehicle",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -248,7 +248,7 @@ print("Updated vehicle:", updated["vehicleNumber"])`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/ewayBill.extend \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/ewayBill.extend \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -264,7 +264,7 @@ console.log("Extended validity:", extended.validUpto);`,
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/ewayBill.extend",
+    "https://api.rohadas.app/api/trpc/ewayBill.extend",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -325,7 +325,7 @@ print("New expiry:", extended["validUpto"])`,
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/ewayBill.getByInvoice?input=%7B%22json%22%3A%7B%22invoiceId%22%3A%22inv-uuid%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/ewayBill.getByInvoice?input=%7B%22json%22%3A%7B%22invoiceId%22%3A%22inv-uuid%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const ewb = await trpc.ewayBill.getByInvoice.query({
@@ -340,7 +340,7 @@ if (ewb) {
         python: `import httpx
 
 resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/ewayBill.getByInvoice",
+    "https://api.rohadas.app/api/trpc/ewayBill.getByInvoice",
     params={"input": '{"json":{"invoiceId":"inv-uuid"}}'},
     headers={
         "Authorization": f"Bearer {session_token}",
@@ -404,7 +404,7 @@ if ewb:
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/ewayBill.dashboard?input=%7B%22json%22%3A%7B%22status%22%3A%22active%22%2C%22page%22%3A1%2C%22limit%22%3A10%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/ewayBill.dashboard?input=%7B%22json%22%3A%7B%22status%22%3A%22active%22%2C%22page%22%3A1%2C%22limit%22%3A10%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const dashboard = await trpc.ewayBill.dashboard.query({
@@ -419,7 +419,7 @@ for (const ewb of dashboard.data) {
         python: `import httpx
 
 resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/ewayBill.dashboard",
+    "https://api.rohadas.app/api/trpc/ewayBill.dashboard",
     params={"input": '{"json":{"status":"active","page":1,"limit":10}}'},
     headers={
         "Authorization": f"Bearer {session_token}",
@@ -480,7 +480,7 @@ for ewb in data["data"]:
         ],
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/ewayBill.expiringList" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/ewayBill.expiringList" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const expiring = await trpc.ewayBill.expiringList.query();
@@ -495,7 +495,7 @@ if (expiring.length > 0) {
 from datetime import datetime, timezone
 
 resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/ewayBill.expiringList",
+    "https://api.rohadas.app/api/trpc/ewayBill.expiringList",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,

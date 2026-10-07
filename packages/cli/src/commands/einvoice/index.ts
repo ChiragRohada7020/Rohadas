@@ -1,9 +1,9 @@
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, EXIT } from "../../output.js";
 
 function handleError(e: unknown): never {
-  if (e instanceof HisaaboApiError) {
+  if (e instanceof RohadasApiError) {
     const err = e.hisaaboError;
     if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
     if (err.code === "network_error") fatalError(err.message, EXIT.NETWORK);
@@ -13,7 +13,7 @@ function handleError(e: unknown): never {
 
 export async function eInvoiceDashboardCommand(opts: { json?: boolean; from?: string; to?: string }): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const result = await client.eInvoice.dashboard({ fromDate: opts.from, toDate: opts.to });
@@ -45,7 +45,7 @@ export async function eInvoiceDashboardCommand(opts: { json?: boolean; from?: st
 
 export async function eInvoiceGenerateCommand(invoiceId: string, opts: { json?: boolean }): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const result = await client.eInvoice.generate({ invoiceId });
@@ -70,7 +70,7 @@ export async function eInvoiceGenerateCommand(invoiceId: string, opts: { json?: 
 
 export async function eInvoiceCancelCommand(invoiceId: string, opts: { json?: boolean; reason?: string }): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const result = await client.eInvoice.cancel({ invoiceId, cancelReason: opts.reason ?? "1" });
@@ -89,7 +89,7 @@ export async function eInvoiceCancelCommand(invoiceId: string, opts: { json?: bo
 
 export async function eInvoiceRetryCommand(invoiceId: string, opts: { json?: boolean }): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const result = await client.eInvoice.retryFailed({ invoiceId });

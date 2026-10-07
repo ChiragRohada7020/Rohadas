@@ -94,7 +94,7 @@ function InviteAcceptPage() {
         <div className="flex items-center justify-center gap-2.5 mb-8">
           <Logo className="w-9 h-9" />
           <span className="font-semibold text-lg tracking-tight text-text-primary">
-            Hisaabo
+            Rohadas
           </span>
         </div>
 

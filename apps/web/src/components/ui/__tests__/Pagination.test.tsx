@@ -1,7 +1,7 @@
 /**
  * Pagination — prev/next navigation bar for paginated lists
  *
- * Pagination appears at the bottom of every paginated list in Hisaabo —
+ * Pagination appears at the bottom of every paginated list in Rohadas —
  * invoices, parties, items, expenses.  Correctness here directly impacts
  * usability: a disabled Prev button on page 1 prevents navigating to a
  * non-existent page 0; a disabled Next on the last page prevents an empty

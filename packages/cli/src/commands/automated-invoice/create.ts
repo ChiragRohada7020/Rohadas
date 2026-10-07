@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, EXIT, success } from "../../output.js";
 
@@ -22,7 +22,7 @@ interface CreateOpts {
 
 export async function automatedInvoiceCreateCommand(opts: CreateOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   if (!opts.partyId) fatalError("--party-id is required", EXIT.USAGE);
   if (!opts.name) fatalError("--name is required", EXIT.USAGE);
@@ -74,7 +74,7 @@ export async function automatedInvoiceCreateCommand(opts: CreateOpts): Promise<v
     success(`Created recurring invoice template: ${result.name} (${result.id})`);
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "validation_failed") fatalError(e.message, EXIT.VALIDATION);

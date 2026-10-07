@@ -1,7 +1,7 @@
 /**
  * Disclosure — collapsible section with accessible trigger
  *
- * Disclosure is used in Hisaabo's filter panels, invoice detail sidebars,
+ * Disclosure is used in Rohadas's filter panels, invoice detail sidebars,
  * and settings forms to group related fields under a togglable heading.
  * Users need to be able to collapse sections they don't need, reducing
  * cognitive load when working with dense forms.

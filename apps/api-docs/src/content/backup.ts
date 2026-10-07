@@ -16,7 +16,7 @@ export const backupEndpoints: EndpointGroup = {
         { name: "tenantId", type: "string (UUID)", required: true, description: "The tenant to export. Caller must be an owner of this tenant." },
       ],
       output: {
-        description: "A signed download token and a relative URL. Resolve the URL against your API base (e.g. https://api.hisaabo.in) before downloading.",
+        description: "A signed download token and a relative URL. Resolve the URL against your API base (e.g. https://api.rohadas.app) before downloading.",
         example: {
           token: "eyJhbGciOiJIUzI1NiIs...",
           url: "/api/export/550e8400-e29b-41d4-a716-446655440000?token=eyJhbGci...",
@@ -25,20 +25,20 @@ export const backupEndpoints: EndpointGroup = {
       },
       codeExamples: {
         curl: `# Step 1: Get the export token
-curl -X POST https://api.hisaabo.in/api/trpc/selfExport.request \\
+curl -X POST https://api.rohadas.app/api/trpc/selfExport.request \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -d '{"json":{"tenantId":"550e8400-e29b-41d4-a716-446655440000"}}'
 
 # Step 2: Download the backup (URL is relative — prefix with API base)
-curl -o backup.tar.gz "https://api.hisaabo.in\${RETURNED_URL}"`,
+curl -o backup.tar.gz "https://api.rohadas.app\${RETURNED_URL}"`,
         javascript: `// Step 1: Request token
 const { url } = await trpc.selfExport.request.mutate({
   tenantId: "550e8400-e29b-41d4-a716-446655440000",
 });
 
 // Step 2: Download the backup. The URL is relative — resolve against your API base.
-const response = await fetch(\`https://api.hisaabo.in\${url}\`);
+const response = await fetch(\`https://api.rohadas.app\${url}\`);
 const blob = await response.blob();
 // Save blob to file...`,
       },
@@ -70,13 +70,13 @@ const blob = await response.blob();
       },
       codeExamples: {
         curl: `# Step 1: Get the import token
-curl -X POST https://api.hisaabo.in/api/trpc/selfImport.request \\
+curl -X POST https://api.rohadas.app/api/trpc/selfImport.request \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -d '{"json":{"tenantId":"550e8400-e29b-41d4-a716-446655440000"}}'
 
 # Step 2: Upload the backup archive
-curl -X POST "https://api.hisaabo.in/api/selfImport/TENANT_ID?token=RETURNED_TOKEN" \\
+curl -X POST "https://api.rohadas.app/api/selfImport/TENANT_ID?token=RETURNED_TOKEN" \\
   -H "Content-Type: application/gzip" \\
   --data-binary @backup.tar.gz`,
         javascript: `// Step 1: Request token

@@ -69,6 +69,14 @@ vi.mock("@/lib/trpc", () => ({
                 type: "customer",
                 creditPeriodDays: 7,
               },
+              // A supplier, so purchase-side tests can select a party — the
+              // party combobox is labelled by party type (Supplier vs Customer).
+              {
+                id: "party-2",
+                name: "Northwind Suppliers",
+                type: "supplier",
+                creditPeriodDays: 0,
+              },
             ],
           },
           isFetching: false,
@@ -115,6 +123,32 @@ vi.mock("@/lib/trpc", () => ({
                 unitVariants: [
                   { unit: "packet", conversionFactor: 0.2, salePrice: "20" },
                 ],
+              },
+              // ── Lot-tracked fixtures ──────────────────────────────
+              // Present so the conditional lot row can be exercised: an
+              // untracked item must render NOTHING extra, while a tracked
+              // one must reveal the inputs its mode actually needs.
+              {
+                id: "item-4",
+                name: "Sunflower Oil",
+                salePrice: "140",
+                purchasePrice: "120",
+                taxPercent: "5",
+                itemMode: "standard",
+                unit: "bottle",
+                unitVariants: [],
+                trackingMode: "expiry",
+              },
+              {
+                id: "item-5",
+                name: "Circuit Board",
+                salePrice: "2400",
+                purchasePrice: "1900",
+                taxPercent: "18",
+                itemMode: "standard",
+                unit: "pcs",
+                unitVariants: [],
+                trackingMode: "serial",
               },
             ],
           },
@@ -169,6 +203,21 @@ vi.mock("@/lib/trpc", () => ({
     dashboard: {
       summary: { invalidate: invalidateStub },
       shippingSummary: { invalidate: invalidateStub },
+    },
+    // Inventory namespace used by DocumentCreator's document-level godown
+    // selector (and the serial LotPicker for serial-tracked items).
+    inventory: {
+      list: {
+        useQuery: () => ({
+          data: [
+            { id: "godown-main", name: "Main Godown", isPrimary: true },
+            { id: "godown-shop", name: "Shop Counter", isPrimary: false },
+          ],
+        }),
+      },
+      listLots: {
+        useQuery: () => ({ data: [], isFetching: false }),
+      },
     },
     useUtils: () => ({
       invoice: {
@@ -226,12 +275,47 @@ async function pickParty(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByText("Ramesh Traders"));
 }
 
+/** Pick the supplier from the combobox — purchase-side forms label it "Supplier". */
+async function pickSupplier(user: ReturnType<typeof userEvent.setup>) {
+  const partyCombobox = screen.getByRole("combobox", { name: /supplier/i });
+  await user.click(partyCombobox);
+  await user.click(screen.getByText("Northwind Suppliers"));
+}
+
 /** Pick "Steel Rod" (item-1) from the product combobox. */
 async function pickSteelRod(user: ReturnType<typeof userEvent.setup>) {
   const combobox = screen.getByPlaceholderText("Select product or custom item");
   await user.click(combobox);
   const option = await screen.findByRole("option", { name: /steel rod/i });
   await user.click(option);
+}
+
+/**
+ * Pick any product by name. `lineIndex` selects which line's combobox to open —
+ * defaulting to the first, which covers most tests, while multi-line tests need
+ * to reach a specific row. Empty lines are dropped from the submit payload, so
+ * a second line has to be given a product before it counts.
+ */
+async function pickProduct(
+  user: ReturnType<typeof userEvent.setup>,
+  name: RegExp,
+  lineIndex = 0
+) {
+  const comboboxes = screen.getAllByPlaceholderText(
+    "Select product or custom item"
+  );
+  await user.click(comboboxes[lineIndex]);
+  const option = await screen.findByRole("option", { name });
+  await user.click(option);
+}
+
+/**
+ * How many line rows expose the lot row (`data-testid="lot-fields-<id>"`).
+ * The row is conditional on the item's trackingMode, so 0 means "nothing
+ * rendered for untracked items" — which is the behaviour worth pinning.
+ */
+function lotRowCount() {
+  return document.querySelectorAll("[data-testid^='lot-fields-']").length;
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────
@@ -844,5 +928,184 @@ describe("DocumentCreator — T&C pre-fill from business default", () => {
     // Terms should remain empty — editData returns null (mocked), so setTerms
     // stays at "" and the hydration effect is blocked by prefillId guard.
     expect(termsTextarea.value).toBe("");
+  });
+});
+
+// ─── Stock location (godown) + per-line lot fields ─────────────────────────
+//
+// ERPNext puts Target/Source Warehouse on the document, not on each row —
+// one location is chosen up front and stamped onto every line. These tests
+// pin that shape, plus the conditional lot row that receipts use to declare
+// lot identity and sales use to consume it.
+
+describe("DocumentCreator — stock location & lot fields", () => {
+  beforeEach(() => {
+    invoiceCreateMutate.mockClear();
+    quotationCreateMutate.mockClear();
+    invalidateStub.mockClear();
+    vi.mocked(toast.error).mockClear();
+    vi.mocked(toast.success).mockClear();
+  });
+
+  describe("header godown selector — shown only where stock actually moves", () => {
+    it("labels a sale invoice 'Dispatch from'", () => {
+      renderCreator();
+      expect(screen.getByLabelText("Dispatch from")).toBeInTheDocument();
+    });
+
+    it("labels a purchase invoice 'Received in'", () => {
+      renderCreator({ invoiceType: "purchase" });
+      expect(screen.getByLabelText("Received in")).toBeInTheDocument();
+    });
+
+    it("is hidden on a quotation — no stock moves, so no location is offered", () => {
+      renderCreator({ documentType: "quotation" });
+      expect(screen.queryByLabelText("Dispatch from")).not.toBeInTheDocument();
+      expect(screen.queryByLabelText("Received in")).not.toBeInTheDocument();
+    });
+
+    it("offers the blank choice plus every location the business has", () => {
+      renderCreator();
+      const select = screen.getByLabelText("Dispatch from") as HTMLSelectElement;
+
+      // Blank is meaningful (FEFO everywhere), not a disabled placeholder.
+      expect(select.options[0].textContent).toMatch(
+        /Any godown \(earliest expiry first\)/
+      );
+      expect(select.options.length).toBe(3); // blank + 2 mock godowns
+      expect(screen.getByRole("option", { name: /Main Godown/ })).toBeInTheDocument();
+      expect(screen.getByRole("option", { name: /Shop Counter/ })).toBeInTheDocument();
+    });
+
+    it("explains what leaving it blank will do", () => {
+      renderCreator();
+      expect(
+        screen.getByText(/Leave as “Any godown” to sell from wherever stock is held\./)
+      ).toBeInTheDocument();
+    });
+  });
+
+  describe("godownId is stamped onto every line", () => {
+    it("copies the chosen location to all lines, not just the first", async () => {
+      renderCreator();
+      const user = userEvent.setup();
+
+      await pickParty(user);
+      await pickSteelRod(user);
+
+      // Add a second line so "every line" is actually testable. Every row
+      // carries its own remove button, which makes it a reliable row count.
+      await user.click(screen.getByRole("button", { name: /add line item/i }));
+      await waitFor(() =>
+        expect(screen.getAllByLabelText("Remove line").length).toBe(2)
+      );
+      // A line with no product is treated as unfinished and dropped from the
+      // payload, so give the new row an item before asserting on it.
+      await pickProduct(user, /cement bag/i, 1);
+
+      const select = screen.getByLabelText("Dispatch from") as HTMLSelectElement;
+      fireEvent.change(select, { target: { value: "godown-shop" } });
+
+      await user.click(screen.getByRole("button", { name: /create invoice/i }));
+      await waitFor(() => expect(invoiceCreateMutate).toHaveBeenCalledTimes(1));
+
+      const lines = invoiceCreateMutate.mock.calls[0][0].lineItems;
+      expect(lines.length).toBe(2);
+      for (const line of lines) {
+        expect(line.godownId).toBe("godown-shop");
+      }
+    });
+
+    it("omits godownId when left blank so the server applies its own default", async () => {
+      renderCreator();
+      const user = userEvent.setup();
+
+      await pickParty(user);
+      await pickSteelRod(user);
+      await user.click(screen.getByRole("button", { name: /create invoice/i }));
+
+      await waitFor(() => expect(invoiceCreateMutate).toHaveBeenCalledTimes(1));
+      const lines = invoiceCreateMutate.mock.calls[0][0].lineItems;
+      expect(lines[0].godownId).toBeUndefined();
+    });
+  });
+
+  describe("lot fields are conditional on the item's trackingMode", () => {
+    it("renders nothing for an untracked item", async () => {
+      renderCreator({ invoiceType: "purchase" });
+      const user = userEvent.setup();
+      await pickProduct(user, /steel rod/i);
+      expect(lotRowCount()).toBe(0);
+    });
+
+    it("receipt shows batch + expiry inputs for an expiry-tracked item", async () => {
+      renderCreator({ invoiceType: "purchase" });
+      const user = userEvent.setup();
+      await pickProduct(user, /sunflower oil/i);
+
+      expect(lotRowCount()).toBe(1);
+      expect(screen.getByLabelText("Batch number")).toBeInTheDocument();
+      expect(screen.getByLabelText("Expiry date")).toBeInTheDocument();
+      // Serial input belongs to serial-tracked items only.
+      expect(screen.queryByLabelText("Serial number")).not.toBeInTheDocument();
+    });
+
+    it("receipt shows a serial input for a serial-tracked item", async () => {
+      renderCreator({ invoiceType: "purchase" });
+      const user = userEvent.setup();
+      await pickProduct(user, /circuit board/i);
+
+      expect(screen.getByLabelText("Serial number")).toBeInTheDocument();
+      // A serialised receipt records identity, not expiry.
+      expect(screen.queryByLabelText("Expiry date")).not.toBeInTheDocument();
+    });
+
+    it("sends the typed batch + expiry as a full ISO datetime", async () => {
+      renderCreator({ invoiceType: "purchase" });
+      const user = userEvent.setup();
+      await pickSupplier(user);
+      await pickProduct(user, /sunflower oil/i);
+
+      fireEvent.change(screen.getByLabelText("Batch number"), {
+        target: { value: "BATCH-42" },
+      });
+      fireEvent.change(screen.getByLabelText("Expiry date"), {
+        target: { value: "2027-06-30" },
+      });
+
+      await user.click(screen.getByRole("button", { name: /create invoice/i }));
+      await waitFor(() => expect(invoiceCreateMutate).toHaveBeenCalledTimes(1));
+
+      const line = invoiceCreateMutate.mock.calls[0][0].lineItems[0];
+      expect(line.batchNo).toBe("BATCH-42");
+      // zod validates `expiryDate` with `.datetime()`, so a bare YYYY-MM-DD
+      // would be rejected server-side. Assert the shape, not the exact
+      // instant — the machine's time zone decides the date part of the ISO.
+      expect(line.expiryDate).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+    });
+
+    it("never asks the user to type a serial on a sale — it offers a picker", async () => {
+      renderCreator();
+      const user = userEvent.setup();
+      await pickProduct(user, /circuit board/i);
+
+      // No free-text serial field on the outbound side…
+      expect(screen.queryByLabelText("Serial number")).not.toBeInTheDocument();
+      // …and the picker is mounted in its place (stock comes back empty from
+      // the mock, so it states that plainly rather than showing a blank box).
+      expect(lotRowCount()).toBe(1);
+      expect(screen.getByText(/No serial in stock here/i)).toBeInTheDocument();
+    });
+
+    it("sale of a batch item says allocation is automatic (FEFO)", async () => {
+      renderCreator();
+      const user = userEvent.setup();
+      await pickProduct(user, /sunflower oil/i);
+
+      expect(
+        screen.getByText(/Allocated automatically, earliest expiry first\./)
+      ).toBeInTheDocument();
+      expect(screen.queryByLabelText("Batch number")).not.toBeInTheDocument();
+    });
   });
 });

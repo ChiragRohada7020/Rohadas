@@ -119,23 +119,44 @@ export function CustomerPicker({ open, onClose, onPick, walkIn }: Props) {
               )}
               {(data?.data ?? [])
                 .filter((p: any) => !walkIn || p.id !== walkIn.id)
-                .map((p: any) => (
-                  <li key={p.id}>
-                    <button
-                      type="button"
-                      className="w-full text-left px-3 py-2 hover:bg-surface-2 text-sm"
-                      onClick={() => {
-                        onPick({ id: p.id, name: p.name });
-                        reset();
-                      }}
-                    >
-                      <span className="font-medium">{p.name}</span>
-                      {p.phone && (
-                        <span className="text-xs text-text-tertiary ml-2">{p.phone}</span>
-                      )}
-                    </button>
-                  </li>
-                ))}
+                .map((p: any) => {
+                  const bal = parseFloat(p.balance ?? "0") || 0;
+                  const owes = bal > 0.005;
+                  const credit = bal < -0.005;
+                  return (
+                    <li key={p.id}>
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-surface-2"
+                        onClick={() => {
+                          onPick({ id: p.id, name: p.name });
+                          reset();
+                        }}
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium">{p.name}</span>
+                          {p.phone && (
+                            <span className="block truncate text-xs text-text-tertiary">
+                              {p.phone}
+                            </span>
+                          )}
+                        </span>
+                        {(owes || credit) && (
+                          <span
+                            className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${
+                              owes
+                                ? "bg-red-500/10 text-red-600 dark:text-red-400"
+                                : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                            }`}
+                            title={owes ? "Outstanding balance due" : "Advance / credit balance"}
+                          >
+                            {owes ? "owes " : "adv "}₹{Math.abs(bal).toFixed(2)}
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
             </ul>
             <div className="flex gap-2 justify-between items-center">
               <button className="btn-secondary" onClick={reset}>Cancel</button>

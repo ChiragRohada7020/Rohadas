@@ -16,7 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { trpc } from "../../../../src/lib/trpc";
-import { formatCurrency } from "../../../../src/lib/utils";
+import { formatCurrency, utcMidnightIso } from "../../../../src/lib/utils";
 import { makeStyles } from "../../../../src/lib/makeStyles";
 import { useColors } from "../../../../src/contexts/ThemeContext";
 import { haptic } from "../../../../src/lib/haptics";
@@ -158,7 +158,7 @@ export default function BankTransferScreen() {
       toAccountId: toAccount!.id,
       amount: amt.toFixed(2),
       description: description.trim() || undefined,
-      transactionDate: txDate.toISOString(),
+      transactionDate: utcMidnightIso(txDate),
     });
   };
 

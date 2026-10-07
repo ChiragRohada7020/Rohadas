@@ -6,15 +6,15 @@
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { HisaaboClient } from "../client.js";
+import type { RohadasClient } from "../client.js";
 import { wrapTool } from "../lib/errors.js";
 
-export function registerSystemTools(server: McpServer, client: HisaaboClient) {
+export function registerSystemTools(server: McpServer, client: RohadasClient) {
 
   server.tool(
     "system_maintenance_status",
     [
-      "Check if the Hisaabo API is currently under maintenance.",
+      "Check if the Rohadas API is currently under maintenance.",
       "Returns maintenance status including whether it is active, the operator message, and estimated end time.",
       "When maintenance is active, all data operations will be unavailable — retry after the estimated end time.",
     ].join(" "),

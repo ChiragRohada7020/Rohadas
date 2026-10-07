@@ -3,12 +3,12 @@ import { z } from "zod";
 import { DocumentListPage } from "@/components/DocumentListPage";
 
 export const Route = createFileRoute("/delivery-challans")({
-  validateSearch: (search) => z.object({ id: z.string().uuid().optional() }).parse(search),
+  validateSearch: (search) => z.object({ id: z.string().uuid().optional(), type: z.enum(["sale", "purchase"]).optional() }).parse(search),
   component: DeliveryChallansPage,
 });
 
 function DeliveryChallansPage() {
-  const { id } = useSearch({ from: "/delivery-challans" });
+  const { id, type } = useSearch({ from: "/delivery-challans" });
   return (
     <DocumentListPage
       initialSelectedId={id}
@@ -16,6 +16,7 @@ function DeliveryChallansPage() {
         trpcRouter: "deliveryChallan",
         documentType: "delivery_challan",
         hasTypeFilter: true,
+        initialType: type,
         title: "Delivery Challans",
         description: "Manage delivery challans and dispatch notes",
         buttonLabel: "+ New Challan",

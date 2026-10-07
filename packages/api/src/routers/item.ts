@@ -1,4 +1,4 @@
-import { eq, and, ilike, sql, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, sql, desc, isNull, getTableColumns } from "drizzle-orm";
 import { z } from "zod";
 import { items, itemVariants, invoiceItems, invoices, parties, stockAdjustments } from "@hisaabo/db";
 import { createItemSchema, updateItemSchema, paginationSchema, itemTypes, itemModes, itemVariantSchema, money } from "@hisaabo/shared";
@@ -7,6 +7,7 @@ import { TRPCError } from "@trpc/server";
 import { requireCan } from "../lib/permissions.js";
 import { logAudit } from "../lib/audit.js";
 import { escapeLike } from "../lib/escape-like.js";
+import { validateImageDataUrl } from "../lib/validate-logo.js";
 
 export const itemRouter = router({
   list: viewerProcedure
@@ -20,6 +21,10 @@ export const itemRouter = router({
     }))
     .query(async ({ input, ctx }) => {
       requireCan(ctx.ability, "read", "Item");
+      // Exclude the raw image bytes from list payloads — clients fetch them
+      // from GET /api/items/:id/image instead. imageMimeType/imageUpdatedAt
+      // remain so the UI can tell whether an image exists and cache-bust it.
+      const { imageData: _imageData, ...itemCols } = getTableColumns(items);
       // Active catalog read — exclude soft-deleted items. Matches the
       // `items_active_idx` partial index when the planner picks it up.
       const conditions = [eq(items.businessId, ctx.businessId), isNull(items.deletedAt)];
@@ -44,7 +49,7 @@ export const itemRouter = router({
       const offset = (input.page - 1) * input.limit;
 
       const [data, [{ count }]] = await Promise.all([
-        ctx.db.select().from(items)
+        ctx.db.select(itemCols).from(items)
           .where(and(...conditions))
           .orderBy(desc(items.updatedAt))
           .limit(input.limit)
@@ -76,6 +81,7 @@ export const itemRouter = router({
 
       const enriched = data.map((item) => ({
         ...item,
+        hasImage: !!item.imageMimeType,
         variantCount: variantSummaries[item.id]?.count ?? null,
         variantTotalStock: variantSummaries[item.id]?.totalStock ?? null,
       }));
@@ -87,11 +93,13 @@ export const itemRouter = router({
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ input, ctx }) => {
       requireCan(ctx.ability, "read", "Item");
+      // Exclude the raw image bytes — fetched via GET /api/items/:id/image.
+      const { imageData: _imageData, ...itemCols } = getTableColumns(items);
       // Active lookup — soft-deleted items should not appear in the item
       // detail page. If a caller needs to render a historical invoice line
       // that joins to items, it goes through `invoice.getById`, which keeps
       // the join without this filter.
-      const [item] = await ctx.db.select().from(items)
+      const [item] = await ctx.db.select(itemCols).from(items)
         .where(and(
           eq(items.id, input.id),
           eq(items.businessId, ctx.businessId),
@@ -104,10 +112,70 @@ export const itemRouter = router({
         const variants = await ctx.db.select().from(itemVariants)
           .where(and(eq(itemVariants.itemId, item.id), isNull(itemVariants.deletedAt)))
           .orderBy(itemVariants.createdAt);
-        return { ...item, variants };
+        return { ...item, hasImage: !!item.imageMimeType, variants };
       }
 
-      return { ...item, variants: [] as typeof itemVariants.$inferSelect[] };
+      return { ...item, hasImage: !!item.imageMimeType, variants: [] as typeof itemVariants.$inferSelect[] };
+    }),
+
+  // ── Item image (upload / remove) ─────────────────────────────
+  //
+  // The image is stored as raw PNG/JPEG bytes in the tenant DB (mirrors the
+  // business-logo pattern). The tRPC input carries a data URL; validation
+  // (magic bytes + 1MB cap) happens server-side. Clients render the image
+  // via GET /api/items/:id/image, cache-busted by imageUpdatedAt.
+  uploadImage: memberProcedure
+    .input(z.object({ id: z.string().uuid(), dataUrl: z.string().min(1) }))
+    .mutation(async ({ input, ctx }) => {
+      requireCan(ctx.ability, "update", "Item");
+      const { bytes, mime } = validateImageDataUrl(input.dataUrl, "Image");
+      const now = new Date();
+      const [row] = await ctx.db.update(items)
+        .set({ imageData: bytes, imageMimeType: mime, imageUpdatedAt: now, updatedAt: now })
+        .where(and(
+          eq(items.id, input.id),
+          eq(items.businessId, ctx.businessId),
+          isNull(items.deletedAt),
+        ))
+        .returning({ id: items.id, imageUpdatedAt: items.imageUpdatedAt });
+
+      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
+
+      logAudit(ctx.db, {
+        businessId: ctx.businessId,
+        userId: ctx.user.id,
+        action: "item.uploadImage",
+        entityType: "item",
+        entityId: row.id,
+        metadata: { bytes: bytes.length, mime },
+        ipAddress: ctx.ipAddress,
+      });
+
+      return { id: row.id, imageUpdatedAt: row.imageUpdatedAt };
+    }),
+
+  removeImage: memberProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ input, ctx }) => {
+      requireCan(ctx.ability, "update", "Item");
+      const now = new Date();
+      const [row] = await ctx.db.update(items)
+        .set({ imageData: null, imageMimeType: null, imageUpdatedAt: now, updatedAt: now })
+        .where(and(eq(items.id, input.id), eq(items.businessId, ctx.businessId)))
+        .returning({ id: items.id });
+
+      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
+
+      logAudit(ctx.db, {
+        businessId: ctx.businessId,
+        userId: ctx.user.id,
+        action: "item.removeImage",
+        entityType: "item",
+        entityId: row.id,
+        ipAddress: ctx.ipAddress,
+      });
+
+      return { id: row.id };
     }),
 
   create: memberProcedure.input(createItemSchema).mutation(async ({ input, ctx }) => {

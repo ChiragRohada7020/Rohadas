@@ -288,7 +288,7 @@ function BrandPanel() {
                 letterSpacing: "-0.03em",
               }}
             >
-              Hisaabo
+              Rohadas
             </span>
           </div>
 
@@ -456,7 +456,7 @@ function MobileBrandStrip() {
             letterSpacing: "-0.03em",
           }}
         >
-          Hisaabo
+          Rohadas
         </div>
         <div
           style={{
@@ -703,7 +703,7 @@ function LoginPage() {
                     className="text-2xl font-bold text-text-primary mb-2"
                     style={{ letterSpacing: "-0.03em" }}
                   >
-                    Sign in to Hisaabo
+                    Sign in to Rohadas
                   </h1>
                   <p className="text-sm text-text-tertiary leading-relaxed">
                     Enter your email and we'll send you a one-click sign-in link.
@@ -1007,7 +1007,7 @@ function LoginPage() {
                     Create your account
                   </h1>
                   <p className="text-sm text-text-tertiary leading-relaxed">
-                    Get started with Hisaabo. You'll be the owner of your organization.
+                    Get started with Rohadas. You'll be the owner of your organization.
                   </p>
                 </div>
 

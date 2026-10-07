@@ -3,7 +3,7 @@ import type { EndpointGroup } from "./types";
 export const gstEndpoints: EndpointGroup = {
   id: "gst",
   title: "GST Returns",
-  description: "Generate filing-ready GST returns. GSTR-1 (outward supplies), GSTR-3B (summary return), GSTR-9 (annual return), and CMP-08 (composition scheme). All endpoints return structured data ready for export to the GST portal.",
+  description: "Generate filing-ready GST returns. GSTR-1 (outward supplies), GSTR-3B (summary return), GSTR-4 (composition scheme quarterly), GSTR-9 (annual return), and legacy CMP-08. All endpoints return structured data ready for export to the GST portal.",
   endpoints: [
     {
       id: "gst-gstr1",
@@ -55,7 +55,7 @@ export const gstEndpoints: EndpointGroup = {
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/gst.gstr1?input=%7B%22json%22%3A%7B%22year%22%3A2026%2C%22month%22%3A1%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/gst.gstr1?input=%7B%22json%22%3A%7B%22year%22%3A2026%2C%22month%22%3A1%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const report = await trpc.gst.gstr1.query({
@@ -67,7 +67,7 @@ console.log("B2CS taxable:", report.b2cs.taxableValue);`,
         python: `import httpx
 
 resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/gst.gstr1",
+    "https://api.rohadas.app/api/trpc/gst.gstr1",
     params={"input": '{"json":{"year":2026,"month":1}}'},
     headers={
         "Authorization": f"Bearer {session_token}",
@@ -116,7 +116,7 @@ print("Period:", report["period"])`,
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/gst.gstr3b?input=%7B%22json%22%3A%7B%22year%22%3A2026%2C%22month%22%3A1%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/gst.gstr3b?input=%7B%22json%22%3A%7B%22year%22%3A2026%2C%22month%22%3A1%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const summary = await trpc.gst.gstr3b.query({
@@ -128,7 +128,7 @@ console.log("Net ITC CGST:", summary.table4.netItc.cgst);`,
         python: `import httpx
 
 resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/gst.gstr3b",
+    "https://api.rohadas.app/api/trpc/gst.gstr3b",
     params={"input": '{"json":{"year":2026,"month":1}}'},
     headers={
         "Authorization": f"Bearer {session_token}",
@@ -165,7 +165,7 @@ print("Tax payable CGST:", summary["table3_1"]["outwardTaxable"]["cgst"])`,
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/gst.gstr1CSV?input=%7B%22json%22%3A%7B%22year%22%3A2026%2C%22month%22%3A1%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/gst.gstr1CSV?input=%7B%22json%22%3A%7B%22year%22%3A2026%2C%22month%22%3A1%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const { csv, filename } = await trpc.gst.gstr1CSV.query({
@@ -181,7 +181,7 @@ a.click();`,
         python: `import httpx
 
 resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/gst.gstr1CSV",
+    "https://api.rohadas.app/api/trpc/gst.gstr1CSV",
     params={"input": '{"json":{"year":2026,"month":1}}'},
     headers={
         "Authorization": f"Bearer {session_token}",
@@ -226,7 +226,7 @@ with open(data["filename"], "w") as f:
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/gst.gstr1Json?input=%7B%22json%22%3A%7B%22year%22%3A2026%2C%22month%22%3A1%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/gst.gstr1Json?input=%7B%22json%22%3A%7B%22year%22%3A2026%2C%22month%22%3A1%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const { json, filename } = await trpc.gst.gstr1Json.query({
@@ -242,7 +242,7 @@ a.click();`,
         python: `import httpx, json
 
 resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/gst.gstr1Json",
+    "https://api.rohadas.app/api/trpc/gst.gstr1Json",
     params={"input": '{"json":{"year":2026,"month":1}}'},
     headers={
         "Authorization": f"Bearer {session_token}",
@@ -289,7 +289,7 @@ print("Saved portal JSON:", data["filename"])`,
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/gst.gstr9?input=%7B%22json%22%3A%7B%22financialYear%22%3A2025%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/gst.gstr9?input=%7B%22json%22%3A%7B%22financialYear%22%3A2025%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const annual = await trpc.gst.gstr9.query({
@@ -300,7 +300,7 @@ console.log("Total outward:", annual.table4.total.taxableValue);`,
         python: `import httpx
 
 resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/gst.gstr9",
+    "https://api.rohadas.app/api/trpc/gst.gstr9",
     params={"input": '{"json":{"financialYear":2025}}'},
     headers={
         "Authorization": f"Bearer {session_token}",
@@ -343,7 +343,7 @@ print("FY:", annual["financialYear"])`,
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/gst.gstr9Json?input=%7B%22json%22%3A%7B%22financialYear%22%3A2025%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/gst.gstr9Json?input=%7B%22json%22%3A%7B%22financialYear%22%3A2025%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const { json, filename } = await trpc.gst.gstr9Json.query({
@@ -358,7 +358,7 @@ a.click();`,
         python: `import httpx, json
 
 resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/gst.gstr9Json",
+    "https://api.rohadas.app/api/trpc/gst.gstr9Json",
     params={"input": '{"json":{"financialYear":2025}}'},
     headers={
         "Authorization": f"Bearer {session_token}",
@@ -397,7 +397,7 @@ with open(data["filename"], "w") as f:
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/gst.cmp08?input=%7B%22json%22%3A%7B%22year%22%3A2026%2C%22quarter%22%3A1%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/gst.cmp08?input=%7B%22json%22%3A%7B%22year%22%3A2026%2C%22quarter%22%3A1%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const cmp = await trpc.gst.cmp08.query({
@@ -409,7 +409,7 @@ console.log("Tax payable (1%):", cmp.taxPayable);`,
         python: `import httpx
 
 resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/gst.cmp08",
+    "https://api.rohadas.app/api/trpc/gst.cmp08",
     params={"input": '{"json":{"year":2026,"quarter":1}}'},
     headers={
         "Authorization": f"Bearer {session_token}",
@@ -427,6 +427,119 @@ print(f"Tax payable: Rs. {cmp['taxPayable']}")`,
         "Only sale invoices with status != 'cancelled' are included in the taxable value calculation.",
       ],
       relatedEndpoints: ["gst-gstr1", "gst-gstr3b"],
+    },
+    {
+      id: "gst-gstr4",
+      method: "query",
+      path: "gst.gstr4",
+      title: "Generate GSTR-4 (Composition Scheme)",
+      description: "Generate the GSTR-4 quarterly return for composition-scheme dealers. GSTR-4 replaced CMP-08 from FY 2019-20. A composition dealer charges customers 0% GST and instead pays a flat rate on total turnover, and cannot avail input tax credit — so purchase credit is reported as reversed in Table 5 and tax is settled in cash in Table 6. Returns Tables 4, 5 and 6 of the return.",
+      auth: "business",
+      requiredRole: "viewer",
+      input: [
+        { name: "year", type: "number", required: true, description: "Calendar year (2020–2099)" },
+        { name: "quarter", type: "number", required: true, description: "Calendar quarter 1–4 (Q1 = Jan–Mar)" },
+        { name: "compositionRate", type: "number", required: false, default: "1", description: "Flat composition rate as a percentage. Statutory rates: 1 (goods traders / specified goods manufacturers), 0.5 (non-specified goods), 5 (restaurants), 6 (specified services)." },
+      ],
+      output: {
+        description: "GSTR-4 report with table4 (inward/own supplies), table5 (ITC reversed) and table6 (tax payable and tax paid).",
+        example: {
+          period: "Apr–Jun 2026",
+          businessGstin: "27AABCA1234B1Z5",
+          compositionRate: 1,
+          turnover: 5000000,
+          table6: {
+            taxPayableOnTurnover: 50000,
+            taxPaidViaItc: 0,
+            taxPaidViaCash: 50000,
+            excessItcUtilised: 0,
+          },
+          taxPayable: "500.00",
+        },
+      },
+      codeExamples: {
+        curl: `curl "https://api.rohadas.app/api/trpc/gst.gstr4?input=%7B%22json%22%3A%7B%22year%22%3A2026%2C%22quarter%22%3A2%2C%22compositionRate%22%3A1%7D%7D" \\
+  -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
+  -H "x-business-id: YOUR_BUSINESS_ID"`,
+        javascript: `const report = await trpc.gst.gstr4.query({
+  year: 2026,
+  quarter: 2, // Q2 = Apr-Jun (calendar quarter)
+  compositionRate: 1, // 1% goods trader; 5% restaurant; 6% services
+});
+console.log("Turnover:", report.turnover);
+console.log("Tax payable:", report.taxPayable);`,
+        python: `import httpx
+
+resp = httpx.get(
+    "https://api.rohadas.app/api/trpc/gst.gstr4",
+    params={"input": '{"json":{"year":2026,"quarter":2,"compositionRate":1}}'},
+    headers={
+        "Authorization": f"Bearer {session_token}",
+        "x-business-id": business_id,
+    },
+)
+report = resp.json()["result"]["data"]["json"]
+print(f"Turnover paise: {report['turnover']}")
+print(f"Tax payable: Rs. {report['taxPayable']}")`,
+      },
+      gotchas: [
+        "Requires `GstReport:read` permission.",
+        "Tax payable is derived from TURNOVER × rate, NOT from tax charged on invoices. A composition dealer's invoices carry 0% GST by design, so summing invoice tax always yields 0.",
+        "Quarters are CALENDAR quarters (Q1 = Jan–Mar), not financial-year quarters.",
+        "Credit notes and sales returns REDUCE turnover; they are subtracted, never added.",
+        "Quotations and proformas are excluded — they are not supplies.",
+        "All purchase ITC appears in Table 5 as reversed. A composition dealer cannot avail credit, so tax must be paid in cash.",
+        "Table 4 cells for exempt suppliers (4A(i), 4B(i)) and ISD supplies (4D) are always zero because Rohadas has no per-supplier exempt flag.",
+      ],
+      relatedEndpoints: ["gst-gstr4json", "gst-gstr3b"],
+    },
+    {
+      id: "gst-gstr4json",
+      method: "query",
+      path: "gst.gstr4Json",
+      title: "Export GSTR-4 as Portal JSON",
+      description: "Generate the GSTR-4 return in a JSON structure suitable for the GST portal's offline tool. Download and upload directly to gstn.gov.in for filing.",
+      auth: "business",
+      requiredRole: "viewer",
+      input: [
+        { name: "year", type: "number", required: true, description: "Calendar year (2020–2099)" },
+        { name: "quarter", type: "number", required: true, description: "Calendar quarter 1–4 (Q1 = Jan–Mar)" },
+        { name: "compositionRate", type: "number", required: false, default: "1", description: "Flat composition rate as a percentage" },
+      ],
+      output: {
+        description: "An object with `json` (the portal-shaped return, all values as fixed 2dp strings) and `filename` for download.",
+        example: {
+          json: { gstin: "27AABCA1234B1Z5", return_period: "Q22026", composition_rate: 1 },
+          filename: "GSTR4_FY_Q2_2026.json",
+        },
+      },
+      codeExamples: {
+        curl: `curl "https://api.rohadas.app/api/trpc/gst.gstr4Json?input=%7B%22json%22%3A%7B%22year%22%3A2026%2C%22quarter%22%3A2%7D%7D" \\
+  -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
+  -H "x-business-id: YOUR_BUSINESS_ID"`,
+        javascript: `const { json, filename } = await trpc.gst.gstr4Json.query({
+  year: 2026,
+  quarter: 2,
+});
+console.log("Upload this file to gstn.gov.in:", filename);`,
+        python: `import httpx
+
+resp = httpx.get(
+    "https://api.rohadas.app/api/trpc/gst.gstr4Json",
+    params={"input": '{"json":{"year":2026,"quarter":2}}'},
+    headers={
+        "Authorization": f"Bearer {session_token}",
+        "x-business-id": business_id,
+    },
+)
+print(resp.json()["result"]["data"]["json"]["filename"])`,
+      },
+      gotchas: [
+        "Requires `GstReport:read` permission.",
+        "All monetary values are exported as fixed 2dp strings, matching the portal's expected format.",
+        "Table 4 exempt-supplier cells are always zero — see the `gst.gstr4` gotchas.",
+      ],
+      relatedEndpoints: ["gst-gstr4", "gst-gstr3b"],
     },
   ],
 };

@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError, type StoreOrderSummary } from "../../client.js";
+import { RohadasClient, RohadasApiError, type StoreOrderSummary } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import {
   fatalError, outputJSON, outputTable, paginationFooter, EXIT, type ColumnDef,
@@ -7,7 +7,7 @@ import { formatDate, formatAmount, formatStatus } from "../../format.js";
 
 export async function storeSettingsCommand(opts: { json?: boolean }): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const settings = await client.store.getSettings();
@@ -25,7 +25,7 @@ export async function storeSettingsCommand(opts: { json?: boolean }): Promise<vo
     console.log();
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "network_error") fatalError(err.message, EXIT.NETWORK);
@@ -41,7 +41,7 @@ export async function storeOrdersCommand(opts: {
   limit?: number;
 }): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
   const page = opts.page ?? 1;
   const limit = opts.limit ?? 20;
 
@@ -67,7 +67,7 @@ export async function storeOrdersCommand(opts: {
     paginationFooter(result.page, result.limit, result.total);
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "network_error") fatalError(err.message, EXIT.NETWORK);

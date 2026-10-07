@@ -37,7 +37,7 @@ const cliVersion = typeof __CLI_VERSION__ !== "undefined" ? __CLI_VERSION__ : "d
 
 program
   .name("hisaabo")
-  .description("Hisaabo CLI — Invoicing and business management")
+  .description("Rohadas CLI — Invoicing and business management")
   .version(cliVersion);
 
 // ── Register all command groups ───────────────────────────────────────────

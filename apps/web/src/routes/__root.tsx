@@ -1,5 +1,5 @@
 import { createRootRoute, Link, Outlet, useNavigate, useLocation } from "@tanstack/react-router";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { trpc, setBusinessId, queryClient } from "@/lib/trpc";
 import { useHotkeys } from "@/hooks/useHotkeys";
 import { useTheme } from "@/hooks/useTheme";
@@ -14,6 +14,14 @@ import { cn } from "@/lib/utils";
 import { formatRole } from "@/lib/roles";
 import { MaintenanceBanner } from "@/components/MaintenanceBanner";
 import { clearDesktopToken } from "@/lib/desktop-session";
+import {
+  useShortcutPrefs,
+  formatBinding,
+  findBindingConflict,
+  eventToBinding,
+  type ResolvedNavShortcut,
+} from "@/hooks/useShortcutPrefs";
+import { toast } from "@/hooks/useToast";
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -84,12 +92,26 @@ const navSections = [
   {
     label: "SALES",
     items: [
-      { to: "/invoices", label: "Invoices", icon: InvoiceIcon, resource: "Invoice", action: "read" },
-      { to: "/quotations", label: "Quotations", icon: QuotationIcon, resource: "Invoice", action: "read" },
+      { to: "/sales", label: "Sale Invoices", icon: InvoiceIcon, resource: "Invoice", action: "read" },
+      { to: "/quotations", label: "Quotations", icon: QuotationIcon, resource: "Invoice", action: "read", search: { type: "sale" } },
       { to: "/sales-returns", label: "Sales Returns", icon: SalesReturnIcon, resource: "Invoice", action: "read" },
-      { to: "/credit-notes", label: "Credit Notes", icon: CreditNoteIcon, resource: "Invoice", action: "read" },
-      { to: "/delivery-challans", label: "Delivery Challans", icon: DeliveryIcon, resource: "Invoice", action: "read" },
+      { to: "/credit-notes", label: "Credit Notes", icon: CreditNoteIcon, resource: "Invoice", action: "read", search: { type: "sale" } },
+      { to: "/delivery-challans", label: "Delivery Challans", icon: DeliveryIcon, resource: "Invoice", action: "read", search: { type: "sale" } },
       { to: "/proforma-invoices", label: "Proforma Invoices", icon: ProformaIcon, resource: "Invoice", action: "read" },
+    ],
+  },
+  {
+    label: "PURCHASE",
+    items: [
+      { to: "/purchases", label: "Purchase Invoices", icon: InvoiceIcon, resource: "Invoice", action: "read" },
+      { to: "/quotations", label: "Purchase Quotations", icon: QuotationIcon, resource: "Invoice", action: "read", search: { type: "purchase" } },
+      { to: "/credit-notes", label: "Debit Notes", icon: CreditNoteIcon, resource: "Invoice", action: "read", search: { type: "purchase" } },
+      { to: "/delivery-challans", label: "Delivery Challans", icon: DeliveryIcon, resource: "Invoice", action: "read", search: { type: "purchase" } },
+    ],
+  },
+  {
+    label: "AUTOMATION",
+    items: [
       { to: "/store-orders", label: "Store Orders", icon: StoreOrdersIcon, resource: "Store", action: "read" },
       { to: "/automated-invoices", label: "Recurring Invoices", icon: AutomatedInvoiceIcon, resource: "RecurringInvoice", action: "read" },
     ],
@@ -97,13 +119,15 @@ const navSections = [
   {
     label: "CONTACTS",
     items: [
-      { to: "/parties", label: "Parties", icon: PartyIcon, resource: "Party", action: "read" },
+      { to: "/customers", label: "Customers", icon: PartyIcon, resource: "Party", action: "read" },
+      { to: "/suppliers", label: "Suppliers", icon: PartyIcon, resource: "Party", action: "read" },
     ],
   },
   {
     label: "INVENTORY",
     items: [
       { to: "/items", label: "Items", icon: ItemIcon, resource: "Item", action: "read" },
+      { to: "/godowns", label: "Stock Locations", icon: GodownIcon, resource: "Item", action: "read" },
     ],
   },
   {
@@ -125,9 +149,14 @@ const navSections = [
       { to: "/reports", label: "Reports", icon: ReportsIcon, resource: "Report", action: "read" },
     ],
   },
+  {
+    label: "AI",
+    items: [
+      { to: "/chat", label: "AI Assistant", icon: ChatIcon, resource: "Invoice", action: "read" },
+    ],
+  },
 ];
 
-// ── NoOrgScreen — shown when user has zero memberships ─────────
 
 function NoOrgScreen() {
   const navigate = useNavigate();
@@ -160,7 +189,7 @@ function NoOrgScreen() {
       <div className="w-full max-w-[400px] rounded-2xl p-8 shadow-elevated bg-surface-0 border border-border-light">
         <div className="flex items-center justify-center gap-2.5 mb-6">
           <Logo className="w-9 h-9" />
-          <span className="font-semibold text-lg tracking-tight text-text-primary">Hisaabo</span>
+          <span className="font-semibold text-lg tracking-tight text-text-primary">Rohadas</span>
         </div>
 
         {invitesLoading ? (
@@ -361,10 +390,20 @@ function RootLayout() {
   const [showPalette, setShowPalette] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showTenantPicker, setShowTenantPicker] = useState(false);
+  const { shortcuts: navShortcutList } = useShortcutPrefs();
 
   const createOrgMutation = trpc.tenant.create.useMutation();
   const [currentBusinessId, setCurrentBusinessId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    OVERVIEW: true,
+    SALES: true,
+    PURCHASE: true,
+    CONTACTS: true,
+    INVENTORY: true,
+    MONEY: true,
+    COMPLIANCE: true,
+  });
 
   const selectTenantMutation = trpc.tenant.select.useMutation({
     onSuccess: () => {
@@ -384,6 +423,24 @@ function RootLayout() {
       navigate({ to: "/login" });
     },
   });
+
+  // Navigation shortcuts are user-editable (default Ctrl+1 … Ctrl+0) and read
+  // live from the shortcut-prefs store, so re-binding one takes effect at once.
+  const navHotkeys = useMemo(
+    () =>
+      navShortcutList
+        .filter((s) => s.binding)
+        .map((s) => ({
+          key: s.binding!.key,
+          ctrl: s.binding!.ctrl,
+          shift: s.binding!.shift,
+          alt: s.binding!.alt,
+          handler: () => navigate({ to: s.route }),
+          description: s.label,
+          scope: "navigation",
+        })),
+    [navShortcutList, navigate],
+  );
 
   useHotkeys([
     {
@@ -406,19 +463,7 @@ function RootLayout() {
       description: "Keyboard shortcuts",
       scope: "global",
     },
-    // ── Navigation shortcuts (Alt+Shift+Key) ──
-    { key: "d", alt: true, shift: true, handler: () => navigate({ to: "/" }), description: "Dashboard", scope: "navigation" },
-    { key: "i", alt: true, shift: true, handler: () => navigate({ to: "/invoices" }), description: "Invoices", scope: "navigation" },
-    { key: "q", alt: true, shift: true, handler: () => navigate({ to: "/quotations" }), description: "Quotations", scope: "navigation" },
-    { key: "c", alt: true, shift: true, handler: () => navigate({ to: "/credit-notes" }), description: "Credit Notes", scope: "navigation" },
-    { key: "p", alt: true, shift: true, handler: () => navigate({ to: "/parties" }), description: "Parties", scope: "navigation" },
-    { key: "t", alt: true, shift: true, handler: () => navigate({ to: "/items" }), description: "Items", scope: "navigation" },
-    { key: "m", alt: true, shift: true, handler: () => navigate({ to: "/payments" }), description: "Payments", scope: "navigation" },
-    { key: "b", alt: true, shift: true, handler: () => navigate({ to: "/cash-and-bank" }), description: "Cash & Bank", scope: "navigation" },
-    { key: "e", alt: true, shift: true, handler: () => navigate({ to: "/expenses" }), description: "Expenses", scope: "navigation" },
-    { key: "g", alt: true, shift: true, handler: () => navigate({ to: "/gst" }), description: "GST Returns", scope: "navigation" },
-    { key: "r", alt: true, shift: true, handler: () => navigate({ to: "/reports" }), description: "Business Reports", scope: "navigation" },
-    { key: "s", alt: true, shift: true, handler: () => navigate({ to: "/settings" }), description: "Settings", scope: "navigation" },
+    ...navHotkeys,
   ]);
 
   // Set business ID when businesses load — auto-select first
@@ -474,7 +519,7 @@ function RootLayout() {
     }
     // Priority 4: On dashboard but role can't access it → first accessible page
     if (pathname === "/" && session?.role && !canAccess(session.role, "Report", "read")) {
-      navigate({ to: "/invoices" });
+      navigate({ to: "/sales" });
       return;
     }
   }, [sessionLoading, sessionFetching, session, businesses, navigate, pathname]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -623,7 +668,7 @@ function RootLayout() {
           <div className="flex items-center gap-2.5">
             <Logo className="w-8 h-8" />
             <span className="font-semibold text-[15px] tracking-tight text-text-primary">
-              Hisaabo
+              Rohadas
             </span>
           </div>
         </div>
@@ -637,26 +682,53 @@ function RootLayout() {
                 (!("gstOnly" in item && item.gstOnly) || isGstRegistered)
               )
               .map((item) => {
-                // Rename reports label based on GST status (always visible)
                 if (item.to === "/gst") {
                   return { ...item, label: isGstRegistered ? "GST Returns" : "Tax Reports" };
                 }
                 if (item.to === "/reports") {
                   return { ...item, label: "Business Reports" };
                 }
+                if (item.to === "/sales" || item.to === "/invoices") {
+                  return { ...item, label: "Sale Invoices" };
+                }
+                if (item.to === "/purchases") {
+                  return { ...item, label: "Purchase Invoices" };
+                }
                 return item;
               });
             if (visibleItems.length === 0) return null;
             const sectionLabel = section.label === "COMPLIANCE" && !isGstRegistered ? "REPORTS" : section.label;
+            const isExpandable = true;
+            const isExpanded = expandedSections[section.label] ?? true;
             return (
               <div key={section.label}>
-                <p className="px-3 pt-5 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-text-tertiary">
-                  {sectionLabel}
-                </p>
-                {visibleItems.map((item) => (
+                {isExpandable ? (
+                  <button
+                    onClick={() => setExpandedSections((prev) => ({ ...prev, [section.label]: !prev[section.label] }))}
+                    className="w-full flex items-center gap-1 px-3 pt-5 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-text-tertiary hover:text-text-secondary transition-colors"
+                  >
+                    <svg
+                      className={`w-3 h-3 transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                    </svg>
+                    {sectionLabel}
+                  </button>
+                ) : (
+                  <p className="px-3 pt-5 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-text-tertiary">
+                    {sectionLabel}
+                  </p>
+                )}
+                {isExpanded && visibleItems.map((item) => (
                   <Link
                     key={item.to}
                     to={item.to}
+                    search={("search" in item ? item.search : undefined) as any}
                     className="flex items-center gap-2.5 mx-2 px-3 py-[7px] rounded-lg text-[13px] transition-colors"
                     activeProps={{
                       className: "flex items-center gap-2.5 mx-2 px-3 py-[7px] rounded-lg text-[13px] transition-colors bg-brand-600/10 text-brand-700 font-medium",
@@ -723,7 +795,7 @@ function RootLayout() {
           {isOnboarding && (
             <div className="flex items-center gap-2.5 mr-2">
               <Logo className="w-7 h-7" />
-              <span className="font-semibold text-[15px] tracking-tight text-text-primary">Hisaabo</span>
+              <span className="font-semibold text-[15px] tracking-tight text-text-primary">Rohadas</span>
             </div>
           )}
 
@@ -886,7 +958,12 @@ function RoleBadge({ role }: { role: string }) {
 // ── Keyboard Shortcuts Dialog ──────────────────────────────────
 
 function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const hotkeys = open ? getRegisteredHotkeys() : [];
+  const { shortcuts: navShortcuts, setBinding, clearBinding, reset } = useShortcutPrefs();
+  const [recordingId, setRecordingId] = useState<string | null>(null);
+
+  // Read-only shortcuts (global + page-specific) come from the hotkey registry.
+  // Navigation shortcuts are rendered separately because they are editable.
+  const hotkeys = open ? getRegisteredHotkeys().filter((h) => h.scope !== "navigation") : [];
 
   // Group by scope
   const grouped: Record<string, typeof hotkeys> = {};
@@ -906,18 +983,48 @@ function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () => void
     });
   }
 
-  function formatKey(h: (typeof hotkeys)[0]): string[] {
-    const keys: string[] = [];
-    if (h.ctrl) keys.push("⌘");
-    if (h.alt) keys.push("Alt");
-    if (h.shift) keys.push("⇧");
-    keys.push(h.key.length === 1 ? h.key.toUpperCase() : h.key);
-    return keys;
+  // ── Capture a new binding ──
+  // A capture-phase listener on `window` runs before both the Modal's Escape
+  // handler and the global hotkey listener, so we can swallow the keypress
+  // (including Escape) while the user is recording.
+  useEffect(() => {
+    if (!recordingId) return;
+    const handler = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+
+      if (e.key === "Escape") {
+        setRecordingId(null);
+        return;
+      }
+      const binding = eventToBinding(e);
+      if (!binding) return; // modifier-only press — keep waiting
+
+      const conflict = findBindingConflict(binding, recordingId);
+      if (conflict) {
+        toast.error("Shortcut already in use", `${formatBinding(binding).join(" + ")} → "${conflict.label}"`);
+        return;
+      }
+      setBinding(recordingId, binding);
+      setRecordingId(null);
+    };
+    window.addEventListener("keydown", handler, true);
+    return () => window.removeEventListener("keydown", handler, true);
+  }, [recordingId, setBinding]);
+
+  // Group navigation shortcuts by their sidebar group, preserving def order.
+  const navGroups: Array<{ label: string; items: ResolvedNavShortcut[] }> = [];
+  for (const s of navShortcuts) {
+    let g = navGroups.find((x) => x.label === s.group);
+    if (!g) {
+      g = { label: s.group, items: [] };
+      navGroups.push(g);
+    }
+    g.items.push(s);
   }
 
   const scopeLabels: Record<string, string> = {
     global: "Global",
-    navigation: "Navigation (Alt+Shift + Key)",
     parties: "Parties",
     items: "Items",
     payments: "Payments",
@@ -926,12 +1033,53 @@ function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () => void
     general: "General",
   };
 
-  // Sort scopes: global first, navigation second, then page-specific
-  const scopeOrder = ["global", "navigation", "parties", "items", "payments", "invoices", "expenses", "general"];
+  // Sort scopes: global first, then page-specific
+  const scopeOrder = ["global", "parties", "items", "payments", "invoices", "expenses", "general"];
 
   return (
-    <Modal open={open} onClose={onClose} title="Keyboard Shortcuts" className="max-w-md">
-      <div className="space-y-4">
+    <Modal open={open} onClose={onClose} title="Keyboard Shortcuts" className="max-w-lg">
+      <div className="space-y-5">
+        {/* ── Navigation (editable) ── */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-text-tertiary">
+              Navigation
+            </p>
+            <button
+              type="button"
+              onClick={reset}
+              className="text-[11px] font-medium text-brand-600 hover:text-brand-700 transition-colors"
+            >
+              Reset to defaults
+            </button>
+          </div>
+          <p className="text-[11px] text-text-tertiary mb-3">
+            Click any shortcut to re-bind it. Press Esc to cancel.
+          </p>
+          <div className="space-y-3">
+            {navGroups.map((g) => (
+              <div key={g.label}>
+                <p className="text-[10px] font-medium uppercase tracking-wide text-text-tertiary mb-1 px-2">
+                  {g.label}
+                </p>
+                <div className="space-y-0.5">
+                  {g.items.map((s) => (
+                    <NavShortcutRow
+                      key={s.id}
+                      shortcut={s}
+                      recording={recordingId === s.id}
+                      onStartRecording={() => setRecordingId(s.id)}
+                      onCancel={() => setRecordingId(null)}
+                      onClear={() => clearBinding(s.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Read-only shortcuts ── */}
         {scopeOrder.filter((s) => grouped[s]?.length).map((scope) => ({ scope, defs: grouped[scope] })).concat(
           Object.entries(grouped).filter(([s]) => !scopeOrder.includes(s)).map(([scope, defs]) => ({ scope, defs }))
         ).map(({ scope, defs }) => (
@@ -946,7 +1094,7 @@ function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () => void
                   className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-surface-1"
                 >
                   <span className="text-sm text-text-secondary">{h.description}</span>
-                  <KbdShortcut keys={formatKey(h)} />
+                  <KbdShortcut keys={formatBinding(h)} />
                 </div>
               ))}
             </div>
@@ -954,6 +1102,72 @@ function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () => void
         ))}
       </div>
     </Modal>
+  );
+}
+
+// ── Nav shortcut row (editable) ────────────────────────────────
+
+function NavShortcutRow({
+  shortcut,
+  recording,
+  onStartRecording,
+  onCancel,
+  onClear,
+}: {
+  shortcut: ResolvedNavShortcut;
+  recording: boolean;
+  onStartRecording: () => void;
+  onCancel: () => void;
+  onClear: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-surface-1 group">
+      <span className="text-sm text-text-secondary">{shortcut.label}</span>
+      <div className="flex items-center gap-1.5">
+        {recording ? (
+          <>
+            <span className="text-[11px] font-medium text-brand-600 animate-pulse">Press keys…</span>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="text-[11px] text-text-tertiary hover:text-text-primary transition-colors"
+            >
+              Esc
+            </button>
+          </>
+        ) : shortcut.binding ? (
+          <button
+            type="button"
+            onClick={onStartRecording}
+            title="Click to change"
+            className="rounded-md hover:bg-surface-2 transition-colors px-0.5 py-0.5"
+          >
+            <KbdShortcut keys={formatBinding(shortcut.binding)} />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onStartRecording}
+            className="text-[11px] text-text-tertiary hover:text-brand-600 border border-dashed border-border-light rounded-md px-1.5 py-0.5 transition-colors"
+          >
+            + Assign
+          </button>
+        )}
+        {shortcut.isCustom && !recording && (
+          <button
+            type="button"
+            onClick={onClear}
+            title="Reset to default"
+            aria-label="Reset to default"
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-text-tertiary hover:text-red-500"
+          >
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -1033,6 +1247,17 @@ function ItemIcon() {
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M2 4l6-2.5L14 4v8l-6 2.5L2 12V4z" />
       <path d="M8 6.5V14.5M2 4l6 2.5L14 4" />
+    </svg>
+  );
+}
+
+/** Warehouse / godown — a building with a door, for the stock-locations page. */
+function GodownIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1.5 13.5h13" />
+      <path d="M2.5 13.5V6L8 2.5l5.5 3.5v7.5" />
+      <path d="M6.5 13.5V9h3v4.5" />
     </svg>
   );
 }
@@ -1123,6 +1348,16 @@ function StoreOrdersIcon() {
       <circle cx="5.5" cy="13" r="1.2" />
       <circle cx="10.5" cy="13" r="1.2" />
       <path d="M5.5 11.8V9.5M10.5 11.8V9.5" />
+    </svg>
+  )
+}
+function ChatIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 1.5a4.5 4.5 0 0 1 4 2.5 4.5 4.5 0 0 1 0 9l-1.5-1.5" />
+      <circle cx="5.5" cy="8" r="1.2" />
+      <circle cx="10.5" cy="8" r="1.2" />
+      <path d="M3 14l2-2h6a2 2 0 0 0 0-4H5a2 2 0 0 0 0 4z" />
     </svg>
   )
 }

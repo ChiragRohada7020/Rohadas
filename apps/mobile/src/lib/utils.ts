@@ -63,3 +63,16 @@ export function formatDateInput(date: Date | string | null | undefined): string 
 export function todayISODate(): string {
   return dayjs().format("YYYY-MM-DD");
 }
+
+// CALENDAR-DATE SERIALIZATION — the mobile half of the timezone contract
+// documented in apps/web/src/lib/utils.ts (toISOString).
+//
+// Date pickers hold a Date in LOCAL wall-clock time. Business date fields
+// (invoiceDate, paymentDate, entryDate …) are stored canonically at UTC
+// MIDNIGHT of that wall-clock day so every UTC period window ("Today",
+// "This Month") contains them. Sending `date.toISOString()` instead stored
+// LOCAL midnight — 18:30Z the previous day in IST (UTC+5:30) — which is
+// exactly why the dashboard's "Today" view showed nothing.
+export function utcMidnightIso(date: Date): string {
+  return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())).toISOString();
+}

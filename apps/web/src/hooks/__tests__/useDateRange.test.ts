@@ -1,5 +1,6 @@
 import { renderHook, act } from "@testing-library/react";
 import { getDatePreset, getGranularity, useDateRange } from "@/hooks/useDateRange";
+import { toISOString, todayISODate } from "@/lib/utils";
 
 // Pin "now" to 2025-07-15 (month index 6, i.e. July) for all date arithmetic.
 // July is after April so mm >= 3 is true → FY year = 2025, last-FY year = 2024.
@@ -134,9 +135,13 @@ describe("getDatePreset (pure helper)", () => {
     expect(fromDate).toMatch(/2025-04-01T00:00:00/);
   });
 
-  // Edge case: "now" is exactly April 1 — FY starts same year
+  // Edge case: "now" is exactly April 1 — FY starts same year.
+  // Noon UTC (not midnight) so the WALL-clock date is April 1 in every
+  // timezone from UTC-12 to UTC+14 — getDatePreset picks the FY from the
+  // wall clock, so a midnight instant would read as March 31 for runners
+  // west of UTC.
   it("this-fy on April 1: FY starts same year", () => {
-    vi.setSystemTime(new Date("2025-04-01T00:00:00.000Z"));
+    vi.setSystemTime(new Date("2025-04-01T12:00:00.000Z"));
     const { fromDate } = getDatePreset("this-fy");
     expect(fromDate).toMatch(/2025-04-01T00:00:00/);
   });
@@ -147,6 +152,48 @@ describe("getDatePreset (pure helper)", () => {
     const { fromDate, toDate } = getDatePreset("last-fy");
     expect(fromDate).toMatch(/2024-04-01T00:00:00/);
     expect(toDate).toMatch(/2025-03-31T23:59:59/);
+  });
+
+  // ── WALL-CLOCK DAY SELECTION vs UTC ANCHOR ─────────────────────────────
+  // The "dashboard shows nothing for Today" bug had two halves:
+  //   (a) date-only fields were stored at LOCAL midnight (18:30Z the day
+  //       before in IST), and
+  //   (b) the Today window was the UTC calendar day.
+  // Both halves must agree: the window is UTC-anchored (UTC midnight …
+  // 23:59:59.999Z) over the WALL-CLOCK day the user is looking at.
+
+  it("REGRESSION: today's window is UTC midnight → end-of-day of the WALL-clock day", () => {
+    const { fromDate, toDate } = getDatePreset("today");
+    const now = new Date(); // pinned to FIXED_NOW by fake timers
+    const start = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    expect(fromDate).toBe(new Date(start).toISOString());
+    expect(toDate).toBe(new Date(start + 24 * 60 * 60 * 1000 - 1).toISOString());
+  });
+
+  it("REGRESSION: a date-only invoice created today lands inside the Today window", () => {
+    // This is the exact end-to-end pairing the dashboard performs: the web
+    // form serialises today via toISOString(todayISODate()) and the summary
+    // query filters with getDatePreset("today"). Under the old code this
+    // failed for any runner east of UTC after ~05:30 local time.
+    const { fromDate, toDate } = getDatePreset("today");
+    const invoiceIso = toISOString(todayISODate());
+    expect(invoiceIso).toBeDefined();
+    expect(invoiceIso! >= fromDate).toBe(true);
+    expect(invoiceIso! <= toDate).toBe(true);
+  });
+
+  it("REGRESSION: yesterday's window contains yesterday's date-only invoice, never today's", () => {
+    const { fromDate, toDate } = getDatePreset("yesterday");
+    const yesterdayIso = toISOString(
+      // one calendar day before today, computed on the wall clock
+      new Date(Date.now() - 24 * 60 * 60 * 1000),
+    );
+    expect(yesterdayIso).toBeDefined();
+    expect(yesterdayIso! >= fromDate).toBe(true);
+    expect(yesterdayIso! <= toDate).toBe(true);
+    // And today's invoice must NOT be inside yesterday's window.
+    const todayIso = toISOString(todayISODate())!;
+    expect(todayIso > toDate).toBe(true);
   });
 });
 
@@ -265,16 +312,18 @@ describe("useDateRange (hook)", () => {
     const from = new Date(result.current.fromDate!);
     const to = new Date(result.current.toDate!);
 
-    expect(from.getFullYear()).toBe(2025);
-    expect(from.getMonth()).toBe(0); // January
-    expect(from.getDate()).toBe(1);
+    // UTC components — the range contract is UTC-anchored boundaries
+    // (local-component assertions would drift by the runner's tz offset).
+    expect(from.getUTCFullYear()).toBe(2025);
+    expect(from.getUTCMonth()).toBe(0); // January
+    expect(from.getUTCDate()).toBe(1);
 
-    expect(to.getFullYear()).toBe(2025);
-    expect(to.getMonth()).toBe(2); // March
-    expect(to.getDate()).toBe(31);
-    expect(to.getHours()).toBe(23);
-    expect(to.getMinutes()).toBe(59);
-    expect(to.getSeconds()).toBe(59);
+    expect(to.getUTCFullYear()).toBe(2025);
+    expect(to.getUTCMonth()).toBe(2); // March
+    expect(to.getUTCDate()).toBe(31);
+    expect(to.getUTCHours()).toBe(23);
+    expect(to.getUTCMinutes()).toBe(59);
+    expect(to.getUTCSeconds()).toBe(59);
   });
 
   it("setCustomRange with empty strings yields undefined fromDate/toDate", () => {

@@ -203,8 +203,8 @@ export function BiometricSetupPrompt({ visible, onDismiss }: Props) {
               <Text style={styles.sheetTitle}>Secure your app</Text>
               <Text style={styles.sheetDesc}>
                 {hardwareAvailable
-                  ? `Would you like to use ${biometricType.toLowerCase()} to quickly unlock Hisaabo?`
-                  : "Set up a PIN to quickly unlock Hisaabo."}
+                  ? `Would you like to use ${biometricType.toLowerCase()} to quickly unlock Rohadas?`
+                  : "Set up a PIN to quickly unlock Rohadas."}
               </Text>
 
               {hardwareAvailable && (

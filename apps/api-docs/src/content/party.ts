@@ -47,7 +47,7 @@ export const partyEndpoints: EndpointGroup = {
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/party.list?input=%7B%22json%22%3A%7B%22filter%22%3A%22customer%22%2C%22page%22%3A1%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/party.list?input=%7B%22json%22%3A%7B%22filter%22%3A%22customer%22%2C%22page%22%3A1%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const { data, total } = await trpc.party.list.query({
@@ -60,7 +60,7 @@ export const partyEndpoints: EndpointGroup = {
 
 params = urllib.parse.quote(json.dumps({"json": {"filter": "customer", "page": 1}}))
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/party.list?input={params}",
+    f"https://api.rohadas.app/api/trpc/party.list?input={params}",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
 )`,
       },
@@ -101,7 +101,7 @@ resp = httpx.get(
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/party.getById?input=%7B%22json%22%3A%7B%22id%22%3A%22party-uuid%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/party.getById?input=%7B%22json%22%3A%7B%22id%22%3A%22party-uuid%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const party = await trpc.party.getById.query({ id: "party-uuid" });
@@ -113,7 +113,7 @@ if (party) {
 
 params = urllib.parse.quote(json.dumps({"json": {"id": "party-uuid"}}))
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/party.getById?input={params}",
+    f"https://api.rohadas.app/api/trpc/party.getById?input={params}",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
 )`,
       },
@@ -123,7 +123,7 @@ resp = httpx.get(
       method: "mutation",
       path: "party.create",
       title: "Create Party",
-      description: "Create a new customer or supplier. GSTIN is validated with the official 15-character format regex. Opening balance represents the amount already owed before using Hisaabo.",
+      description: "Create a new customer or supplier. GSTIN is validated with the official 15-character format regex. Opening balance represents the amount already owed before using Rohadas.",
       auth: "business",
       requiredRole: "member",
       input: [
@@ -162,7 +162,7 @@ resp = httpx.get(
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/party.create \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/party.create \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -190,7 +190,7 @@ resp = httpx.get(
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/party.create",
+    "https://api.rohadas.app/api/trpc/party.create",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
     json={"json": {
         "type": "customer",
@@ -203,7 +203,7 @@ resp = httpx.post(
       },
       gotchas: [
         "GSTIN is validated against the regex `^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$`. Pass an empty string `\"\"` to clear it.",
-        "`openingBalance` represents money already owed before starting to use Hisaabo. Use a negative value if the party has a credit balance.",
+        "`openingBalance` represents money already owed before starting to use Rohadas. Use a negative value if the party has a credit balance.",
         "An audit log entry is created for party creation.",
       ],
     },
@@ -237,7 +237,7 @@ resp = httpx.post(
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/party.update \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/party.update \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -253,7 +253,7 @@ resp = httpx.post(
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/party.update",
+    "https://api.rohadas.app/api/trpc/party.update",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
     json={"json": {"id": "party-uuid", "data": {"name": "Acme Corp Pvt Ltd"}}},
 )`,
@@ -276,7 +276,7 @@ resp = httpx.post(
         example: { success: true },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/party.delete \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/party.delete \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -285,7 +285,7 @@ resp = httpx.post(
         python: `import httpx
 
 httpx.post(
-    "https://api.hisaabo.in/api/trpc/party.delete",
+    "https://api.rohadas.app/api/trpc/party.delete",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
     json={"json": {"id": "party-uuid"}},
 )`,
@@ -314,7 +314,7 @@ httpx.post(
         ],
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/party.topItems?input=%7B%22json%22%3A%7B%22partyId%22%3A%22party-uuid%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/party.topItems?input=%7B%22json%22%3A%7B%22partyId%22%3A%22party-uuid%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const topItems = await trpc.party.topItems.query({ partyId: "party-uuid" });
@@ -325,7 +325,7 @@ topItems.forEach(item => {
 
 params = urllib.parse.quote(json.dumps({"json": {"partyId": "party-uuid"}}))
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/party.topItems?input={params}",
+    f"https://api.rohadas.app/api/trpc/party.topItems?input={params}",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
 )`,
       },
@@ -352,7 +352,7 @@ resp = httpx.get(
         example: { invoiceCount: 24, paymentCount: 18 },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/party.getStats?input=%7B%22json%22%3A%7B%22id%22%3A%22party-uuid%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/party.getStats?input=%7B%22json%22%3A%7B%22id%22%3A%22party-uuid%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const stats = await trpc.party.getStats.query({ id: "party-uuid" });
@@ -361,7 +361,7 @@ console.log("Invoices:", stats.invoiceCount, "Payments:", stats.paymentCount);`,
 
 params = urllib.parse.quote(json.dumps({"json": {"id": "party-uuid"}}))
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/party.getStats?input={params}",
+    f"https://api.rohadas.app/api/trpc/party.getStats?input={params}",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
 )`,
       },
@@ -384,7 +384,7 @@ resp = httpx.get(
         example: { success: true, mergedInto: "target-party-uuid" },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/party.merge \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/party.merge \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -397,7 +397,7 @@ console.log("Merged into:", result.mergedInto);`,
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/party.merge",
+    "https://api.rohadas.app/api/trpc/party.merge",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
     json={"json": {"sourceId": "source-party-uuid", "targetId": "target-party-uuid"}},
 )`,
@@ -435,7 +435,7 @@ resp = httpx.post(
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/party.ledgerReport?input=%7B%22json%22%3A%7B%22partyId%22%3A%22party-uuid%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/party.ledgerReport?input=%7B%22json%22%3A%7B%22partyId%22%3A%22party-uuid%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const ledger = await trpc.party.ledgerReport.query({
@@ -448,7 +448,7 @@ console.log("Closing balance:", ledger?.summary.closingBalance);`,
 
 params = urllib.parse.quote(json.dumps({"json": {"partyId": "party-uuid"}}))
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/party.ledgerReport?input={params}",
+    f"https://api.rohadas.app/api/trpc/party.ledgerReport?input={params}",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
 )`,
       },
@@ -482,7 +482,7 @@ resp = httpx.get(
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/party.ledgerReportCSV?input=%7B%22json%22%3A%7B%22partyId%22%3A%22party-uuid%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/party.ledgerReportCSV?input=%7B%22json%22%3A%7B%22partyId%22%3A%22party-uuid%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const result = await trpc.party.ledgerReportCSV.query({ partyId: "party-uuid" });
@@ -494,7 +494,7 @@ if (result) {
 
 params = urllib.parse.quote(json.dumps({"json": {"partyId": "party-uuid"}}))
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/party.ledgerReportCSV?input={params}",
+    f"https://api.rohadas.app/api/trpc/party.ledgerReportCSV?input={params}",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
 )
 data = resp.json()["result"]["data"]["json"]
@@ -528,7 +528,7 @@ with open(data["filename"], "w") as f:
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/party.tallyExport?input=%7B%22json%22%3A%7B%22fromDate%22%3A%222026-04-01T00%3A00%3A00.000Z%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/party.tallyExport?input=%7B%22json%22%3A%7B%22fromDate%22%3A%222026-04-01T00%3A00%3A00.000Z%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const tally = await trpc.party.tallyExport.query({
@@ -540,7 +540,7 @@ console.log("Vouchers:", tally.rowCount);`,
 
 params = urllib.parse.quote(json.dumps({"json": {"fromDate": "2026-04-01T00:00:00.000Z"}}))
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/party.tallyExport?input={params}",
+    f"https://api.rohadas.app/api/trpc/party.tallyExport?input={params}",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
 )`,
       },
@@ -578,7 +578,7 @@ resp = httpx.get(
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/party.ledger?input=%7B%22json%22%3A%7B%22partyId%22%3A%22party-uuid%22%2C%22page%22%3A1%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/party.ledger?input=%7B%22json%22%3A%7B%22partyId%22%3A%22party-uuid%22%2C%22page%22%3A1%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const ledger = await trpc.party.ledger.query({
@@ -592,7 +592,7 @@ console.log("Total entries:", ledger.total);`,
 
 params = urllib.parse.quote(json.dumps({"json": {"partyId": "party-uuid", "page": 1}}))
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/party.ledger?input={params}",
+    f"https://api.rohadas.app/api/trpc/party.ledger?input={params}",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
 )`,
       },

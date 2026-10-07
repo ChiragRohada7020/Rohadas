@@ -129,12 +129,12 @@ export function registerDocumentCommands(program: Command): void {
     .option("--json", "JSON output")
     .option("-y, --yes", "Skip confirmation")
     .action(async (opts) => {
-      const { HisaaboClient, HisaaboApiError } = await import("../../client.js");
+      const { RohadasClient, RohadasApiError } = await import("../../client.js");
       const { requireAuth } = await import("../../config.js");
       const { fatalError, outputJSON, success, EXIT } = await import("../../output.js");
 
       const cfg = requireAuth();
-      const client = new HisaaboClient(cfg);
+      const client = new RohadasClient(cfg);
 
       if (!opts.yes && process.stdin.isTTY) {
         const readline = await import("readline");
@@ -170,7 +170,7 @@ export function registerDocumentCommands(program: Command): void {
         console.log(`  New ID:  ${newId}\n`);
 
       } catch (e) {
-        if (e instanceof HisaaboApiError) {
+        if (e instanceof RohadasApiError) {
           const err = e.hisaaboError;
           if (err.code === "not_found") fatalError(`Source document not found: ${opts.fromId}`, EXIT.NOT_FOUND);
           if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);

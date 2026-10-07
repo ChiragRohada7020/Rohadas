@@ -7,7 +7,7 @@
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { HisaaboClient } from "../client.js";
+import type { RohadasClient } from "../client.js";
 import { wrapTool } from "../lib/errors.js";
 
 /** Resolve a named period to ISO 8601 date strings for the API. */
@@ -48,7 +48,7 @@ function resolvePeriod(period: string | undefined): { fromDate?: string; toDate?
   return {};
 }
 
-export function registerDashboardTools(server: McpServer, client: HisaaboClient) {
+export function registerDashboardTools(server: McpServer, client: RohadasClient) {
 
   server.tool(
     "dashboard_summary",

@@ -1,7 +1,7 @@
 /**
  * Listbox — custom select/dropdown component
  *
- * Hisaabo uses Listbox for single-value selection wherever the native
+ * Rohadas uses Listbox for single-value selection wherever the native
  * <select> element would be too plain or insufficient (e.g., GST rate pickers,
  * payment mode selectors, financial year selectors).  The component implements
  * the ARIA Listbox pattern with full keyboard navigation including typeahead.
@@ -29,7 +29,7 @@ import { Listbox } from "../Listbox";
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-// GST rate options — a real use case in Hisaabo's tax-rate picker.
+// GST rate options — a real use case in Rohadas's tax-rate picker.
 const GST_OPTIONS = [
   { value: "0", label: "0% (Exempt)" },
   { value: "5", label: "5% GST" },

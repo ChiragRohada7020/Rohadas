@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError, type GatewayChargeRate } from "../../client.js";
+import { RohadasClient, RohadasApiError, type GatewayChargeRate } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, outputTable, EXIT, type ColumnDef } from "../../output.js";
 
@@ -12,7 +12,7 @@ export async function bankGatewayConfigCommand(
   opts: { json?: boolean },
 ): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const config = await client.bankAccount.getGatewayConfig(accountId);
@@ -50,7 +50,7 @@ export async function bankGatewayConfigCommand(
     outputTable(rows, cols);
     console.log();
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "not_found") fatalError(`Bank account not found: ${accountId}`, EXIT.NOT_FOUND);

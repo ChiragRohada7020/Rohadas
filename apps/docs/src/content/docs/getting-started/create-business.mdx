@@ -1,6 +1,6 @@
 ---
 title: Create Your Business
-description: Set up your first business in Hisaabo. Configure your GST registration type, GSTIN, state code, invoice prefix, and financial year start.
+description: Set up your first business in Rohadas. Configure your GST registration type, GSTIN, state code, invoice prefix, and financial year start.
 sidebar:
   order: 2
 ---
@@ -8,7 +8,7 @@ sidebar:
 import ForDesktop from '../../../components/ForDesktop.astro';
 import ForMobile from '../../../components/ForMobile.astro';
 
-When you sign in to Hisaabo for the first time, you are prompted to create a business. This page explains each setting so you configure it correctly from the start. Getting the GST state code right is especially important — it drives automatic CGST/SGST versus IGST calculation on every invoice.
+When you sign in to Rohadas for the first time, you are prompted to create a business. This page explains each setting so you configure it correctly from the start. Getting the GST state code right is especially important — it drives automatic CGST/SGST versus IGST calculation on every invoice.
 
 <ForDesktop>
 The business creation form opens as a centered page after your first sign-in. Fill in each section and click **Create Business** at the bottom.
@@ -35,7 +35,7 @@ Beyond the address (entered above), the state and state code fields deserve spec
 
 **State**: Enter your full state name, for example "Maharashtra" or "Tamil Nadu".
 
-**State Code**: Enter the 2-digit GST state code for your state. This is the most critical configuration value in Hisaabo. The system uses this code to determine whether a supply to a party is intra-state (same state code → CGST + SGST) or inter-state (different state code → IGST).
+**State Code**: Enter the 2-digit GST state code for your state. This is the most critical configuration value in Rohadas. The system uses this code to determine whether a supply to a party is intra-state (same state code → CGST + SGST) or inter-state (different state code → IGST).
 
 Common GST state codes:
 
@@ -140,4 +140,4 @@ Go to Settings and edit your business profile. Update the state code and save. T
 Yes, but the counter continues from where it left off. Changing the prefix does not reset the counter. For example, if you have 50 invoices with prefix `INV`, changing to `BILL` will produce `BILL-00051` as the next invoice.
 
 **What if my party is in a Union Territory?**
-Union Territories have their own GST codes (for example, Delhi is 07, Puducherry is 34, Dadra & Nagar Haveli and Daman & Diu is 26). Enter the correct 2-digit code for the territory. The CGST/UGST (Union Territory GST) split works the same as CGST/SGST for Hisaabo's calculation purposes.
+Union Territories have their own GST codes (for example, Delhi is 07, Puducherry is 34, Dadra & Nagar Haveli and Daman & Diu is 26). Enter the correct 2-digit code for the territory. The CGST/UGST (Union Territory GST) split works the same as CGST/SGST for Rohadas's calculation purposes.

@@ -1,7 +1,7 @@
 /**
  * ConfirmDialog — two-button confirmation overlay
  *
- * ConfirmDialog is used throughout Hisaabo whenever a destructive or
+ * ConfirmDialog is used throughout Rohadas whenever a destructive or
  * irreversible action requires explicit user consent before proceeding —
  * deleting an invoice, removing a party, voiding a payment, etc.  It wraps
  * the Modal primitive and therefore inherits Modal's keyboard and ARIA

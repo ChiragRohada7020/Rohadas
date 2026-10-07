@@ -25,6 +25,9 @@ export const invoiceRouter = router({
       toDate: z.string().datetime().nullish(),
       itemId: z.string().uuid().nullish(),
       search: z.string().nullish(),
+      source: z.string().nullish(),
+      balanceMin: z.number().min(0).nullish(),
+      balanceMax: z.number().min(0).nullish(),
       sortBy: z.enum(["date", "amount", "number"]).nullish(),
       sortDir: z.enum(["asc", "desc"]).nullish(),
       ...paginationSchema.shape,
@@ -40,13 +43,17 @@ export const invoiceRouter = router({
       if (Array.isArray(input.status)) {
         conditions.push(inArray(invoices.status, input.status));
       } else if (input.status === "overdue") {
-        // Overdue is computed: due date has passed AND invoice is not paid/cancelled/draft
         conditions.push(sql`${invoices.dueDate} < NOW()`);
         conditions.push(sql`${invoices.status} NOT IN ('paid', 'cancelled', 'draft')`);
       } else if (input.status) {
         conditions.push(eq(invoices.status, input.status));
       }
       if (input.partyId) conditions.push(eq(invoices.partyId, input.partyId));
+      if (input.source === "manual") {
+        conditions.push(isNull(invoices.source));
+      } else if (input.source) {
+        conditions.push(eq(invoices.source, input.source));
+      }
       conditions.push(...buildBusinessDateFilter(invoices, { from: input.fromDate, to: input.toDate }));
       if (input.search) {
         const term = `%${escapeLike(input.search)}%`;
@@ -88,6 +95,17 @@ export const invoiceRouter = router({
         .groupBy(invoices.referenceDocumentId)
         .as("adj");
 
+      // Balance filters: filter by computed outstanding (totalAmount - amountPaid - totalAdjusted)
+      if (input.balanceMin !== undefined || input.balanceMax !== undefined) {
+        const balanceExpr = sql`${invoices.totalAmount}::numeric - ${invoices.amountPaid}::numeric - COALESCE(${adjSq.totalAdj}::numeric, 0)`;
+        if (input.balanceMin !== undefined) {
+          conditions.push(sql`${balanceExpr} >= ${input.balanceMin}`);
+        }
+        if (input.balanceMax !== undefined) {
+          conditions.push(sql`${balanceExpr} <= ${input.balanceMax}`);
+        }
+      }
+
       const [data, [{ count }]] = await Promise.all([
         ctx.db.select({
           id: invoices.id,
@@ -122,6 +140,7 @@ export const invoiceRouter = router({
           .limit(input.limit)
           .offset(offset),
         ctx.db.select({ count: sql<number>`count(*)::int` }).from(invoices)
+          .leftJoin(adjSq, eq(adjSq.refId, invoices.id))
           .where(and(...conditions)),
       ]);
 

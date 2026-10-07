@@ -2,7 +2,7 @@
  * Tests for pure utility functions in apps/web/src/lib/utils.ts
  *
  * WHY THIS FILE EXISTS:
- * utils.ts exports small, composable functions used throughout the Hisaabo
+ * utils.ts exports small, composable functions used throughout the Rohadas
  * web app — from building Tailwind class strings to generating CSV exports
  * for business owners. Regressions in these helpers can corrupt user-facing
  * data silently. This file pins the exact contract of every exported function
@@ -78,7 +78,7 @@ describe("cn() — Tailwind className merger", () => {
   });
 
   it("handles a mix of falsy and truthy values in arbitrary order", () => {
-    // Realistic Hisaabo usage: status badge conditional classes
+    // Realistic Rohadas usage: status badge conditional classes
     const isPaid = true;
     const isOverdue = false;
     expect(
@@ -121,7 +121,7 @@ describe("formatDateInput() — converts dates to YYYY-MM-DD for HTML date input
   });
 
   it("preserves the year, month, and day for financial-year boundary dates", () => {
-    // Financial year starts April 1 — a critical date in Hisaabo
+    // Financial year starts April 1 — a critical date in Rohadas
     const result = formatDateInput("2025-04-01T00:00:00.000Z");
     expect(result).toBe("2025-04-01");
   });
@@ -185,18 +185,21 @@ describe("formatMonthYearShort() — 'MMM YY' for monthly chart axes", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // toISOString / toISOStringEndOfDay — form input → ISO for tRPC mutations
 // ─────────────────────────────────────────────────────────────────────────────
-describe("toISOString() — YYYY-MM-DD → ISO for z.string().datetime() inputs", () => {
-  it("returns a full ISO string for a valid YYYY-MM-DD input", () => {
-    const result = toISOString("2025-03-31");
-    // Must be a full ISO timestamp (20 or more chars, with T and Z)
-    expect(result).toBeDefined();
-    expect(result).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
-    expect(result).toContain("2025-03-31");
+describe("toISOString() — calendar dates are canonicalised to UTC midnight", () => {
+  it("REGRESSION: a date-only string becomes UTC midnight of that exact day, in ANY timezone", () => {
+    // THE "dashboard shows nothing for Today" BUG: the old local-time parse
+    // turned "2025-03-31" into 2025-03-30T18:30:00Z in IST (UTC+5:30) —
+    // outside the dashboard's UTC "[today 00:00Z … today 23:59:59.999Z]"
+    // window. The date-only path must be timezone-independent by construction.
+    expect(toISOString("2025-03-31")).toBe("2025-03-31T00:00:00.000Z");
+    // Trimmed input behaves identically (date inputs sometimes carry spaces).
+    expect(toISOString(" 2025-03-31 ")).toBe("2025-03-31T00:00:00.000Z");
   });
 
-  it("accepts a Date object", () => {
-    const result = toISOString(new Date("2025-03-31T12:00:00.000Z"));
-    expect(result).toBe("2025-03-31T12:00:00.000Z");
+  it("canonicalises a Date object to UTC midnight of its wall-clock day", () => {
+    // Noon UTC keeps the wall date on 31 March in every timezone from
+    // UTC-12 to UTC+12, so this assertion is deterministic under any runner tz.
+    expect(toISOString(new Date("2025-03-31T12:00:00.000Z"))).toBe("2025-03-31T00:00:00.000Z");
   });
 
   it("returns undefined for null/undefined/empty so optional mutation fields stay absent", () => {
@@ -212,12 +215,12 @@ describe("toISOString() — YYYY-MM-DD → ISO for z.string().datetime() inputs"
 });
 
 describe("toISOStringEndOfDay() — upper-bound range filters include the whole day", () => {
-  it("pushes to 23:59:59.999 before serialising", () => {
-    const result = toISOStringEndOfDay("2025-03-31");
-    expect(result).toBeDefined();
-    // dayjs endOf("day") → 23:59:59.999 in local tz, then .toISOString()
-    // Exact time depends on tz but must end with ":59.999Z" after conversion to UTC.
-    expect(result).toMatch(/\.999Z$/);
+  it("emits 23:59:59.999 UTC of the date-only day (timezone-independent)", () => {
+    expect(toISOStringEndOfDay("2025-03-31")).toBe("2025-03-31T23:59:59.999Z");
+  });
+
+  it("canonicalises a Date object to end-of-day UTC of its wall-clock day", () => {
+    expect(toISOStringEndOfDay(new Date("2025-03-31T12:00:00.000Z"))).toBe("2025-03-31T23:59:59.999Z");
   });
 
   it("returns undefined for null/undefined/empty/invalid", () => {

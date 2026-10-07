@@ -43,6 +43,19 @@ interface UnitOption {
   conversionFactor: number;
 }
 
+/**
+ * A selectable `item_variants` row. Mirrors the shape POS uses for its catalog
+ * tiles (packages/api/src/routers/pos.ts) so both screens label variants
+ * identically — "Item — attr / attr".
+ */
+interface VariantOption {
+  variantId: string;
+  label: string;
+  salePrice: string;
+  purchasePrice: string;
+  stockQuantity: string;
+}
+
 interface LineItem {
   id: string;
   itemId?: string;
@@ -67,6 +80,31 @@ interface LineItem {
   selectedUnit?: string;
   conversionFactor?: string;
   availableUnits?: UnitOption[];
+  /**
+   * Chosen row from `item_variants` for `itemMode === "variants"` items.
+   *
+   * Distinct from `selectedUnit`: an alt_units item keeps its units in the
+   * `items.unit_variants` JSONB array (→ selectedUnit), whereas a variants item
+   * keeps them in the `item_variants` TABLE (→ variantId). The invoice builder
+   * previously only ever set the former, so variant items silently fell back to
+   * the parent's base price and recorded no variant identity.
+   */
+  variantId?: string;
+  /** Variant rows offered for this line, when the parent item has variants. */
+  availableVariants?: VariantOption[];
+  /** Frozen "Item — attr / attr" label; set at pick time, matching POS tiles. */
+  baseItemName?: string;
+
+  // ── Lot identity, per line ──────────────────────────────────────
+  //
+  // Only meaningful for an item whose trackingMode is not "none". Sent with
+  // every line, but the UI only reveals the inputs a tracked item needs.
+  batchNo?: string;
+  serialNo?: string;
+  /** yyyy-mm-dd from the native date input; converted to ISO on submit. */
+  expiryDate?: string;
+  /** A specific lot being consumed (a serial-tracked sale). */
+  lotId?: string;
 }
 
 interface Charge {
@@ -142,6 +180,19 @@ export function DocumentCreator({
   // integer" auto-fill so we don't silently undo their override.
   const [roundOffOverridden, setRoundOffOverridden] = useState(false);
   const [referenceDocumentId, _setReferenceDocumentId] = useState<string | undefined>(prefillFromInvoiceId || undefined);
+
+  // ── Stock location (godown) ────────────────────────────────────
+  //
+  // ONE selector for the whole document, not one per line. This mirrors
+  // ERPNext, and it is also just correct: a purchase delivery physically
+  // arrives at one place, so asking per row would be both tedious and wrong.
+  // The value is stamped onto every line at submit time.
+  //
+  // Only documents that actually move stock show it. A quotation or proforma
+  // has no goods to place, and a credit note is a financial adjustment — so
+  // the field is hidden rather than shown-and-ignored.
+  const [godownId, setGodownId] = useState("");
+  const { data: godowns } = trpc.inventory.list.useQuery();
 
   // Confirm dialog when closing with unsaved data
   const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
@@ -257,6 +308,11 @@ export function DocumentCreator({
         unitPrice: li.unitPrice,
         taxPercent: li.taxPercent || "0",
         discountPercent: li.discountPercent || "0",
+        // Rehydrate the variant selection when editing an existing document,
+        // otherwise the variant silently resets to the first/default on save.
+        selectedUnit: li.selectedUnit ?? undefined,
+        conversionFactor: li.conversionFactor ?? undefined,
+        variantId: li.variantId ?? undefined,
       })));
     }
   }, [editData]);
@@ -446,7 +502,7 @@ export function DocumentCreator({
       setItems((prev) =>
         prev.map((li) =>
           li.id === lineId
-            ? { ...li, itemId: undefined, availableUnits: undefined, selectedUnit: undefined, conversionFactor: undefined }
+            ? { ...li, itemId: undefined, availableUnits: undefined, selectedUnit: undefined, conversionFactor: undefined, variantId: undefined, availableVariants: undefined, baseItemName: undefined }
             : li
         )
       );
@@ -463,6 +519,39 @@ export function DocumentCreator({
     }));
     const allUnits = [baseUnit, ...variants];
 
+    // Variants live in the `item_variants` TABLE, not the `unit_variants` JSONB
+    // array. An item with itemMode="variants" has a NULL unit_variants array,
+    // so the code above produced allUnits.length === 1 and the line fell back
+    // to the parent's base price with no variant identity recorded.
+    const rawVariants: Array<{
+      id: string;
+      salePrice?: string | null;
+      purchasePrice?: string | null;
+      stockQuantity?: string | null;
+      attributeValues?: unknown;
+    }> = ((product as { variants?: unknown }).variants as typeof rawVariants) ?? [];
+    const availableVariants: VariantOption[] = rawVariants.map((v) => {
+      // Same " / " join POS uses (pos.ts expandItemsToTiles) so both screens
+      // label variants identically.
+      const attrs = Object.values((v.attributeValues ?? {}) as Record<string, unknown>)
+        .filter(Boolean)
+        .join(" / ");
+      return {
+        variantId: v.id,
+        label: attrs ? `${product.name} — ${attrs}` : product.name,
+        salePrice: v.salePrice ?? product.salePrice ?? "",
+        purchasePrice: v.purchasePrice ?? product.purchasePrice ?? "",
+        stockQuantity: v.stockQuantity ?? "0",
+      };
+    });
+    // Preselect the first variant so a variant-only item always bills a real
+    // variant instead of silently using the parent price.
+    const firstVariant = availableVariants[0];
+    const variantPrice =
+      invoiceType === "sale"
+        ? firstVariant?.salePrice
+        : (firstVariant?.purchasePrice || firstVariant?.salePrice);
+
     setItems((prev) =>
       prev.map((li) =>
         li.id === lineId
@@ -474,16 +563,37 @@ export function DocumentCreator({
               // new line starts with a blank notes field — users then type a
               // per-invoice comment (e.g. "Keep separate from order #42") if
               // they want one.
-              itemName: product.name,
+              itemName: firstVariant ? firstVariant.label : product.name,
+              baseItemName: product.name,
               notes: "",
-              unitPrice: basePrice,
+              unitPrice: variantPrice ?? basePrice,
               taxPercent: product.taxPercent,
               selectedUnit: undefined,
               conversionFactor: undefined,
               availableUnits: allUnits.length > 1 ? allUnits : undefined,
+              variantId: firstVariant?.variantId,
+              availableVariants: availableVariants.length > 0 ? availableVariants : undefined,
             }
           : li
       )
+    );
+  }
+
+  function handleSelectVariant(lineId: string, variantId: string) {
+    setItems((prev) =>
+      prev.map((li) => {
+        if (li.id !== lineId) return li;
+        const v = li.availableVariants?.find((o) => o.variantId === variantId);
+        if (!v) return li;
+        return {
+          ...li,
+          variantId: v.variantId,
+          // Refreeze the display label so the line reads "Item — attrs".
+          itemName: v.label,
+          unitPrice:
+            invoiceType === "sale" ? v.salePrice : (v.purchasePrice || v.salePrice),
+        };
+      })
     );
   }
 
@@ -534,6 +644,9 @@ export function DocumentCreator({
               selectedUnit: undefined,
               conversionFactor: undefined,
               availableUnits: undefined,
+              variantId: undefined,
+              availableVariants: undefined,
+              baseItemName: undefined,
             }
           : li
       )
@@ -571,6 +684,26 @@ export function DocumentCreator({
         discountPercent: li.discountPercent,
         selectedUnit: li.selectedUnit || undefined,
         conversionFactor: li.conversionFactor || undefined,
+        // Required so the API records WHICH variant was billed — without it
+        // the server has no variant identity to decrement stock against and
+        // the line reopens as a plain item.
+        variantId: li.variantId || undefined,
+        // The header-level godown, stamped onto each line. Blank stays
+        // undefined so the server applies its own default (purchase → primary
+        // godown, sale → FEFO across all) rather than storing an empty string.
+        godownId: godownId || undefined,
+        // Lot identity. Only present for a tracked item; the inputs are
+        // hidden otherwise, so these are normally undefined.
+        batchNo: li.batchNo?.trim() || undefined,
+        serialNo: li.serialNo?.trim() || undefined,
+        lotId: li.lotId || undefined,
+        // The native date input yields yyyy-mm-dd; the API validator expects a
+        // full ISO datetime. Anchor at UTC MIDNIGHT (Z), matching godowns.tsx
+        // and the calendar-date storage convention — a local-time parse here
+        // would land on 18:30Z the previous day in IST.
+        expiryDate: li.expiryDate
+          ? `${li.expiryDate}T00:00:00.000Z`
+          : undefined,
       };
     });
 
@@ -616,6 +749,38 @@ export function DocumentCreator({
 
   const label = documentTypeLabels[documentType];
   const partyLabel = invoiceType === "sale" ? "Customer" : "Supplier";
+
+  // ── Where should this godown field sit, and what should it say? ─────
+  //
+  // Derived from how the document actually moves stock, matching the
+  // `stockEffect` each router declares:
+  //
+  //   purchase invoice / sales_return    → increment  → goods COME IN
+  //   sale invoice / delivery_challan    → decrement  → goods GO OUT
+  //   purchase_return                    → decrement  → goods GO BACK OUT
+  //   quotation / proforma / credit/debit → none      → field hidden
+  //
+  // Getting the wording wrong here is worse than hiding the field: telling a
+  // user a delivery "leaves from" the godown they are about to type would make
+  // them record the purchase into the wrong location.
+  const godownPlacement = useMemo((): { show: boolean; label: string } => {
+    switch (documentType) {
+      case "invoice":
+        return invoiceType === "purchase"
+          ? { show: true, label: "Received in" }
+          : { show: true, label: "Dispatch from" };
+      case "delivery_challan":
+        return { show: true, label: "Dispatch from" };
+      case "sales_return":
+        return { show: true, label: "Returned to" };
+      case "purchase_return":
+        return { show: true, label: "Returned from" };
+      default:
+        return { show: false, label: "" };
+    }
+  }, [documentType, invoiceType]);
+
+  const showGodownField = godownPlacement.show && (godowns?.length ?? 0) > 0;
 
   const partyOptions =
     partiesData?.data.map((p) => ({
@@ -723,6 +888,44 @@ export function DocumentCreator({
           )}
         </div>
 
+        {/* Stock location — a document-level field, mirroring ERPNext's
+            Target/Source Warehouse on a receipt or transfer. Rendered only for
+            documents that move stock, and only once the business has at least
+            one godown: a single-location shop should never see the control. */}
+        {showGodownField && (
+          <div className="max-w-xs">
+            <label className="label" htmlFor={`${lineItemIdPrefix}-godown`}>
+              {godownPlacement.label}
+            </label>
+            <select
+              id={`${lineItemIdPrefix}-godown`}
+              value={godownId}
+              onChange={(e) => setGodownId(e.target.value)}
+              className="input"
+            >
+              {/* Blank is a real, meaningful choice, not "unset":
+                  goods coming IN fall back to the primary godown on the
+                  server, while goods going OUT are allocated FEFO across every
+                  godown. The option text says so, so the user is never
+                  guessing what blank will do. */}
+              <option value="">
+                {invoiceType === "purchase" ? "Main godown (default)" : "Any godown (earliest expiry first)"}
+              </option>
+              {godowns?.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
+                  {g.isPrimary ? " (main)" : ""}
+                </option>
+              ))}
+            </select>
+            <p className="text-[10px] text-text-tertiary mt-1">
+              {invoiceType === "purchase"
+                ? "Applies to every line on this document."
+                : "Leave as “Any godown” to sell from wherever stock is held."}
+            </p>
+          </div>
+        )}
+
         {/* Line items */}
         <div className="space-y-3">
           <p className="text-[11px] font-medium text-text-tertiary uppercase tracking-wide">Line Items</p>
@@ -767,6 +970,42 @@ export function DocumentCreator({
                     </svg>
                   </button>
                 </div>
+
+                {/* Variant selector pills — only for items whose variants live
+                    in the `item_variants` table (itemMode="variants"). Mutually
+                    exclusive with the unit pills above: an item is either
+                    variant-based or alt-unit-based, never both. */}
+                {li.availableVariants && li.availableVariants.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 pl-0.5" role="radiogroup" aria-label="Select variant">
+                    {li.availableVariants.map((v) => {
+                      const isSelected = li.variantId === v.variantId;
+                      // Strip the leading "Item — " so the pill shows just the
+                      // attributes (the item name is already on the combobox).
+                      const attrs = v.label.replace(/^.*—\s*/, "");
+                      const price = invoiceType === "sale" ? v.salePrice : (v.purchasePrice || v.salePrice);
+                      return (
+                        <button
+                          key={v.variantId}
+                          type="button"
+                          role="radio"
+                          aria-checked={isSelected}
+                          onClick={() => handleSelectVariant(li.id, v.variantId)}
+                          className={cn(
+                            "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-colors border",
+                            isSelected
+                              ? "bg-brand-600 text-white border-brand-600"
+                              : "border-border-light text-text-secondary hover:bg-surface-1"
+                          )}
+                        >
+                          <span>{attrs}</span>
+                          <span className={cn("tabular-nums", isSelected ? "text-white/80" : "text-text-tertiary")}>
+                            ₹{price}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {/* Unit selector pills — only for items with alt units */}
                 {li.availableUnits && li.availableUnits.length > 1 && (
@@ -890,7 +1129,84 @@ export function DocumentCreator({
                   </div>
                 </div>
 
-                {/* Row 4: Free-text notes for this line (optional). Stored
+                {/* Row 4: Lot identity — shown ONLY for an item that actually
+                    uses lot tracking, so nothing extra appears for the ~95% of
+                    items that don't.
+
+                    A RECEIPT declares the identity of the goods arriving
+                    (batch / expiry). A SALE instead CONSUMES an existing lot,
+                    so it offers the serials in stock rather than asking the
+                    user to invent a batch number — that would create a lot that
+                    already had stock consumed from it. */}
+                {(() => {
+                  const product = li.itemId
+                    ? itemsData?.data.find((p) => p.id === li.itemId)
+                    : undefined;
+                  const mode = (product?.trackingMode ?? "none") as
+                    "none" | "batch" | "serial" | "expiry";
+                  if (mode === "none") return null;
+
+                  return (
+                    <div
+                      className="flex items-center gap-2 flex-wrap pt-1"
+                      data-testid={`lot-fields-${li.id}`}
+                    >
+                      <span className="text-[10px] font-medium uppercase tracking-wide text-text-tertiary">
+                        {invoiceType === "purchase" ? "Lot" : "Consume lot"}
+                      </span>
+
+                      {invoiceType === "purchase" ? (
+                        <>
+                          {mode !== "serial" && (
+                            <input
+                              type="text"
+                              value={li.batchNo ?? ""}
+                              onChange={(e) => updateItem(li.id, "batchNo", e.target.value)}
+                              placeholder="Batch no."
+                              aria-label="Batch number"
+                              maxLength={100}
+                              className="input py-1 text-xs w-36"
+                            />
+                          )}
+                          {mode === "expiry" && (
+                            <input
+                              type="date"
+                              value={li.expiryDate ?? ""}
+                              onChange={(e) => updateItem(li.id, "expiryDate", e.target.value)}
+                              aria-label="Expiry date"
+                              className="input py-1 text-xs"
+                            />
+                          )}
+                          {mode === "serial" && (
+                            <input
+                              type="text"
+                              value={li.serialNo ?? ""}
+                              onChange={(e) => updateItem(li.id, "serialNo", e.target.value)}
+                              placeholder="Serial no."
+                              aria-label="Serial number"
+                              maxLength={100}
+                              className="input py-1 text-xs w-40"
+                            />
+                          )}
+                        </>
+                      ) : mode === "serial" ? (
+                        <LotPicker
+                          itemId={li.itemId!}
+                          variantId={li.variantId}
+                          godownId={godownId || undefined}
+                          value={li.lotId ?? ""}
+                          onChange={(lotId) => updateItem(li.id, "lotId", lotId)}
+                        />
+                      ) : (
+                        <span className="text-[10px] text-text-tertiary">
+                          Allocated automatically, earliest expiry first.
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Row 5: Free-text notes for this line (optional). Stored
                     on the backend as `invoice_items.description` and
                     rendered as italic muted secondary text on the PDF and
                     detail views beneath the item name. */}
@@ -1174,5 +1490,71 @@ export function DocumentCreator({
       }}
     />
     </>
+  );
+}
+/**
+ * LotPicker — choose the specific serial being sold.
+ *
+ * Only rendered for a SERIAL-tracked item on a stock-OUT document. FEFO would
+ * happily consume "whichever unit comes first", but a serialised product (a
+ * phone, a laptop, a vehicle) has to stay traceable: a warranty claim must name
+ * the exact unit, and a tax audit needs to follow it. So this is an explicit
+ * pick rather than an automatic allocation.
+ *
+ * The godown filter mirrors the header selection, so once a cashier says
+ * "Dispatch from: Front Counter", only units actually on that counter are
+ * offered — picking a serial that is in the back room would then fail at
+ * submit time, which is a far worse experience than not offering it.
+ */
+function LotPicker({
+  itemId,
+  variantId,
+  godownId,
+  value,
+  onChange,
+}: {
+  itemId: string;
+  variantId?: string;
+  godownId?: string;
+  value: string;
+  onChange: (lotId: string) => void;
+}) {
+  const { data, isFetching } = trpc.inventory.listLots.useQuery({
+    itemId,
+    variantId: variantId ?? undefined,
+    godownId: godownId ?? undefined,
+    inStockOnly: true,
+    limit: 200,
+  });
+
+  // listLots returns a bare array of stock_lots rows.
+  const lots = data ?? [];
+
+  if (isFetching && lots.length === 0) {
+    return <span className="text-[10px] text-text-tertiary">Loading serials…</span>;
+  }
+
+  if (lots.length === 0) {
+    return (
+      <span className="text-[10px] text-text-tertiary">
+        No serial in stock here — receive one first.
+      </span>
+    );
+  }
+
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      aria-label="Serial to consume"
+      className="input py-1 text-xs"
+    >
+      <option value="">Choose serial…</option>
+      {lots.map((lot) => (
+        <option key={lot.id} value={lot.id}>
+          {lot.serialNo ?? lot.batchNo ?? lot.id.slice(0, 8)}
+        </option>
+      ))}
+    </select>
   );
 }

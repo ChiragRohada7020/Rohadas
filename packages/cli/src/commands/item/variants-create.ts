@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, EXIT, success } from "../../output.js";
 
@@ -14,7 +14,7 @@ interface VariantsCreateOpts {
 
 export async function itemVariantsCreateCommand(itemId: string, opts: VariantsCreateOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   let parsedAttributes: Record<string, unknown> | undefined;
   if (opts.attributes) {
@@ -46,7 +46,7 @@ export async function itemVariantsCreateCommand(itemId: string, opts: VariantsCr
     console.log();
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "not_found") fatalError(`Item not found: ${itemId}`, EXIT.NOT_FOUND);
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);

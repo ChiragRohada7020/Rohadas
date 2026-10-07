@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, outputTable, outputTSV, outputCSV, EXIT, hasColor } from "../../output.js";
 import { formatDate, formatRelativeDate } from "../../format.js";
@@ -11,7 +11,7 @@ interface ApiKeyListOpts {
 
 export async function apiKeyListCommand(opts: ApiKeyListOpts): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const keys = await client.apiKey.list();
@@ -61,7 +61,7 @@ export async function apiKeyListCommand(opts: ApiKeyListOpts): Promise<void> {
       process.stdout.write("\n");
     }
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "network_error") fatalError(err.message, EXIT.NETWORK);

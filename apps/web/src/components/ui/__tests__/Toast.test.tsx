@@ -1,7 +1,7 @@
 /**
  * ToastContainer — portal-based notification component
  *
- * Toast notifications are the primary feedback channel in Hisaabo.  They
+ * Toast notifications are the primary feedback channel in Rohadas.  They
  * confirm that an invoice was saved, a payment was recorded, or a file was
  * exported.  Getting them wrong — wrong colour, missing title, non-dismissable
  * — leaves users uncertain whether their action succeeded.

@@ -120,7 +120,7 @@ function CompleteProfilePage() {
         <div className="flex items-center gap-2.5 mb-8">
           <Logo className="w-9 h-9" />
           <span className="font-semibold text-lg tracking-tight text-text-primary">
-            Hisaabo
+            Rohadas
           </span>
         </div>
 
@@ -128,7 +128,7 @@ function CompleteProfilePage() {
         {step === "name" && !alreadyHasName && (
           <>
             <h1 className="text-xl font-semibold mb-1 text-text-primary">
-              {inviteInfo ? "Almost there!" : "Welcome to Hisaabo"}
+              {inviteInfo ? "Almost there!" : "Welcome to Rohadas"}
             </h1>
             <p className="text-sm mb-6 text-text-tertiary">
               {inviteInfo

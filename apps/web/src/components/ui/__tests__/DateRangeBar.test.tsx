@@ -1,7 +1,7 @@
 /**
  * DateRangeBar — date filter toolbar for report and list pages
  *
- * DateRangeBar appears at the top of every report page in Hisaabo: invoices,
+ * DateRangeBar appears at the top of every report page in Rohadas: invoices,
  * expenses, payments, and stock.  It lets the user narrow data to a preset
  * period (this month, last FY, etc.) or enter a custom date range.  An
  * optional Export CSV button triggers a download.

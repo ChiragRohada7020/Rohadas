@@ -29,6 +29,27 @@
       "when": 1776712378497,
       "tag": "0003_needy_siren",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791090413735,
+      "tag": "0004_lean_ben_parker",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791099502162,
+      "tag": "0005_freezing_exodus",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791101049167,
+      "tag": "0006_complex_chronomancer",
+      "breakpoints": true
     }
   ]
 }

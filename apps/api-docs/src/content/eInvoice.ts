@@ -36,7 +36,7 @@ export const eInvoiceEndpoints: EndpointGroup = {
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/eInvoice.configure \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/eInvoice.configure \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -55,7 +55,7 @@ console.log("E-invoicing configured:", config.isEnabled);`,
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/eInvoice.configure",
+    "https://api.rohadas.app/api/trpc/eInvoice.configure",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -108,7 +108,7 @@ config = resp.json()["result"]["data"]["json"]`,
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/eInvoice.getConfig" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/eInvoice.getConfig" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const config = await trpc.eInvoice.getConfig.query();
@@ -121,7 +121,7 @@ if (config) {
         python: `import httpx
 
 resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/eInvoice.getConfig",
+    "https://api.rohadas.app/api/trpc/eInvoice.getConfig",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -154,7 +154,7 @@ else:
         example: { success: true, message: "Successfully connected to IRP" },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/eInvoice.testConnection \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/eInvoice.testConnection \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -168,7 +168,7 @@ if (result.success) {
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/eInvoice.testConnection",
+    "https://api.rohadas.app/api/trpc/eInvoice.testConnection",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -211,7 +211,7 @@ print("Connection:", "OK" if result["success"] else result["message"])`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/eInvoice.generate \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/eInvoice.generate \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -230,7 +230,7 @@ print("Connection:", "OK" if result["success"] else result["message"])`,
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/eInvoice.generate",
+    "https://api.rohadas.app/api/trpc/eInvoice.generate",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -275,7 +275,7 @@ print("IRN:", result["irn"])`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/eInvoice.cancel \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/eInvoice.cancel \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -289,7 +289,7 @@ console.log("E-invoice cancelled:", result.eInvoiceStatus);`,
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/eInvoice.cancel",
+    "https://api.rohadas.app/api/trpc/eInvoice.cancel",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -334,7 +334,7 @@ result = resp.json()["result"]["data"]["json"]`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/eInvoice.retryFailed \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/eInvoice.retryFailed \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -350,7 +350,7 @@ if (result.eInvoiceStatus === "generated") {
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/eInvoice.retryFailed",
+    "https://api.rohadas.app/api/trpc/eInvoice.retryFailed",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -409,7 +409,7 @@ print("Status:", result["eInvoiceStatus"])`,
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/eInvoice.dashboard?input=%7B%22json%22%3A%7B%22status%22%3A%22failed%22%2C%22page%22%3A1%2C%22limit%22%3A10%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/eInvoice.dashboard?input=%7B%22json%22%3A%7B%22status%22%3A%22failed%22%2C%22page%22%3A1%2C%22limit%22%3A10%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const dashboard = await trpc.eInvoice.dashboard.query({
@@ -424,7 +424,7 @@ for (const inv of dashboard.data) {
         python: `import httpx
 
 resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/eInvoice.dashboard",
+    "https://api.rohadas.app/api/trpc/eInvoice.dashboard",
     params={"input": '{"json":{"status":"failed","page":1,"limit":10}}'},
     headers={
         "Authorization": f"Bearer {session_token}",
@@ -470,7 +470,7 @@ for inv in data["data"]:
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/eInvoice.getStatus?input=%7B%22json%22%3A%7B%22invoiceId%22%3A%22inv-uuid%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/eInvoice.getStatus?input=%7B%22json%22%3A%7B%22invoiceId%22%3A%22inv-uuid%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const status = await trpc.eInvoice.getStatus.query({
@@ -483,7 +483,7 @@ if (status?.eInvoiceStatus === "generated") {
         python: `import httpx
 
 resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/eInvoice.getStatus",
+    "https://api.rohadas.app/api/trpc/eInvoice.getStatus",
     params={"input": '{"json":{"invoiceId":"inv-uuid"}}'},
     headers={
         "Authorization": f"Bearer {session_token}",
@@ -519,7 +519,7 @@ if status and status["eInvoiceStatus"] == "generated":
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/eInvoice.bulkRetry \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/eInvoice.bulkRetry \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -529,7 +529,7 @@ console.log(\`Retried \${result.attempted}: \${result.succeeded} succeeded, \${r
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/eInvoice.bulkRetry",
+    "https://api.rohadas.app/api/trpc/eInvoice.bulkRetry",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,

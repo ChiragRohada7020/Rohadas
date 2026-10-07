@@ -290,6 +290,11 @@ input, select, textarea {
   [class*="animate-check"] {
     animation: none;
   }
+  [class*="animate-pos-tap"],
+  [class*="animate-cart-add"],
+  [class*="animate-check-pop"] {
+    animation: none;
+  }
   .target-progress-fill,
   .target-progress-fill--near,
   .target-progress-fill--achieved,

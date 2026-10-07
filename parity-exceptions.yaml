@@ -84,9 +84,37 @@ exceptions:
 
       # --- GST Compliance ---
       # GST compliance reports are complex accounting workflows; desktop-only.
+      # The mobile GST screen is an explicit "coming soon" placeholder, so the
+      # whole return family is absent from mobile by design, not by oversight.
       - gst.gstr1
       - gst.gstr1CSV
       - gst.gstr3b
+      # GSTR-4 (composition-scheme quarterly return) follows the same rule as
+      # the returns above — it is a filing-preparation workflow on a wide table,
+      # which is a desktop job. The underlying data IS available on mobile via
+      # dashboard/invoice screens; only the return rendering is not.
+      - gst.gstr4
+
+      # --- Stock Locations & Lots ---
+      # Godowns, batches, serials and expiry are inventory-master data entered
+      # and reviewed against wide tables (batch list, expiry report, FEFO plan).
+      # That is a desktop task. Mobile keeps the POS and invoice flows, which
+      # deliberately stay on the single scalar stock model — so a mobile sale
+      # does NOT need a godown or lot picker.
+      - inventory.list
+      - inventory.getById
+      - inventory.create
+      - inventory.update
+      - inventory.delete
+      - inventory.setPrimary
+      - inventory.stockByGodown
+      - inventory.transfer
+      - inventory.transferHistory
+      - inventory.listLots
+      - inventory.createLot
+      - inventory.deleteLot
+      - inventory.allocateFEFO
+      - inventory.expiringSoon
 
       # --- Online Store Admin ---
       # Store settings and item-visibility management are admin setup

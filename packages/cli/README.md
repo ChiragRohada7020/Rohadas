@@ -30,7 +30,7 @@ You'll be prompted for email and password, then asked to pick a business if you 
 hisaabo login --api-url https://your-hisaabo-instance.com --token hisaabo_key_abc123...
 ```
 
-Generate API keys at Settings > API Keys in the Hisaabo web app.
+Generate API keys at Settings > API Keys in the Rohadas web app.
 
 **Verify your session:**
 

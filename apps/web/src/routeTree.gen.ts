@@ -9,12 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SuppliersRouteImport } from './routes/suppliers'
 import { Route as StoreOrdersRouteImport } from './routes/store-orders'
 import { Route as ShipmentsRouteImport } from './routes/shipments'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SalesReturnsRouteImport } from './routes/sales-returns'
+import { Route as SalesRouteImport } from './routes/sales'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as QuotationsRouteImport } from './routes/quotations'
+import { Route as PurchasesRouteImport } from './routes/purchases'
 import { Route as ProformaInvoicesRouteImport } from './routes/proforma-invoices'
 import { Route as PosRouteImport } from './routes/pos'
 import { Route as PaymentsRouteImport } from './routes/payments'
@@ -26,11 +29,14 @@ import { Route as ItcRouteImport } from './routes/itc'
 import { Route as InvoicesRouteImport } from './routes/invoices'
 import { Route as Gstr2bRouteImport } from './routes/gstr2b'
 import { Route as GstRouteImport } from './routes/gst'
+import { Route as GodownsRouteImport } from './routes/godowns'
 import { Route as ExpensesRouteImport } from './routes/expenses'
 import { Route as EwayBillsRouteImport } from './routes/eway-bills'
 import { Route as EInvoicingRouteImport } from './routes/e-invoicing'
 import { Route as DeliveryChallansRouteImport } from './routes/delivery-challans'
+import { Route as CustomersRouteImport } from './routes/customers'
 import { Route as CreditNotesRouteImport } from './routes/credit-notes'
+import { Route as ChatRouteImport } from './routes/chat'
 import { Route as CashAndBankRouteImport } from './routes/cash-and-bank'
 import { Route as BankReconciliationRouteImport } from './routes/bank-reconciliation'
 import { Route as AutomatedInvoicesRouteImport } from './routes/automated-invoices'
@@ -39,6 +45,11 @@ import { Route as InviteTokenRouteImport } from './routes/invite/$token'
 import { Route as AuthVerifyRouteImport } from './routes/auth/verify'
 import { Route as AuthCompleteProfileRouteImport } from './routes/auth/complete-profile'
 
+const SuppliersRoute = SuppliersRouteImport.update({
+  id: '/suppliers',
+  path: '/suppliers',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StoreOrdersRoute = StoreOrdersRouteImport.update({
   id: '/store-orders',
   path: '/store-orders',
@@ -59,6 +70,11 @@ const SalesReturnsRoute = SalesReturnsRouteImport.update({
   path: '/sales-returns',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SalesRoute = SalesRouteImport.update({
+  id: '/sales',
+  path: '/sales',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReportsRoute = ReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
@@ -67,6 +83,11 @@ const ReportsRoute = ReportsRouteImport.update({
 const QuotationsRoute = QuotationsRouteImport.update({
   id: '/quotations',
   path: '/quotations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PurchasesRoute = PurchasesRouteImport.update({
+  id: '/purchases',
+  path: '/purchases',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProformaInvoicesRoute = ProformaInvoicesRouteImport.update({
@@ -124,6 +145,11 @@ const GstRoute = GstRouteImport.update({
   path: '/gst',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GodownsRoute = GodownsRouteImport.update({
+  id: '/godowns',
+  path: '/godowns',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ExpensesRoute = ExpensesRouteImport.update({
   id: '/expenses',
   path: '/expenses',
@@ -144,9 +170,19 @@ const DeliveryChallansRoute = DeliveryChallansRouteImport.update({
   path: '/delivery-challans',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CustomersRoute = CustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CreditNotesRoute = CreditNotesRouteImport.update({
   id: '/credit-notes',
   path: '/credit-notes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChatRoute = ChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CashAndBankRoute = CashAndBankRouteImport.update({
@@ -190,11 +226,14 @@ export interface FileRoutesByFullPath {
   '/automated-invoices': typeof AutomatedInvoicesRoute
   '/bank-reconciliation': typeof BankReconciliationRoute
   '/cash-and-bank': typeof CashAndBankRoute
+  '/chat': typeof ChatRoute
   '/credit-notes': typeof CreditNotesRoute
+  '/customers': typeof CustomersRoute
   '/delivery-challans': typeof DeliveryChallansRoute
   '/e-invoicing': typeof EInvoicingRoute
   '/eway-bills': typeof EwayBillsRoute
   '/expenses': typeof ExpensesRoute
+  '/godowns': typeof GodownsRoute
   '/gst': typeof GstRoute
   '/gstr2b': typeof Gstr2bRoute
   '/invoices': typeof InvoicesRoute
@@ -206,12 +245,15 @@ export interface FileRoutesByFullPath {
   '/payments': typeof PaymentsRoute
   '/pos': typeof PosRoute
   '/proforma-invoices': typeof ProformaInvoicesRoute
+  '/purchases': typeof PurchasesRoute
   '/quotations': typeof QuotationsRoute
   '/reports': typeof ReportsRoute
+  '/sales': typeof SalesRoute
   '/sales-returns': typeof SalesReturnsRoute
   '/settings': typeof SettingsRoute
   '/shipments': typeof ShipmentsRoute
   '/store-orders': typeof StoreOrdersRoute
+  '/suppliers': typeof SuppliersRoute
   '/auth/complete-profile': typeof AuthCompleteProfileRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -221,11 +263,14 @@ export interface FileRoutesByTo {
   '/automated-invoices': typeof AutomatedInvoicesRoute
   '/bank-reconciliation': typeof BankReconciliationRoute
   '/cash-and-bank': typeof CashAndBankRoute
+  '/chat': typeof ChatRoute
   '/credit-notes': typeof CreditNotesRoute
+  '/customers': typeof CustomersRoute
   '/delivery-challans': typeof DeliveryChallansRoute
   '/e-invoicing': typeof EInvoicingRoute
   '/eway-bills': typeof EwayBillsRoute
   '/expenses': typeof ExpensesRoute
+  '/godowns': typeof GodownsRoute
   '/gst': typeof GstRoute
   '/gstr2b': typeof Gstr2bRoute
   '/invoices': typeof InvoicesRoute
@@ -237,12 +282,15 @@ export interface FileRoutesByTo {
   '/payments': typeof PaymentsRoute
   '/pos': typeof PosRoute
   '/proforma-invoices': typeof ProformaInvoicesRoute
+  '/purchases': typeof PurchasesRoute
   '/quotations': typeof QuotationsRoute
   '/reports': typeof ReportsRoute
+  '/sales': typeof SalesRoute
   '/sales-returns': typeof SalesReturnsRoute
   '/settings': typeof SettingsRoute
   '/shipments': typeof ShipmentsRoute
   '/store-orders': typeof StoreOrdersRoute
+  '/suppliers': typeof SuppliersRoute
   '/auth/complete-profile': typeof AuthCompleteProfileRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -253,11 +301,14 @@ export interface FileRoutesById {
   '/automated-invoices': typeof AutomatedInvoicesRoute
   '/bank-reconciliation': typeof BankReconciliationRoute
   '/cash-and-bank': typeof CashAndBankRoute
+  '/chat': typeof ChatRoute
   '/credit-notes': typeof CreditNotesRoute
+  '/customers': typeof CustomersRoute
   '/delivery-challans': typeof DeliveryChallansRoute
   '/e-invoicing': typeof EInvoicingRoute
   '/eway-bills': typeof EwayBillsRoute
   '/expenses': typeof ExpensesRoute
+  '/godowns': typeof GodownsRoute
   '/gst': typeof GstRoute
   '/gstr2b': typeof Gstr2bRoute
   '/invoices': typeof InvoicesRoute
@@ -269,12 +320,15 @@ export interface FileRoutesById {
   '/payments': typeof PaymentsRoute
   '/pos': typeof PosRoute
   '/proforma-invoices': typeof ProformaInvoicesRoute
+  '/purchases': typeof PurchasesRoute
   '/quotations': typeof QuotationsRoute
   '/reports': typeof ReportsRoute
+  '/sales': typeof SalesRoute
   '/sales-returns': typeof SalesReturnsRoute
   '/settings': typeof SettingsRoute
   '/shipments': typeof ShipmentsRoute
   '/store-orders': typeof StoreOrdersRoute
+  '/suppliers': typeof SuppliersRoute
   '/auth/complete-profile': typeof AuthCompleteProfileRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -286,11 +340,14 @@ export interface FileRouteTypes {
     | '/automated-invoices'
     | '/bank-reconciliation'
     | '/cash-and-bank'
+    | '/chat'
     | '/credit-notes'
+    | '/customers'
     | '/delivery-challans'
     | '/e-invoicing'
     | '/eway-bills'
     | '/expenses'
+    | '/godowns'
     | '/gst'
     | '/gstr2b'
     | '/invoices'
@@ -302,12 +359,15 @@ export interface FileRouteTypes {
     | '/payments'
     | '/pos'
     | '/proforma-invoices'
+    | '/purchases'
     | '/quotations'
     | '/reports'
+    | '/sales'
     | '/sales-returns'
     | '/settings'
     | '/shipments'
     | '/store-orders'
+    | '/suppliers'
     | '/auth/complete-profile'
     | '/auth/verify'
     | '/invite/$token'
@@ -317,11 +377,14 @@ export interface FileRouteTypes {
     | '/automated-invoices'
     | '/bank-reconciliation'
     | '/cash-and-bank'
+    | '/chat'
     | '/credit-notes'
+    | '/customers'
     | '/delivery-challans'
     | '/e-invoicing'
     | '/eway-bills'
     | '/expenses'
+    | '/godowns'
     | '/gst'
     | '/gstr2b'
     | '/invoices'
@@ -333,12 +396,15 @@ export interface FileRouteTypes {
     | '/payments'
     | '/pos'
     | '/proforma-invoices'
+    | '/purchases'
     | '/quotations'
     | '/reports'
+    | '/sales'
     | '/sales-returns'
     | '/settings'
     | '/shipments'
     | '/store-orders'
+    | '/suppliers'
     | '/auth/complete-profile'
     | '/auth/verify'
     | '/invite/$token'
@@ -348,11 +414,14 @@ export interface FileRouteTypes {
     | '/automated-invoices'
     | '/bank-reconciliation'
     | '/cash-and-bank'
+    | '/chat'
     | '/credit-notes'
+    | '/customers'
     | '/delivery-challans'
     | '/e-invoicing'
     | '/eway-bills'
     | '/expenses'
+    | '/godowns'
     | '/gst'
     | '/gstr2b'
     | '/invoices'
@@ -364,12 +433,15 @@ export interface FileRouteTypes {
     | '/payments'
     | '/pos'
     | '/proforma-invoices'
+    | '/purchases'
     | '/quotations'
     | '/reports'
+    | '/sales'
     | '/sales-returns'
     | '/settings'
     | '/shipments'
     | '/store-orders'
+    | '/suppliers'
     | '/auth/complete-profile'
     | '/auth/verify'
     | '/invite/$token'
@@ -380,11 +452,14 @@ export interface RootRouteChildren {
   AutomatedInvoicesRoute: typeof AutomatedInvoicesRoute
   BankReconciliationRoute: typeof BankReconciliationRoute
   CashAndBankRoute: typeof CashAndBankRoute
+  ChatRoute: typeof ChatRoute
   CreditNotesRoute: typeof CreditNotesRoute
+  CustomersRoute: typeof CustomersRoute
   DeliveryChallansRoute: typeof DeliveryChallansRoute
   EInvoicingRoute: typeof EInvoicingRoute
   EwayBillsRoute: typeof EwayBillsRoute
   ExpensesRoute: typeof ExpensesRoute
+  GodownsRoute: typeof GodownsRoute
   GstRoute: typeof GstRoute
   Gstr2bRoute: typeof Gstr2bRoute
   InvoicesRoute: typeof InvoicesRoute
@@ -396,12 +471,15 @@ export interface RootRouteChildren {
   PaymentsRoute: typeof PaymentsRoute
   PosRoute: typeof PosRoute
   ProformaInvoicesRoute: typeof ProformaInvoicesRoute
+  PurchasesRoute: typeof PurchasesRoute
   QuotationsRoute: typeof QuotationsRoute
   ReportsRoute: typeof ReportsRoute
+  SalesRoute: typeof SalesRoute
   SalesReturnsRoute: typeof SalesReturnsRoute
   SettingsRoute: typeof SettingsRoute
   ShipmentsRoute: typeof ShipmentsRoute
   StoreOrdersRoute: typeof StoreOrdersRoute
+  SuppliersRoute: typeof SuppliersRoute
   AuthCompleteProfileRoute: typeof AuthCompleteProfileRoute
   AuthVerifyRoute: typeof AuthVerifyRoute
   InviteTokenRoute: typeof InviteTokenRoute
@@ -409,6 +487,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/suppliers': {
+      id: '/suppliers'
+      path: '/suppliers'
+      fullPath: '/suppliers'
+      preLoaderRoute: typeof SuppliersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/store-orders': {
       id: '/store-orders'
       path: '/store-orders'
@@ -437,6 +522,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SalesReturnsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sales': {
+      id: '/sales'
+      path: '/sales'
+      fullPath: '/sales'
+      preLoaderRoute: typeof SalesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reports': {
       id: '/reports'
       path: '/reports'
@@ -449,6 +541,13 @@ declare module '@tanstack/react-router' {
       path: '/quotations'
       fullPath: '/quotations'
       preLoaderRoute: typeof QuotationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/purchases': {
+      id: '/purchases'
+      path: '/purchases'
+      fullPath: '/purchases'
+      preLoaderRoute: typeof PurchasesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/proforma-invoices': {
@@ -528,6 +627,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GstRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/godowns': {
+      id: '/godowns'
+      path: '/godowns'
+      fullPath: '/godowns'
+      preLoaderRoute: typeof GodownsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/expenses': {
       id: '/expenses'
       path: '/expenses'
@@ -556,11 +662,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DeliveryChallansRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/customers': {
+      id: '/customers'
+      path: '/customers'
+      fullPath: '/customers'
+      preLoaderRoute: typeof CustomersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/credit-notes': {
       id: '/credit-notes'
       path: '/credit-notes'
       fullPath: '/credit-notes'
       preLoaderRoute: typeof CreditNotesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chat': {
+      id: '/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof ChatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cash-and-bank': {
@@ -620,11 +740,14 @@ const rootRouteChildren: RootRouteChildren = {
   AutomatedInvoicesRoute: AutomatedInvoicesRoute,
   BankReconciliationRoute: BankReconciliationRoute,
   CashAndBankRoute: CashAndBankRoute,
+  ChatRoute: ChatRoute,
   CreditNotesRoute: CreditNotesRoute,
+  CustomersRoute: CustomersRoute,
   DeliveryChallansRoute: DeliveryChallansRoute,
   EInvoicingRoute: EInvoicingRoute,
   EwayBillsRoute: EwayBillsRoute,
   ExpensesRoute: ExpensesRoute,
+  GodownsRoute: GodownsRoute,
   GstRoute: GstRoute,
   Gstr2bRoute: Gstr2bRoute,
   InvoicesRoute: InvoicesRoute,
@@ -636,12 +759,15 @@ const rootRouteChildren: RootRouteChildren = {
   PaymentsRoute: PaymentsRoute,
   PosRoute: PosRoute,
   ProformaInvoicesRoute: ProformaInvoicesRoute,
+  PurchasesRoute: PurchasesRoute,
   QuotationsRoute: QuotationsRoute,
   ReportsRoute: ReportsRoute,
+  SalesRoute: SalesRoute,
   SalesReturnsRoute: SalesReturnsRoute,
   SettingsRoute: SettingsRoute,
   ShipmentsRoute: ShipmentsRoute,
   StoreOrdersRoute: StoreOrdersRoute,
+  SuppliersRoute: SuppliersRoute,
   AuthCompleteProfileRoute: AuthCompleteProfileRoute,
   AuthVerifyRoute: AuthVerifyRoute,
   InviteTokenRoute: InviteTokenRoute,

@@ -8,10 +8,10 @@
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { HisaaboClient } from "../client.js";
+import type { RohadasClient } from "../client.js";
 import { wrapTool } from "../lib/errors.js";
 
-export function registerSessionTools(server: McpServer, client: HisaaboClient) {
+export function registerSessionTools(server: McpServer, client: RohadasClient) {
 
   server.tool(
     "session_list",

@@ -2,7 +2,7 @@
  * Tests for utility functions in `src/lib/utils.ts`
  *
  * WHY these tests matter for contributors:
- * Hisaabo is an Indian business finance app used by shopkeepers, traders, and
+ * Rohadas is an Indian business finance app used by shopkeepers, traders, and
  * distributors across India. Incorrect currency formatting is not a cosmetic
  * bug — it is a trust-destroying issue. Showing "₹100,000" instead of the
  * Indian standard "₹1,00,000" makes the app look unprofessional to the very

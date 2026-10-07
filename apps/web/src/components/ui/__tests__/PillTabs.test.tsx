@@ -1,7 +1,7 @@
 /**
  * PillTabs & SegmentedControl — tab navigation components
  *
- * PillTabs is used on virtually every list page in Hisaabo (invoices,
+ * PillTabs is used on virtually every list page in Rohadas (invoices,
  * parties, items, payments, …) to switch between views or filter sets.
  * SegmentedControl is a visually distinct variant used for binary/ternary
  * options such as Sale/Purchase or Income/Expense toggles.

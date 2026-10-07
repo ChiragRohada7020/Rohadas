@@ -33,7 +33,7 @@ export const businessEndpoints: EndpointGroup = {
         ],
       },
       codeExamples: {
-        curl: `curl https://api.hisaabo.in/api/trpc/business.list \\
+        curl: `curl https://api.rohadas.app/api/trpc/business.list \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN"`,
         javascript: `const businesses = await trpc.business.list.query();
 // Set active business for subsequent calls
@@ -41,7 +41,7 @@ trpc.setBusinessId(businesses[0].id);`,
         python: `import httpx
 
 resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/business.list",
+    "https://api.rohadas.app/api/trpc/business.list",
     headers={"Authorization": f"Bearer {session_token}"},
 )
 businesses = resp.json()["result"]["data"]["json"]`,
@@ -85,7 +85,7 @@ businesses = resp.json()["result"]["data"]["json"]`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/business.create \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/business.create \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -d '{
@@ -114,7 +114,7 @@ businesses = resp.json()["result"]["data"]["json"]`,
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/business.create",
+    "https://api.rohadas.app/api/trpc/business.create",
     headers={"Authorization": f"Bearer {session_token}"},
     json={"json": {
         "name": "My Shop",
@@ -145,7 +145,7 @@ resp = httpx.post(
         example: true,
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/business.canCreate" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/business.canCreate" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN"`,
         javascript: `const canCreate = await trpc.business.canCreate.query();
 if (!canCreate) {
@@ -155,7 +155,7 @@ if (!canCreate) {
         python: `import httpx
 
 resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/business.canCreate",
+    "https://api.rohadas.app/api/trpc/business.canCreate",
     headers={"Authorization": f"Bearer {session_token}"},
 )
 can_create = resp.json()["result"]["data"]["json"]`,
@@ -194,7 +194,7 @@ can_create = resp.json()["result"]["data"]["json"]`,
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/business.getById?input=%7B%22json%22%3A%7B%22id%22%3A%22biz-uuid%22%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/business.getById?input=%7B%22json%22%3A%7B%22id%22%3A%22biz-uuid%22%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN"`,
         javascript: `const business = await trpc.business.getById.query({ id: "biz-uuid" });
 if (business) {
@@ -204,7 +204,7 @@ if (business) {
 
 params = urllib.parse.quote(json.dumps({"json": {"id": "biz-uuid"}}))
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/business.getById?input={params}",
+    f"https://api.rohadas.app/api/trpc/business.getById?input={params}",
     headers={"Authorization": f"Bearer {session_token}"},
 )`,
       },
@@ -238,7 +238,7 @@ resp = httpx.get(
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/business.update \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/business.update \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -d '{"json":{"id":"biz-uuid","data":{"name":"My Shop Updated","phone":"9876543211"}}}'`,
@@ -254,7 +254,7 @@ resp = httpx.get(
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/business.update",
+    "https://api.rohadas.app/api/trpc/business.update",
     headers={"Authorization": f"Bearer {session_token}"},
     json={"json": {
         "id": "biz-uuid",
@@ -285,7 +285,7 @@ resp = httpx.post(
         example: { success: true, previousNumber: 43, newNumber: 100 },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/business.updateSequenceNumber \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/business.updateSequenceNumber \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -298,7 +298,7 @@ console.log("Previous:", result.previousNumber, "New:", result.newNumber);`,
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/business.updateSequenceNumber",
+    "https://api.rohadas.app/api/trpc/business.updateSequenceNumber",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
     json={"json": {
         "documentType": "invoice",
@@ -350,7 +350,7 @@ resp = httpx.post(
         },
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/business.auditTrail?input=%7B%22json%22%3A%7B%22page%22%3A1%2C%22limit%22%3A50%7D%7D" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/business.auditTrail?input=%7B%22json%22%3A%7B%22page%22%3A1%2C%22limit%22%3A50%7D%7D" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const trail = await trpc.business.auditTrail.query({
@@ -365,7 +365,7 @@ trail.data.forEach(entry => {
 
 params = urllib.parse.quote(json.dumps({"json": {"page": 1, "limit": 50}}))
 resp = httpx.get(
-    f"https://api.hisaabo.in/api/trpc/business.auditTrail?input={params}",
+    f"https://api.rohadas.app/api/trpc/business.auditTrail?input={params}",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
 )`,
       },
@@ -396,7 +396,7 @@ resp = httpx.get(
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/business.exportData \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/business.exportData \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -410,7 +410,7 @@ const url = URL.createObjectURL(blob);
         python: `import httpx
 
 resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/business.exportData",
+    "https://api.rohadas.app/api/trpc/business.exportData",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
     json={},
 )

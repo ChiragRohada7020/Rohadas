@@ -14,7 +14,7 @@ import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import * as readline from "node:readline";
 
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireTenantAuth } from "../../config.js";
 import { fatalError, success, warn, hasColor, isInteractive, EXIT } from "../../output.js";
 import chalk from "chalk";
@@ -43,7 +43,7 @@ interface TenantEntry {
   role: string;
 }
 
-async function resolveTenant(client: HisaaboClient, slugOrId: string): Promise<{ id: string; slug: string }> {
+async function resolveTenant(client: RohadasClient, slugOrId: string): Promise<{ id: string; slug: string }> {
   if (isUuid(slugOrId)) {
     return { id: slugOrId, slug: slugOrId };
   }
@@ -150,7 +150,7 @@ export interface RestoreOpts {
 
 export async function restoreCommand(opts: RestoreOpts): Promise<void> {
   const cfg = requireTenantAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   // 1. Verify file exists, readable, non-zero
   let fileStats: { size: number };
@@ -172,7 +172,7 @@ export async function restoreCommand(opts: RestoreOpts): Promise<void> {
     tenantId = resolved.id;
     tenantSlug = resolved.slug;
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") {
         fatalError("Not authenticated. Run `hisaabo login` first.", EXIT_AUTH);
@@ -210,7 +210,7 @@ export async function restoreCommand(opts: RestoreOpts): Promise<void> {
       ? `${cfg.apiUrl}${result.url}`
       : result.url;
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") {
         fatalError("Not authenticated. Run `hisaabo login` first.", EXIT_AUTH);
@@ -310,7 +310,7 @@ export async function restoreCommand(opts: RestoreOpts): Promise<void> {
       clearInterval(progressInterval);
     }
     clearProgress();
-    if (e instanceof HisaaboApiError && e.hisaaboError.code === "network_error") {
+    if (e instanceof RohadasApiError && e.hisaaboError.code === "network_error") {
       fatalError(`Upload failed: ${e.hisaaboError.message}`, EXIT_SERVER_ERROR);
     }
     // Re-throw if it's already a process.exit (fatalError)

@@ -59,10 +59,13 @@ export function useShortcutFlash() {
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!target) return false;
   const el = target as HTMLElement;
-  const tag = el.tagName.toLowerCase();
+  // e.target can be `document` (tagName === undefined) when the listener is
+  // on document and the event is dispatched programmatically, or a text node.
+  // Guard so we return false instead of throwing on .toLowerCase().
+  const tag = typeof el.tagName === "string" ? el.tagName.toLowerCase() : "";
   if (tag === "input" || tag === "textarea" || tag === "select") return true;
-  if (el.contentEditable === "true" || el.contentEditable === "plaintext-only")
-    return true;
+  const editable = (el as HTMLElement).contentEditable;
+  if (editable === "true" || editable === "plaintext-only") return true;
   return false;
 }
 
@@ -79,7 +82,12 @@ export function useHotkeys(hotkeys: HotkeyDef[]): void {
     defs.forEach((d) => hotkeyRegistry.push(d));
 
     const handler = (e: KeyboardEvent) => {
+      // e.key is undefined for some synthetic / IME-composition events.
+      // Bail early instead of throwing on .toLowerCase() — matches the
+      // isTypingTarget guard above.
+      if (typeof e.key !== "string" || e.key.length === 0) return;
       for (const def of hotkeysRef.current) {
+        if (typeof def.key !== "string" || def.key.length === 0) continue;
         const keyMatch = e.key.toLowerCase() === def.key.toLowerCase();
         if (!keyMatch) continue;
 

@@ -154,7 +154,7 @@ describe("ThemeContext — mode, palette, and persistence", () => {
     // WHY: Respecting the system setting is the default on install (mode
     //      starts as "system") and is what most Android 10+/iOS 13+ users
     //      expect. A broken "system" branch means the user's OS-level dark
-    //      mode choice is silently ignored by Hisaabo.
+    //      mode choice is silently ignored by Rohadas.
     mockUseColorScheme.mockReturnValue("light");
 
     const { result } = renderHook(() => useTheme(), {
@@ -171,7 +171,7 @@ describe("ThemeContext — mode, palette, and persistence", () => {
   // -------------------------------------------------------------------------
   it("initialMode=\"system\" with useColorScheme()=\"dark\" resolves to darkColors", () => {
     // WHAT: Same as above but for the dark OS appearance.
-    // WHY: Dark mode is the historical default for Hisaabo mobile. If the
+    // WHY: Dark mode is the historical default for Rohadas mobile. If the
     //      system branch fails here, OS-level dark mode feels broken on
     //      devices where the light-mode branch works — a confusing bug class.
     mockUseColorScheme.mockReturnValue("dark");

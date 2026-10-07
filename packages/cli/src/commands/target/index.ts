@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError, type TargetRow } from "../../client.js";
+import { RohadasClient, RohadasApiError, type TargetRow } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import {
   fatalError, outputJSON, outputTable, EXIT, success, type ColumnDef,
@@ -7,7 +7,7 @@ import { formatDate, formatAmount } from "../../format.js";
 
 export async function targetListCommand(opts: { json?: boolean }): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const targets = await client.target.list({});
@@ -31,7 +31,7 @@ export async function targetListCommand(opts: { json?: boolean }): Promise<void>
     outputTable(targets, cols);
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "network_error") fatalError(err.message, EXIT.NETWORK);
@@ -42,7 +42,7 @@ export async function targetListCommand(opts: { json?: boolean }): Promise<void>
 
 export async function targetMyCommand(opts: { json?: boolean }): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const targets = await client.target.myTargets();
@@ -64,7 +64,7 @@ export async function targetMyCommand(opts: { json?: boolean }): Promise<void> {
     });
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "network_error") fatalError(err.message, EXIT.NETWORK);
@@ -83,7 +83,7 @@ export async function targetCreateCommand(opts: {
   notes?: string;
 }): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   if (!opts.type) fatalError("--type is required (order_count/order_value/item_quantity)", EXIT.USAGE);
   if (!opts.value) fatalError("--value is required", EXIT.USAGE);
@@ -107,7 +107,7 @@ export async function targetCreateCommand(opts: {
     success(`Target created: ${target.type} ${target.period} ${formatAmount(target.targetValue)}`);
 
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);
       if (err.code === "validation_failed") fatalError(e.message, EXIT.VALIDATION);

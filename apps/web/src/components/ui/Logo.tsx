@@ -1,4 +1,4 @@
-// Logo — the Hisaabo mark. Inlined SVG matches public/favicon.svg so offline/first-paint renders work.
+// Logo — the Rohadas mark. Inlined SVG matches public/favicon.svg so offline/first-paint renders work.
 // If you change this, keep the mark in sync across every sibling file:
 //   apps/web/public/favicon.svg          (browser tab icon)
 //   apps/web/public/bimi.svg             (BIMI email avatar — SVG Tiny P/S profile)
@@ -16,7 +16,7 @@ export function Logo({ className }: LogoProps) {
       viewBox="0 0 32 32"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      aria-label="Hisaabo"
+      aria-label="Rohadas"
       role="img"
     >
       <rect width="32" height="32" rx="6" fill="#5b5bd6" />

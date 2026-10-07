@@ -1,4 +1,4 @@
-import { HisaaboClient, HisaaboApiError } from "../../client.js";
+import { RohadasClient, RohadasApiError } from "../../client.js";
 import { requireAuth } from "../../config.js";
 import { fatalError, outputJSON, EXIT, hasColor } from "../../output.js";
 import { formatDate, formatAmount, formatStatus } from "../../format.js";
@@ -9,7 +9,7 @@ export async function storeOrderGetCommand(
   opts: { json?: boolean },
 ): Promise<void> {
   const cfg = requireAuth();
-  const client = new HisaaboClient(cfg);
+  const client = new RohadasClient(cfg);
 
   try {
     const order = await client.store.getOrder(id);
@@ -55,7 +55,7 @@ export async function storeOrderGetCommand(
 
     process.stdout.write("\n");
   } catch (e) {
-    if (e instanceof HisaaboApiError) {
+    if (e instanceof RohadasApiError) {
       const err = e.hisaaboError;
       if (err.code === "not_found") fatalError(`Order not found: ${id}`, EXIT.NOT_FOUND);
       if (err.code === "unauthorized") fatalError("Session expired. Run: hisaabo login", EXIT.AUTH);

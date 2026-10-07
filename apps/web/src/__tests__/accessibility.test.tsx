@@ -8,8 +8,8 @@
  *   4. Screen-reader requirements (ARIA labels, live regions, roles).
  *   5. axe-core audits of fully-composed UI surfaces.
  *
- * WHY these tests matter for Hisaabo:
- *   Hisaabo targets Indian small business owners who may use basic mobile
+ * WHY these tests matter for Rohadas:
+ *   Rohadas targets Indian small business owners who may use basic mobile
  *   devices, assistive technologies, or keyboard-only navigation.  Every
  *   WCAG violation we ship makes the app unusable for some users.  These
  *   tests serve as a regression guard — a previously-passing accessibility

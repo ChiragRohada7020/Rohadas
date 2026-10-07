@@ -15,6 +15,10 @@ import { Combobox } from "@/components/ui/Combobox";
 import { DateRangeBar } from "@/components/ui/DateRangeBar";
 import { toast } from "@/hooks/useToast";
 import { useDateRange } from "@/hooks/useDateRange";
+import { AnnualGSTR1View } from "./gst-annual-gstr1";
+import { AnnualGSTR3BView } from "./gst-annual-gstr3b";
+import { CAHandoverView } from "./gst-annual-handover";
+import { GSTR4View } from "./gst-gstr4";
 
 export const Route = createFileRoute("/gst")({
   component: GSTReportsPage,
@@ -25,13 +29,45 @@ const months = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-type ReportTab = "gstr1" | "gstr3b" | "gstr9" | "pnl" | "trial-balance" | "balance-sheet" | "aging" | "ledger" | "tally";
+/** Selectable FY start years, newest first. `2026` renders as "2026-27". */
+function fyOptions(): number[] {
+  const d = new Date();
+  const thisFy = d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1;
+  return Array.from({ length: 5 }, (_, i) => thisFy - i);
+}
+
+type ReportTab = "gstr1" | "gstr3b" | "gstr9" | "gstr4" | "handover" | "pnl" | "trial-balance" | "balance-sheet" | "aging" | "ledger" | "tally";
 
 function GSTReportsPage() {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
-  const [activeTab, setActiveTabRaw] = useState<ReportTab>(
+
+  // Monthly vs Full Year.
+  //
+  // GST returns are FILED monthly, but the person who prepares them is handed
+  // the whole year at the end of it. Offering monthly only meant a CA had to
+  // open twelve months by hand and re-add them. Both views are always
+  // available; the choice is remembered per user.
+  const [periodMode, setPeriodModeRaw] = useState<"monthly" | "yearly">(
+    () =>
+      (localStorage.getItem("hisaabo_gst_period_mode") as "monthly" | "yearly") ||
+      "monthly",
+  );
+  const setPeriodMode = (m: "monthly" | "yearly") => {
+    setPeriodModeRaw(m);
+    localStorage.setItem("hisaabo_gst_period_mode", m);
+  };
+  // `financialYear` is the FY START year: 2026 → 2026-27 (Apr 2026 – Mar 2027).
+  const [financialYear, setFinancialYear] = useState(() => {
+    const d = new Date();
+    return d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1;
+  });
+
+  // `activeTab` is derived below from `activeTabRaw`, because a remembered
+  // gstr4 tab must fall back to gstr1 if the business is no longer a
+  // composition dealer.
+  const [activeTabRaw, setActiveTabRaw] = useState<ReportTab>(
     () => (localStorage.getItem("hisaabo_gst_tab") as ReportTab) || "gstr1"
   );
   const setActiveTab = (tab: ReportTab) => {
@@ -46,6 +82,16 @@ function GSTReportsPage() {
 
   const isGstRegistered = biz?.gstRegistrationType !== "unregistered" || !!biz?.gstin;
 
+  // Composition-scheme dealers file GSTR-4 instead of the monthly GSTR-1/3B
+  // pair, so the GSTR-4 tab is only offered to them.
+  const isComposition = biz?.gstRegistrationType === "composition";
+
+  // A remembered tab can outlive a change of registration type (e.g. a user
+  // moves from composition to regular). Falling back to GSTR-1 avoids landing
+  // on a tab that no longer exists in `tabs`.
+  const activeTab: ReportTab =
+    activeTabRaw === "gstr4" && !isComposition ? "gstr1" : activeTabRaw;
+
   // Report labels adapt based on GST status
   const reportTitle = isGstRegistered ? "GST Returns" : "Tax Reports";
   const reportDesc = isGstRegistered
@@ -58,6 +104,11 @@ function GSTReportsPage() {
     { value: "gstr1", label: tab1Label },
     { value: "gstr3b", label: tab2Label },
     { value: "gstr9", label: "GSTR-9" },
+    // GSTR-4 is the composition-scheme return. Only meaningful for a business
+    // registered under the composition scheme, so the tab is hidden otherwise
+    // rather than showing a permanently zero return.
+    ...(isComposition ? [{ value: "gstr4" as ReportTab, label: "GSTR-4" }] : []),
+    { value: "handover", label: "CA Handover" },
     { value: "pnl", label: "Profit & Loss" },
     { value: "trial-balance", label: "Trial Balance" },
     { value: "balance-sheet", label: "Balance Sheet" },
@@ -82,29 +133,55 @@ function GSTReportsPage() {
         />
       </div>
 
-      {/* Period selector — only shown for GST tabs */}
+      {/* Period selector — only shown for the GST return tabs */}
       {(activeTab === "gstr1" || activeTab === "gstr3b") && (
-        <div className="flex items-center gap-3 mb-6">
-          <select
-            className="input w-40"
-            value={month}
-            onChange={(e) => setMonth(Number(e.target.value))}
-          >
-            {months.map((m, i) => (
-              <option key={i} value={i + 1}>{m}</option>
-            ))}
-          </select>
-          <select
-            className="input w-28"
-            value={year}
-            onChange={(e) => setYear(Number(e.target.value))}
-          >
-            {years.map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
+        <div className="flex items-center gap-3 mb-6 flex-wrap">
+          <SegmentedControl
+            tabs={[
+              { value: "monthly", label: "Monthly" },
+              { value: "yearly", label: "Full Year" },
+            ]}
+            value={periodMode}
+            onChange={(v) => setPeriodMode(v as "monthly" | "yearly")}
+          />
 
-          <div className="ml-4">
+          {periodMode === "monthly" ? (
+            <>
+              <select
+                className="input w-40"
+                value={month}
+                onChange={(e) => setMonth(Number(e.target.value))}
+              >
+                {months.map((m, i) => (
+                  <option key={i} value={i + 1}>{m}</option>
+                ))}
+              </select>
+              <select
+                className="input w-28"
+                value={year}
+                onChange={(e) => setYear(Number(e.target.value))}
+              >
+                {years.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </>
+          ) : (
+            <select
+              className="input w-40"
+              value={financialYear}
+              onChange={(e) => setFinancialYear(Number(e.target.value))}
+              aria-label="Select financial year"
+            >
+              {fyOptions().map((fy) => (
+                <option key={fy} value={fy}>
+                  {`${fy}-${String(fy + 1).slice(2)}`}
+                </option>
+              ))}
+            </select>
+          )}
+
+          <div className="ml-auto">
             <SegmentedControl
               tabs={[
                 { value: "gstr1", label: tab1Label },
@@ -117,9 +194,25 @@ function GSTReportsPage() {
         </div>
       )}
 
-      {activeTab === "gstr1" && <GSTR1View year={year} month={month} />}
-      {activeTab === "gstr3b" && <GSTR3BView year={year} month={month} />}
+      {activeTab === "gstr1" && (
+        <GSTR1View
+          year={year}
+          month={month}
+          mode={periodMode}
+          financialYear={financialYear}
+        />
+      )}
+      {activeTab === "gstr3b" && (
+        <GSTR3BView
+          year={year}
+          month={month}
+          mode={periodMode}
+          financialYear={financialYear}
+        />
+      )}
       {activeTab === "gstr9" && <GSTR9View />}
+      {activeTab === "gstr4" && <GSTR4View />}
+      {activeTab === "handover" && <CAHandoverView financialYear={financialYear} />}
       {activeTab === "pnl" && <ProfitAndLossView />}
       {activeTab === "trial-balance" && <TrialBalanceView />}
       {activeTab === "balance-sheet" && <BalanceSheetView />}
@@ -132,7 +225,22 @@ function GSTReportsPage() {
 
 // ── GSTR-1 View ────────────────────────────────────────────────
 
-function GSTR1View({ year, month }: { year: number; month: number }) {
+function GSTR1View({
+  year,
+  month,
+  mode,
+  financialYear,
+}: {
+  year: number;
+  month: number;
+  mode: "monthly" | "yearly";
+  financialYear: number;
+}) {
+  // Only fetch what is on screen — the annual endpoint loops all twelve months,
+  // so requesting it "just in case" would waste the work.
+  const wantsMonthly = mode === "monthly";
+  if (!wantsMonthly) return <AnnualGSTR1View financialYear={financialYear} />;
+
   const { data, isLoading, error } = trpc.gst.gstr1.useQuery({ year, month });
   const { data: csvData } = trpc.gst.gstr1CSV.useQuery({ year, month });
 
@@ -258,7 +366,20 @@ function GSTR1View({ year, month }: { year: number; month: number }) {
 
 // ── GSTR-3B View ───────────────────────────────────────────────
 
-function GSTR3BView({ year, month }: { year: number; month: number }) {
+function GSTR3BView({
+  year,
+  month,
+  mode,
+  financialYear,
+}: {
+  year: number;
+  month: number;
+  mode: "monthly" | "yearly";
+  financialYear: number;
+}) {
+  const wantsMonthly = mode === "monthly";
+  if (!wantsMonthly) return <AnnualGSTR3BView financialYear={financialYear} />;
+
   const { data, isLoading, error } = trpc.gst.gstr3b.useQuery({ year, month });
 
   if (isLoading) return <ReportSkeleton />;
@@ -521,7 +642,7 @@ function ProfitAndLossView() {
               <p className="text-lg font-bold tabular-nums text-emerald-600">{fmtStr(data.revenue)}</p>
             </div>
             <div className="card px-4 py-3">
-              <p className="text-xs text-text-tertiary mb-1">COGS (Purchases)</p>
+              <p className="text-xs text-text-tertiary mb-1">COGS</p>
               <p className="text-lg font-bold tabular-nums text-blue-600">{fmtStr(data.cogs)}</p>
             </div>
             <div className="card px-4 py-3">
@@ -556,8 +677,24 @@ function ProfitAndLossView() {
                   <td className="text-right tabular-nums font-semibold text-emerald-600">{fmtStr(data.revenue)}</td>
                 </tr>
                 <tr>
-                  <td className="text-text-secondary pl-6">Less: Cost of Goods Sold (Purchases)</td>
-                  <td className="text-right tabular-nums text-text-secondary">({fmtStr(data.cogs)})</td>
+                  <td className="text-text-secondary pl-6">Less: Cost of Goods Sold</td>
+                  <td className="text-right tabular-nums text-text-secondary"></td>
+                </tr>
+                <tr>
+                  <td className="text-text-secondary pl-10">Opening Stock</td>
+                  <td className="text-right tabular-nums text-text-secondary">{fmtStr(data.openingInventory)}</td>
+                </tr>
+                <tr>
+                  <td className="text-text-secondary pl-10">Add: Purchases</td>
+                  <td className="text-right tabular-nums text-text-secondary">{fmtStr(data.purchasesInPeriod)}</td>
+                </tr>
+                <tr>
+                  <td className="text-text-secondary pl-10">Less: Closing Stock</td>
+                  <td className="text-right tabular-nums text-text-secondary">({fmtStr(data.closingInventory)})</td>
+                </tr>
+                <tr className="border-t border-border-light">
+                  <td className="font-medium text-text-primary pl-6">Cost of Goods Sold</td>
+                  <td className="text-right tabular-nums text-blue-600 font-medium">({fmtStr(data.cogs)})</td>
                 </tr>
                 <tr className="border-t border-border-light bg-surface-1">
                   <td className="font-semibold text-text-primary">Gross Profit</td>
@@ -588,6 +725,18 @@ function ProfitAndLossView() {
                 </tr>
               </tbody>
             </table>
+            {data.stockDataIncomplete && (
+              <div className="px-4 py-2 bg-amber-50 dark:bg-amber-950/20 border-t border-amber-200">
+                <p className="text-xs text-amber-700 dark:text-amber-400">
+                  Stock data is incomplete — no item has a purchase price set, so COGS falls back to
+                  total purchases. Set purchase prices on your items for an accurate cost of goods sold.
+                </p>
+              </div>
+            )}
+            <div className="px-4 py-2 text-[11px] text-text-tertiary border-t border-border-light">
+              Cost of Goods Sold = Opening Stock + Purchases − Closing Stock (weighted-average cost).
+              Revenue and COGS are net of GST.
+            </div>
           </div>
         </>
       )}

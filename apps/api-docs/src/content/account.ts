@@ -92,7 +92,7 @@ export const accountEndpoints: EndpointGroup = {
         ],
       },
       codeExamples: {
-        curl: `curl "https://api.hisaabo.in/api/trpc/account.list" \\
+        curl: `curl "https://api.rohadas.app/api/trpc/account.list" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID"`,
         javascript: `const accounts = await trpc.account.list.query();
@@ -104,7 +104,7 @@ console.log("Liabilities:", grouped.liability?.length ?? 0);
 console.log("Income:", grouped.income?.length ?? 0);
 console.log("Expenses:", grouped.expense?.length ?? 0);`,
         python: `resp = httpx.get(
-    "https://api.hisaabo.in/api/trpc/account.list",
+    "https://api.rohadas.app/api/trpc/account.list",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -156,7 +156,7 @@ for account_type, group in groupby(accounts, key=lambda a: a["accountType"]):
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/account.create \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/account.create \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -175,7 +175,7 @@ for account_type, group in groupby(accounts, key=lambda a: a["accountType"]):
 
 console.log(\`Created: \${account.code} - \${account.name}\`);`,
         python: `resp = httpx.post(
-    "https://api.hisaabo.in/api/trpc/account.create",
+    "https://api.rohadas.app/api/trpc/account.create",
     headers={
         "Authorization": f"Bearer {session_token}",
         "x-business-id": business_id,
@@ -222,7 +222,7 @@ account = resp.json()["result"]["data"]["json"]`,
         },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/account.update \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/account.update \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
@@ -243,7 +243,7 @@ await trpc.account.update.mutate({
   isActive: false,
 });`,
         python: `httpx.post(
-    "https://api.hisaabo.in/api/trpc/account.update",
+    "https://api.rohadas.app/api/trpc/account.update",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
     json={"json": {"id": "acc-custom-uuid", "name": "Digital Marketing Expenses"}},
 )`,
@@ -270,14 +270,14 @@ await trpc.account.update.mutate({
         example: { success: true },
       },
       codeExamples: {
-        curl: `curl -X POST https://api.hisaabo.in/api/trpc/account.delete \\
+        curl: `curl -X POST https://api.rohadas.app/api/trpc/account.delete \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
   -H "x-business-id: YOUR_BUSINESS_ID" \\
   -d '{"json":{"id":"acc-custom-uuid"}}'`,
         javascript: `await trpc.account.delete.mutate({ id: "acc-custom-uuid" });`,
         python: `httpx.post(
-    "https://api.hisaabo.in/api/trpc/account.delete",
+    "https://api.rohadas.app/api/trpc/account.delete",
     headers={"Authorization": f"Bearer {session_token}", "x-business-id": business_id},
     json={"json": {"id": "acc-custom-uuid"}},
 )`,

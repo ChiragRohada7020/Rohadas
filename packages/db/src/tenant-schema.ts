@@ -19,6 +19,19 @@ export const paymentModeEnum = pgEnum("payment_mode", ["cash", "bank", "upi", "c
 export const unitEnum = pgEnum("unit", ["pcs", "kg", "g", "l", "ml", "m", "cm", "ft", "in", "box", "dozen", "pair", "set", "pkt", "bun", "pouch", "jar", "btl", "bag", "ton", "pack", "pet", "person", "other"]);
 export const itemTypeEnum = pgEnum("item_type", ["product", "service"]);
 export const itemModeEnum = pgEnum("item_mode", ["simple", "alt_units", "variants"]);
+// How (and whether) an item's stock is tracked beyond a single scalar quantity.
+//
+// "none" is the default and preserves the original behaviour exactly: stock is
+// just items.stock_quantity, with no lot concept at all. That default is what
+// makes the lot/godown layer safe to roll out — businesses only see the new
+// behaviour for items they explicitly opt in.
+//
+// "batch"  — quantities roll up per batch/lot number (FMCG, pharma).
+// "serial" — one identifiable unit per row (electronics, auto parts).
+//            Each unit is a lot with quantity 1.
+// "expiry" — batch/lot tracking that additionally carries an expiry date and
+//            drives FEFO (first-expiry-first-out) allocation on sale.
+export const itemTrackingModeEnum = pgEnum("item_tracking_mode", ["none", "batch", "serial", "expiry"]);
 export const documentTypeEnum = pgEnum("document_type", ["invoice", "quotation", "credit_note", "debit_note", "delivery_challan", "proforma", "sales_return", "purchase_return"]);
 export const bankAccountTypeEnum = pgEnum("bank_account_type", ["savings", "current", "cash", "upi", "credit_card", "payment_gateway"]);
 export const bankTransactionTypeEnum = pgEnum("bank_transaction_type", ["deposit", "withdrawal", "transfer"]);
@@ -95,6 +108,9 @@ export const businesses = pgTable("businesses", {
   // reachable and the "Switch to POS" entry button appears on invoice
   // create. Off by default; toggle lives on Settings → POS.
   posEnabled: boolean("pos_enabled").default(false).notNull(),
+  // Selected invoice PDF template (classic | modern | minimal | bold). Drives
+  // the visual theme of every generated invoice PDF — download and send.
+  invoiceTemplate: text("invoice_template").default("classic").notNull(),
   // Document defaults applied at invoice/quote creation time. Editable per
   // business under Settings → Documents.
   defaultRoundOff: boolean("default_round_off").default(true).notNull(),
@@ -151,6 +167,10 @@ export const items = pgTable("items", {
   sku: text("sku"),
   unit: unitEnum("unit").default("pcs").notNull(),
   itemMode: itemModeEnum("item_mode").default("simple").notNull(),
+  // Lot/batch/serial/expiry tracking. Defaults to "none", which means this item
+  // keeps the original single-scalar stock behaviour — no lots, no godowns.
+  // Businesses opt in per item; existing rows are unaffected by the migration.
+  trackingMode: itemTrackingModeEnum("tracking_mode").default("none").notNull(),
   unitVariants: jsonb("unit_variants").$type<Array<{
     unit: string;
     conversionFactor: number;
@@ -174,6 +194,13 @@ export const items = pgTable("items", {
   storeSortOrder: integer("store_sort_order").default(0).notNull(),
   storeCategory: text("store_category"),
   storeDescription: text("store_description"),
+  // Item image stored as raw image bytes. PNG or JPEG only (magic-byte
+  // validated on upload). Lives in the tenant DB so it rides along with
+  // pg_dump, pg_basebackup and the NDJSON self-export. Served via
+  // GET /api/items/:id/image, cache-busted with imageUpdatedAt.
+  imageData: bytea("image_data"),
+  imageMimeType: text("image_mime_type"),
+  imageUpdatedAt: timestamp("image_updated_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   // Soft delete — historical invoice line items must still resolve item
@@ -206,6 +233,9 @@ export const itemVariants = pgTable("item_variants", {
   purchasePrice: numeric("purchase_price", { precision: 15, scale: 2 }),
   stockQuantity: numeric("stock_quantity", { precision: 15, scale: 3 }).default("0").notNull(),
   lowStockAlert: numeric("low_stock_alert", { precision: 15, scale: 3 }),
+  // Variants can be tracked independently of their parent (e.g. only the 1L
+  // bottle is batch-tracked while loose units are not).
+  trackingMode: itemTrackingModeEnum("tracking_mode").default("none").notNull(),
   storeEnabled: boolean("store_enabled").default(false).notNull(),
   storePrice: numeric("store_price", { precision: 15, scale: 2 }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -222,6 +252,220 @@ export const itemVariants = pgTable("item_variants", {
   // Partial index for the active-variant read path (variant lookups in
   // item detail pages, stock/reporting joins). Mirrors items_active_idx.
   index("item_variants_active_idx").on(t.itemId).where(sql`deleted_at IS NULL`),
+]);
+
+// ── Godowns (stock locations) ─────────────────────────────────────────
+//
+// A godown is a physical place stock lives: the main shop, a warehouse, a
+// branch, a distributor's godown. Indian retail and distribution businesses
+// routinely hold the same item across several of them, which a single
+// items.stock_quantity scalar cannot express.
+//
+// ADOPTION IS OPT-IN BY DESIGN. Every stock mutation in the codebase writes
+// items.stock_quantity, and that column REMAINS the authoritative business-wide
+// total. Godown balances live in stock_lots as an additional breakdown that
+// sums back to it. A business that never creates a godown keeps exactly the
+// behaviour it had before this table existed — every line with a NULL
+// godown_id is attributed to the primary godown (or to "no godown" when none
+// exists), so the breakdown can never silently disagree with the headline.
+//
+// The one primary godown per business is enforced in application code
+// (godown.setPrimary demotes the previous one) rather than by a partial unique
+// index, so the check stays readable and returns a useful error message.
+export const godowns = pgTable("godowns", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  // Short human code used on stock reports and e-way bills (e.g. "MAIN", "WH2").
+  code: text("code"),
+  address: text("address"),
+  city: text("city"),
+  state: text("state"),
+  stateCode: text("state_code"),
+  pincode: text("pincode"),
+  phone: text("phone"),
+  // The godown stock is attributed to when a document line omits one.
+  isPrimary: boolean("is_primary").default(false).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  // Soft delete — historical stock movements and documents reference godowns
+  // that may later be closed. Active reads filter on deletedAt IS NULL.
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+}, (t) => [
+  index("godowns_business_idx").on(t.businessId),
+  index("godowns_name_idx").on(t.businessId, t.name),
+  index("godowns_primary_idx").on(t.businessId, t.isPrimary),
+  index("godowns_active_idx").on(t.businessId, t.name).where(sql`deleted_at IS NULL`),
+]);
+
+
+// ── Stock Lots (batch / serial / expiry) ──────────────────────────────────
+//
+// One row is one stock lot: a batch number for FMCG/pharma, a single
+// identifiable serial for electronics/auto parts, or a batch with an expiry
+// date that drives FEFO allocation on sale.
+//
+// ONLY items with trackingMode != "none" have lots. For every other item this
+// table stays empty and stock flows through items.stock_quantity alone, which
+// is why adding lots cannot change behaviour for existing businesses.
+//
+// `quantity` is the quantity ON HAND in this lot, maintained transactionally
+// alongside the parent item's stock_quantity so that SUM(stock_lots.quantity)
+// for an item equals items.stock_quantity for lot-tracked items. It is
+// deliberately NOT derived from quantity_received minus quantity_sold: storing
+// the running balance makes allocation a single UPDATE under a row lock
+// (SELECT ... FOR UPDATE) instead of a recompute, while those two cumulative
+// columns stay available for the lot-wise purchase/sales report.
+//
+// A serial-tracked item uses quantity = 1 per row with `serialNo` set; a
+// batch-tracked item uses quantity > 1 with `batchNo` set.
+export const stockLots = pgTable("stock_lots", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "cascade" }),
+  itemId: uuid("item_id").notNull().references(() => items.id, { onDelete: "cascade" }),
+  // Set when the lot belongs to a specific variant of a "variants" item.
+  variantId: uuid("variant_id").references(() => itemVariants.id, { onDelete: "cascade" }),
+  godownId: uuid("godown_id").references(() => godowns.id, { onDelete: "set null" }),
+  batchNo: text("batch_no"),
+  serialNo: text("serial_no"),
+  manufacturingDate: timestamp("manufacturing_date", { withTimezone: true }),
+  // Expiry is what makes FEFO possible. Not column-enforced because a batch may
+  // legitimately be received without one; the API requires it when the item's
+  // trackingMode is "expiry".
+  expiryDate: timestamp("expiry_date", { withTimezone: true }),
+  // Quantity on hand in this lot right now.
+  quantity: numeric("quantity", { precision: 15, scale: 3 }).default("0").notNull(),
+  // Cumulative quantities, kept for lot-wise reporting and audit.
+  quantityReceived: numeric("quantity_received", { precision: 15, scale: 3 }).default("0").notNull(),
+  quantitySold: numeric("quantity_sold", { precision: 15, scale: 3 }).default("0").notNull(),
+  // Unit cost of the lot, for weighted valuation and margin reporting.
+  unitCost: numeric("unit_cost", { precision: 15, scale: 2 }),
+  // "active" | "depleted" | "expired" | "quarantined". Kept as text rather
+  // than a pgEnum because the set will grow with quality-control workflows
+  // (quarantine, recall) and a text column avoids a migration per addition.
+  status: text("status").default("active").notNull(),
+  receivedDate: timestamp("received_date", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+}, (t) => [
+  index("stock_lots_business_idx").on(t.businessId),
+  index("stock_lots_item_idx").on(t.itemId),
+  index("stock_lots_variant_idx").on(t.variantId),
+  index("stock_lots_godown_idx").on(t.godownId),
+  // The FEFO allocation query is "lots for this item/variant in this godown
+  // with quantity > 0, earliest expiry first", so this index carries the
+  // ordering and avoids a sort on every sale of an expiry-tracked item.
+  index("stock_lots_fefo_idx").on(t.itemId, t.godownId, t.expiryDate),
+  index("stock_lots_batch_idx").on(t.itemId, t.batchNo),
+  index("stock_lots_serial_idx").on(t.serialNo),
+  index("stock_lots_expiry_idx").on(t.businessId, t.expiryDate),
+  index("stock_lots_active_idx").on(t.businessId, t.itemId).where(sql`deleted_at IS NULL`),
+]);
+
+// ── Godown transfers (inter-warehouse movement) ───────────────────────────
+//
+// Moving stock between godowns must not change the business-wide total, so it
+// is recorded as its own document rather than as a pair of invoices.
+export const godownTransfers = pgTable("godown_transfers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "cascade" }),
+  itemId: uuid("item_id").notNull().references(() => items.id, { onDelete: "cascade" }),
+  variantId: uuid("variant_id").references(() => itemVariants.id, { onDelete: "cascade" }),
+  lotId: uuid("lot_id").references(() => stockLots.id, { onDelete: "set null" }),
+  fromGodownId: uuid("from_godown_id").references(() => godowns.id, { onDelete: "set null" }),
+  toGodownId: uuid("to_godown_id").references(() => godowns.id, { onDelete: "set null" }),
+  quantity: numeric("quantity", { precision: 15, scale: 3 }).notNull(),
+  // A Stock Transfer Note is a document a business raises before the goods
+  // physically move: draft while it is being prepared, completed once it is.
+  // `transfer` moves stock immediately, so it writes "completed".
+  status: text("status").default("completed").notNull(),
+  transferDate: timestamp("transfer_date", { withTimezone: true }).defaultNow().notNull(),
+  referenceNumber: text("reference_number"),
+  notes: text("notes"),
+  createdByUserId: uuid("created_by_user_id"),
+  createdByName: text("created_by_name"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  index("godown_transfers_business_idx").on(t.businessId),
+  index("godown_transfers_item_idx").on(t.itemId),
+  index("godown_transfers_date_idx").on(t.businessId, t.transferDate),
+]);
+
+
+// ── Lot consumptions (which lot a document line actually drew from) ───────
+//
+// A single invoice line can consume SEVERAL lots: selling 50 units of an
+// expiry-tracked item under FEFO might take 25 from batch A and 25 from batch
+// B. invoice_items.lot_id can only point at one lot, so it records the PRIMARY
+// lot for display and traceability, while this table is the auditable record
+// of the full allocation.
+//
+// It is also what makes a sale REVERSIBLE: cancelling the invoice reads these
+// rows and puts the exact quantity back into the exact lots it came from,
+// rather than guessing.
+export const lotConsumptions = pgTable("lot_consumptions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "cascade" }),
+  invoiceItemId: uuid("invoice_item_id").notNull().references(() => invoiceItems.id, { onDelete: "cascade" }),
+  // NULLABLE on purpose. It is NULL when the stock-out could not be covered by
+  // any lot — the "sold against no stock" case the rest of the model allows so a
+  // business can backorder. Keeping it nullable is honest; a sentinel UUID would
+  // only satisfy the type while pretending to be a real lot, and would violate
+  // the foreign key the moment the row was written.
+  lotId: uuid("lot_id").references(() => stockLots.id, { onDelete: "cascade" }),
+  quantity: numeric("quantity", { precision: 15, scale: 3 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  index("lot_consumptions_business_idx").on(t.businessId),
+  index("lot_consumptions_line_idx").on(t.invoiceItemId),
+  index("lot_consumptions_lot_idx").on(t.lotId),
+]);
+
+// ── Inventory counts (physical reconciliation) ──────────────────────────
+//
+// "Count the shelf, compare to the book." One session per godown at a point in
+// time, with a line per item holding BOTH what the system expected and what
+// the counter physically saw, so the variance is a recorded fact rather than
+// something recomputed later from a moving target.
+//
+// A session is only posted when it is completed; until then it is a draft the
+// counter can keep editing.
+export const inventoryCounts = pgTable("inventory_counts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "cascade" }),
+  godownId: uuid("godown_id").references(() => godowns.id, { onDelete: "set null" }),
+  // Sequential per business so counters can cite a document number.
+  countNumber: text("count_number").notNull(),
+  status: text("status").default("draft").notNull(), // draft | posted | cancelled
+  countedAt: timestamp("counted_at", { withTimezone: true }).defaultNow().notNull(),
+  notes: text("notes"),
+  createdByUserId: uuid("created_by_user_id"),
+  createdByName: text("created_by_name"),
+  postedAt: timestamp("posted_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  index("inventory_counts_business_idx").on(t.businessId),
+  index("inventory_counts_godown_idx").on(t.godownId),
+  uniqueIndex("inventory_counts_number_idx").on(t.businessId, t.countNumber),
+]);
+
+export const inventoryCountLines = pgTable("inventory_count_lines", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  countId: uuid("count_id").notNull().references(() => inventoryCounts.id, { onDelete: "cascade" }),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "cascade" }),
+  itemId: uuid("item_id").notNull().references(() => items.id, { onDelete: "cascade" }),
+  variantId: uuid("variant_id").references(() => itemVariants.id, { onDelete: "cascade" }),
+  // What the book said when the count was saved. Frozen so a later posting
+  // cannot be re-based onto a number that has since moved.
+  expectedQuantity: numeric("expected_quantity", { precision: 15, scale: 3 }).notNull(),
+  // What the counter physically counted. NULL means "not yet counted".
+  countedQuantity: numeric("counted_quantity", { precision: 15, scale: 3 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  index("inventory_count_lines_count_idx").on(t.countId),
+  index("inventory_count_lines_item_idx").on(t.businessId, t.itemId),
 ]);
 
 // ── Invoices ───────────────────────────────────────────────────
@@ -303,10 +547,21 @@ export const invoiceItems = pgTable("invoice_items", {
   selectedUnit: text("selected_unit"), // which unit was used (null = base unit)
   conversionFactor: numeric("conversion_factor", { precision: 10, scale: 4 }).default("1"), // how many base units per selected unit
   variantId: uuid("variant_id").references(() => itemVariants.id, { onDelete: "set null" }),
+  // Which lot this line consumed (sale) or created/added to (purchase). NULL
+  // for untracked items and for tracked items the user has not yet allocated —
+  // the API enforces a lot on tracked items rather than the column, so that a
+  // partially-migrated business can keep billing.
+  lotId: uuid("lot_id").references(() => stockLots.id, { onDelete: "set null" }),
+  // Which godown the movement is attributed to. NULL means "the primary
+  // godown", resolved at read time, which keeps every existing document line
+  // valid without a backfill.
+  godownId: uuid("godown_id").references(() => godowns.id, { onDelete: "set null" }),
 }, (t) => [
   index("invoice_items_invoice_idx").on(t.invoiceId),
   index("invoice_items_item_idx").on(t.itemId),
   index("invoice_items_variant_idx").on(t.variantId),
+  index("invoice_items_lot_idx").on(t.lotId),
+  index("invoice_items_godown_idx").on(t.godownId),
 ]);
 
 // ── Payments ───────────────────────────────────────────────────
