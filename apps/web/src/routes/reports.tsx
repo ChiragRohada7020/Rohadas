@@ -9,6 +9,7 @@ import { PartyCombobox } from "@/components/ui/PartyCombobox";
 import { Combobox } from "@/components/ui/Combobox";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { useDateRange } from "@/hooks/useDateRange";
+import { apiUrl } from "@/lib/api-url";
 
 export const Route = createFileRoute("/reports")({
   component: ReportsPage,
@@ -294,6 +295,9 @@ function DaybookReport({
       <div className="flex items-center gap-2 mb-3 flex-wrap">
         <DaybookTypeTabs value={typeFilter} onChange={setTypeFilter} />
         <ExportButton onClick={handleExport} />
+        <PdfButton
+          url={`/api/reports/daybook.pdf?from=${encodeURIComponent(fromDateOnly ?? todayISODate())}&to=${encodeURIComponent(toDateOnly ?? todayISODate())}${typeFilter !== "all" ? `&type=${typeFilter}` : ""}`}
+        />
       </div>
 
       {/* Table grouped by day */}
@@ -683,8 +687,11 @@ function OutstandingReport({
           </span>
         )}
 
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center">
           <ExportButton onClick={handleExport} />
+          <PdfButton
+            url={`/api/reports/outstanding.pdf?type=${routerType}${toDate ? `&asOfDate=${encodeURIComponent(toDate)}` : ""}`}
+          />
         </div>
       </div>
 
@@ -960,8 +967,11 @@ function RegisterReport({
       </div>
 
       {/* Export */}
-      <div className="flex justify-end mb-3">
+      <div className="flex justify-end mb-3 gap-0 items-center">
         <ExportButton onClick={handleExport} />
+        <PdfButton
+          url={`/api/reports/${isSale ? "sales-register" : "purchase-register"}.pdf?from=${encodeURIComponent(fromDate ?? "")}&to=${encodeURIComponent(toDate ?? "")}`}
+        />
       </div>
 
       {/* Table */}
@@ -1235,6 +1245,60 @@ function PartyStatementReport({
     { enabled: !!partyId }
   ) as { data: PartyStatementData | null | undefined; isLoading: boolean; error: unknown };
 
+  // Send-statement popover state. `sendMode` doubles as the visibility flag:
+  // "none" hides the panel, "email"/"whatsapp" shows it with that channel.
+  const [sendMode, setSendMode] = useState<"none" | "email" | "whatsapp">("none");
+  const [sendTo, setSendTo] = useState("");
+  const [sendMessage, setSendMessage] = useState("");
+  const [sendNotice, setSendNotice] = useState<string | null>(null);
+
+  const sendEmailMutation = (trpc as any).reports.sendLedgerEmail.useMutation();
+  const sendWhatsAppMutation = (trpc as any).reports.sendLedgerWhatsApp.useMutation();
+
+  const isSending = sendEmailMutation.isPending || sendWhatsAppMutation.isPending;
+
+  function openSend(mode: "email" | "whatsapp") {
+    setSendMode(mode);
+    setSendNotice(null);
+    // Pre-fill from the party record so the common case is one click.
+    setSendTo(
+      mode === "email"
+        ? (data?.party.email ?? "")
+        : (data?.party.phone ?? "")
+    );
+  }
+
+  async function handleSend() {
+    if (!partyId || !data) return;
+    setSendNotice(null);
+    const payload = {
+      partyId,
+      message: sendMessage || undefined,
+      fromDate,
+      toDate,
+    };
+    try {
+      const result =
+        sendMode === "email"
+          ? await sendEmailMutation.mutateAsync({ ...payload, email: sendTo || undefined })
+          : await sendWhatsAppMutation.mutateAsync({ ...payload, phoneNumber: sendTo || undefined });
+      setSendNotice(`Sent to ${result.recipient}`);
+      setSendMode("none");
+      setSendMessage("");
+    } catch (err) {
+      setSendNotice(err instanceof Error ? err.message : "Could not send the statement.");
+    }
+  }
+
+  function handleDownloadPdf() {
+    if (!partyId) return;
+    const params = new URLSearchParams();
+    if (fromDate) params.set("from", fromDate);
+    if (toDate) params.set("to", toDate);
+    const qs = params.toString();
+    window.open(apiUrl(`/api/parties/${partyId}/ledger.pdf${qs ? `?${qs}` : ""}`), "_blank");
+  }
+
   function handleExport() {
     if (!data) return;
     const headers = ["Date", "Type", "Ref #", "Description", "Debit", "Credit", "Running Balance", "Status"];
@@ -1349,10 +1413,69 @@ function PartyStatementReport({
         </div>
       </div>
 
-      {/* Export */}
-      <div className="flex justify-end mb-3">
+      {/* Actions: PDF download, email, WhatsApp, CSV */}
+      <div className="flex flex-wrap items-center justify-end gap-2 mb-3">
+        <button type="button" onClick={handleDownloadPdf} className="btn-secondary text-xs px-3 py-1.5">
+          Download PDF
+        </button>
+        <button type="button" onClick={() => openSend("email")} className="btn-secondary text-xs px-3 py-1.5">
+          Email statement
+        </button>
+        <button type="button" onClick={() => openSend("whatsapp")} className="btn-secondary text-xs px-3 py-1.5">
+          Send on WhatsApp
+        </button>
         <ExportButton onClick={handleExport} />
       </div>
+
+      {sendNotice && (
+        <div className="mb-3 px-3 py-2 rounded-lg bg-surface-2 border border-border text-[12px] text-text-secondary">
+          {sendNotice}
+        </div>
+      )}
+
+      {sendMode !== "none" && (
+        <div className="mb-4 bg-surface rounded-xl border border-border px-4 py-3">
+          <p className="text-[12px] font-semibold text-text-primary mb-2">
+            {sendMode === "email" ? "Email the ledger PDF" : "Send the ledger PDF on WhatsApp"}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              type={sendMode === "email" ? "email" : "tel"}
+              value={sendTo}
+              onChange={(e) => setSendTo(e.target.value)}
+              placeholder={sendMode === "email" ? "name@example.com" : "+91 98765 43210"}
+              className="input flex-1 text-[13px]"
+            />
+            <input
+              type="text"
+              value={sendMessage}
+              onChange={(e) => setSendMessage(e.target.value)}
+              placeholder="Optional message"
+              className="input flex-1 text-[13px]"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleSend}
+                disabled={isSending}
+                className="btn-primary text-xs px-3 py-1.5 disabled:opacity-50"
+              >
+                {isSending ? "Sending…" : "Send"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSendMode("none")}
+                className="btn-ghost text-xs px-3 py-1.5"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+          <p className="text-[11px] text-text-tertiary mt-2">
+            Leave the field blank to use the {sendMode === "email" ? "email address" : "phone number"} saved on the party record.
+          </p>
+        </div>
+      )}
 
       {data.entries.length === 0 ? (
         <EmptyState title="No transactions in this period" description="Try selecting a wider date range." />
@@ -1663,8 +1786,14 @@ function StockSummaryReport() {
             {totalItems} match{totalItems === 1 ? "" : "es"}
           </span>
         )}
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center">
           <ExportButton onClick={handleExport} />
+          <PdfButton
+            url={`/api/reports/stock-summary.pdf?${new URLSearchParams({
+              ...(categoryFilter ? { category: categoryFilter } : {}),
+              ...(showZeroStock ? { showZeroStock: "true" } : {}),
+            }).toString()}`}
+          />
         </div>
       </div>
 
@@ -1997,6 +2126,28 @@ function ExportButton({ onClick }: { onClick: () => void }) {
   );
 }
 
+// ── Report PDF download ────────────────────────────────────────────
+// Mirrors the party-ledger PDF download pattern: open the signed report
+// endpoint in a new tab so it prints or saves directly.
+function PdfButton({ url, last = false }: { url: string; last?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={() => window.open(apiUrl(url), "_blank")}
+      className={
+        "btn-secondary text-xs px-3 py-1.5 inline-flex items-center gap-1.5 shrink-0" +
+        (last ? "" : " ml-2")
+      }
+      title="Download this report as PDF"
+    >
+      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+      </svg>
+      Download PDF
+    </button>
+  );
+}
+
 function FilterTabs<T extends string>({
   options,
   value,
@@ -2128,6 +2279,10 @@ function PaymentSummaryReport({
           onChange={setType}
         />
         <ExportButton onClick={handleExport} />
+        <PdfButton
+          url={`/api/reports/payment-summary.pdf?from=${encodeURIComponent(fromDate ?? "")}&to=${encodeURIComponent(toDate ?? "")}${type !== "both" ? `&type=${type}` : ""}`}
+          last
+        />
       </div>
 
       {/* Recent payments table */}
@@ -2321,6 +2476,10 @@ function TaxSummaryReport({
           onChange={setType}
         />
         <ExportButton onClick={handleExport} />
+        <PdfButton
+          url={`/api/reports/tax-summary.pdf?from=${encodeURIComponent(fromDate ?? "")}&to=${encodeURIComponent(toDate ?? "")}${type !== "both" ? `&type=${type}` : ""}`}
+          last
+        />
       </div>
 
       {noData ? (
@@ -2467,8 +2626,11 @@ function ItemSalesReport({
             {rows.length} of {data.rows.length}
           </span>
         )}
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center">
           <ExportButton onClick={handleExport} />
+          <PdfButton
+            url={`/api/reports/item-sales.pdf?from=${encodeURIComponent(fromDate ?? "")}&to=${encodeURIComponent(toDate ?? "")}`}
+          />
         </div>
       </div>
 
@@ -2699,6 +2861,11 @@ function CollectionEfficiencyReport({
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <PdfButton
+          url={`/api/reports/collection-efficiency.pdf?from=${encodeURIComponent(fromDate ?? "")}&to=${encodeURIComponent(toDate ?? "")}`}
+        />
+      </div>
       {/* Top row: two large metric cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* On-Time Collection Rate */}
@@ -2898,6 +3065,11 @@ function CashFlowReport({
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <PdfButton
+          url={`/api/reports/cash-flow.pdf?from=${encodeURIComponent(fromDate ?? "")}&to=${encodeURIComponent(toDate ?? "")}`}
+        />
+      </div>
       {/* Opening / Closing balance summary cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-surface rounded-xl border border-border px-5 py-4">

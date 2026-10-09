@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { trpc, getBusinessId } from "@/lib/trpc";
@@ -487,8 +487,8 @@ function ProfitAndLossView() {
   const { preset, setPreset, fromDate, toDate, customFrom, customTo, setCustomRange } =
     useDateRange("pnl-report", "this-fy");
 
-  const curFY = getCurrentFYBounds();
-  const prevFY = getPreviousFYBounds();
+  const curFY = useMemo(() => getCurrentFYBounds(), []);
+  const prevFY = useMemo(() => getPreviousFYBounds(), []);
 
   const { data, isLoading, error } = trpc.dashboard.profitAndLoss.useQuery(
     { fromDate: fromDate || undefined, toDate: toDate || undefined },
@@ -840,8 +840,8 @@ function CompareToggle({ enabled, onToggle }: { enabled: boolean; onToggle: () =
 
 function TrialBalanceView() {
   const [compareMode, setCompareMode] = useState(false);
-  const curFY = getCurrentFYBounds();
-  const prevFY = getPreviousFYBounds();
+  const curFY = useMemo(() => getCurrentFYBounds(), []);
+  const prevFY = useMemo(() => getPreviousFYBounds(), []);
 
   const { data, isLoading, error } = trpc.reports.trialBalance.useQuery(
     { asOfDate: curFY.end },
@@ -998,8 +998,8 @@ function TrialBalanceView() {
 
 function BalanceSheetView() {
   const [compareMode, setCompareMode] = useState(false);
-  const curFY = getCurrentFYBounds();
-  const prevFY = getPreviousFYBounds();
+  const curFY = useMemo(() => getCurrentFYBounds(), []);
+  const prevFY = useMemo(() => getPreviousFYBounds(), []);
 
   const { data, isLoading, error } = trpc.reports.balanceSheet.useQuery(
     { asOfDate: curFY.end },

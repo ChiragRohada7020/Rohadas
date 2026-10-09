@@ -18,6 +18,8 @@ import { appRouter } from "./router.js";
 import { createContext, getSessionIdFromRequest } from "./context.js";
 import type { InvoicePDFData, InvoiceTemplate } from "./lib/invoice-pdf.js";
 import { generateLedgerPDF } from "./lib/ledger-pdf.js";
+import { buildPaymentReceipt } from "./lib/payment-receipt-service.js";
+import { buildReportPdf, REPORT_PDF_TYPES } from "./lib/report-pdf-service.js";
 import { controlDb, getTenantDb, invoices, invoiceItems, items, itemVariants, parties, businesses, sessions, tenants, tenantMembers, magicLinkTokens, bankAccounts, storeOrders, payments, assertMigrationsPresent } from "@hisaabo/db";
 import { calcLineItem, calcInvoiceTotals, money } from "@hisaabo/shared";
 import { verifyTurnstile } from "./lib/turnstile.js";
@@ -92,6 +94,9 @@ const TAURI_DESKTOP_ORIGINS = [
 const allowedOrigins = [
   ...(process.env.CORS_ORIGINS || "http://localhost:5173").split(","),
   ...TAURI_DESKTOP_ORIGINS,
+  // Allow the user's public domain (Cloudflare)
+  "https://wedflix.space",
+  "http://wedflix.space",
 ];
 
 app.use("*", cors({
@@ -779,11 +784,24 @@ app.get("/api/parties/:id/ledger.pdf", async (c) => {
   const invoiceConditions = [
     eq(invoices.partyId, partyId),
     eq(invoices.businessId, businessId),
-    eq(invoices.documentType, "invoice"),
+    // Include credit notes, debit notes and returns — the on-screen ledger shows
+    // them, so filtering to 'invoice' alone made the PDF disagree with the screen.
+    inArray(invoices.documentType, [
+      "invoice",
+      "credit_note",
+      "sales_return",
+      "purchase_return",
+      "debit_note",
+    ]),
+    sql`${invoices.status} NOT IN ('cancelled')`,
+    isNull(invoices.deletedAt),
   ] as Parameters<typeof and>[0][];
   const paymentConditions = [
     eq(payments.partyId, partyId),
     eq(payments.businessId, businessId),
+    // Soft-deleted payments must not reach the PDF — they were inflating the
+    // closing balance printed on the statement.
+    isNull(payments.deletedAt),
   ] as Parameters<typeof and>[0][];
 
   invoiceConditions.push(...buildBusinessDateFilter(invoices, { from: fromDate, to: toDate }));
@@ -795,6 +813,7 @@ app.get("/api/parties/:id/ledger.pdf", async (c) => {
       invoiceNumber: invoices.invoiceNumber,
       date: invoices.invoiceDate,
       type: invoices.type,
+      documentType: invoices.documentType,
       totalAmount: invoices.totalAmount,
       status: invoices.status,
     }).from(invoices).where(and(...invoiceConditions as [any, ...any[]])).orderBy(invoices.invoiceDate),
@@ -804,27 +823,63 @@ app.get("/api/parties/:id/ledger.pdf", async (c) => {
       date: payments.paymentDate,
       amount: payments.amount,
       mode: payments.mode,
+      // Which invoice this payment settled — drives the debit/credit side.
+      // A party can be BOTH a customer and a supplier, so the party's own
+      // declared type is not a reliable direction signal.
+      settledType: sql<string | null>`(
+        SELECT i.type FROM payment_allocations pa
+        JOIN invoices i ON i.id = pa.invoice_id
+        WHERE pa.payment_id = payments.id
+        ORDER BY pa.id LIMIT 1
+      )`,
+      legacySettledType: sql<string | null>`(
+        SELECT i.type FROM invoices i WHERE i.id = payments.invoice_id
+      )`,
     }).from(payments).where(and(...paymentConditions as [any, ...any[]])).orderBy(payments.paymentDate),
   ]);
 
   // Build ledger entries (same logic as ledgerReport tRPC procedure)
+  // Returns reverse the normal direction; a purchase debit note reduces the payable.
+  const ledgerDocLabels: Record<string, string> = {
+    invoice: "", credit_note: "Credit Note", sales_return: "Sales Return",
+    purchase_return: "Purchase Return", debit_note: "Debit Note",
+  };
+  const isLedgerReduction = (type: string, dt: string) =>
+    type === "purchase"
+      ? ["credit_note", "purchase_return", "debit_note"].includes(dt)
+      : ["credit_note", "sales_return"].includes(dt);
+
   const entries = [
-    ...partyInvoices.map(inv => ({
-      date: inv.date as Date,
-      type: "invoice" as const,
-      number: inv.invoiceNumber,
-      description: inv.type === "sale" ? "Sale Invoice" : "Purchase Invoice",
-      debit: inv.type === "sale" ? inv.totalAmount : "0",
-      credit: inv.type === "sale" ? "0" : inv.totalAmount,
-    })),
-    ...partyPayments.map(pmt => ({
-      date: pmt.date as Date,
-      type: "payment" as const,
-      number: pmt.paymentNumber || "",
-      description: `Payment (${pmt.mode})`,
-      debit: party.type === "supplier" ? pmt.amount : "0",
-      credit: party.type === "supplier" ? "0" : pmt.amount,
-    })),
+    ...partyInvoices.map(inv => {
+      const reduce = isLedgerReduction(inv.type as string, inv.documentType as string);
+      const isSaleDir = inv.type === "sale";
+      const debit = (isSaleDir && !reduce) || (!isSaleDir && reduce) ? inv.totalAmount : "0";
+      return {
+        date: inv.date as Date,
+        type: "invoice" as const,
+        number: inv.invoiceNumber,
+        description:
+          ledgerDocLabels[inv.documentType as string] ||
+          (inv.type === "sale" ? "Sale Invoice" : "Purchase Invoice"),
+        debit,
+        credit: debit === "0" ? inv.totalAmount : "0",
+      };
+    }),
+    ...partyPayments.map(pmt => {
+      // Settling a purchase invoice = money OUT (debit). Settling a sale invoice
+      // = money IN (credit). Fall back to the party's type only when the payment
+      // is not tied to any invoice.
+      const settled = pmt.settledType ?? pmt.legacySettledType;
+      const isOutgoing = settled ? settled === "purchase" : party.type === "supplier";
+      return {
+        date: pmt.date as Date,
+        type: "payment" as const,
+        number: pmt.paymentNumber || "",
+        description: `Payment (${pmt.mode})`,
+        debit: isOutgoing ? pmt.amount : "0",
+        credit: isOutgoing ? "0" : pmt.amount,
+      };
+    }),
   ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   let runningBalance = party.openingBalance;
@@ -840,7 +895,9 @@ app.get("/api/parties/:id/ledger.pdf", async (c) => {
   // Generate UPI QR for ledger if closing balance is receivable
   let ledgerUpiQrDataUrl: string | undefined;
   let ledgerUpiPayUrl: string | undefined;
-  if (parseFloat(closingBalance) > 0 && party.type === "customer") {
+  // UPI QR whenever the party owes money (debit balance) — the declared type is
+  // irrelevant: a dual-role contact with a debit balance also owes us.
+  if (parseFloat(closingBalance) > 0) {
     const ledgerBankAccounts = await db.select().from(bankAccounts)
       .where(eq(bankAccounts.businessId, businessId));
     const ledgerUpiAccount = ledgerBankAccounts.find(a => a.accountType === "upi");
@@ -871,6 +928,124 @@ app.get("/api/parties/:id/ledger.pdf", async (c) => {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="ledger-${safePartyName}.pdf"`,
+    },
+  });
+});
+
+// ── Payment Receipt PDF endpoint ──────────────────────────────
+// GET /api/payments/:id/receipt.pdf
+// Money received from a customer renders as a Payment Receipt; money paid to a
+// supplier renders as a Payment Voucher (see buildPaymentReceipt).
+app.get("/api/payments/:id/receipt.pdf", async (c) => {
+  if (!checkPdfRateLimit(getClientIp(c))) {
+    return c.json({ error: "Too many PDF requests. Try again later." }, 429);
+  }
+
+  const paymentId = c.req.param("id");
+
+  const sessionId = getSessionIdFromRequest(c.req.raw);
+  if (!sessionId) return c.json({ error: "Unauthorized" }, 401);
+
+  const [sessionRow] = await controlDb
+    .select({ userId: sessions.userId, tenantId: sessions.tenantId })
+    .from(sessions)
+    .where(and(eq(sessions.id, sessionId), gt(sessions.expiresAt, new Date())))
+    .limit(1);
+
+  if (!sessionRow) return c.json({ error: "Unauthorized" }, 401);
+  if (!sessionRow.tenantId) return c.json({ error: "No organization selected" }, 400);
+
+  const [tenant] = await controlDb.select({ status: tenants.status })
+    .from(tenants).where(eq(tenants.id, sessionRow.tenantId)).limit(1);
+  if (!tenant || tenant.status !== "active") return c.json({ error: "Organization suspended" }, 403);
+
+  const businessId = c.req.header("x-business-id");
+  if (!businessId) return c.json({ error: "No business selected" }, 400);
+
+  const db = await getTenantDb(sessionRow.tenantId);
+
+  const bizAccess = await verifyBusinessAccess(db, businessId, sessionRow.tenantId);
+  if (!bizAccess.ok) return c.json({ error: bizAccess.error }, 403);
+
+  const receipt = await buildPaymentReceipt(db, businessId, paymentId);
+  if (!receipt) return c.json({ error: "Payment not found" }, 404);
+
+  return new Response(new Uint8Array(receipt.pdfBuffer), {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="${receipt.fileName}"`,
+    },
+  });
+});
+
+// ── Report PDF endpoint ────────────────────────────────────────
+// GET /api/reports/:type.pdf?from=...&to=...&asOfDate=...&partyId=...&accountId=...&year=...&month=...
+// Renders the standard financial/operational/GST working reports as PDFs.
+app.get("/api/reports/:type.pdf", async (c) => {
+  if (!checkPdfRateLimit(getClientIp(c))) {
+    return c.json({ error: "Too many PDF requests. Try again later." }, 429);
+  }
+
+  const type = c.req.param("type");
+  if (!REPORT_PDF_TYPES.includes(type as (typeof REPORT_PDF_TYPES)[number])) {
+    return c.json({ error: "Unknown report type" }, 400);
+  }
+
+  // Auth check — same pattern as the invoice/ledger/receipt PDF endpoints.
+  const sessionId = getSessionIdFromRequest(c.req.raw);
+  if (!sessionId) return c.json({ error: "Unauthorized" }, 401);
+
+  const [sessionRow] = await controlDb
+    .select({ userId: sessions.userId, tenantId: sessions.tenantId })
+    .from(sessions)
+    .where(and(eq(sessions.id, sessionId), gt(sessions.expiresAt, new Date())))
+    .limit(1);
+
+  if (!sessionRow) return c.json({ error: "Unauthorized" }, 401);
+  if (!sessionRow.tenantId) return c.json({ error: "No organization selected" }, 400);
+
+  const [tenant] = await controlDb.select({ status: tenants.status })
+    .from(tenants).where(eq(tenants.id, sessionRow.tenantId)).limit(1);
+  if (!tenant || tenant.status !== "active") return c.json({ error: "Organization suspended" }, 403);
+
+  const businessId = c.req.header("x-business-id");
+  if (!businessId) return c.json({ error: "No business selected" }, 400);
+
+  const db = await getTenantDb(sessionRow.tenantId);
+  const bizAccess = await verifyBusinessAccess(db, businessId, sessionRow.tenantId);
+  if (!bizAccess.ok) return c.json({ error: bizAccess.error }, 403);
+
+  // Parse filters from query params.
+  const num = (v: string | undefined): number | undefined => {
+    if (v === undefined || v === "") return undefined;
+    const n = parseInt(v, 10);
+    return Number.isNaN(n) ? undefined : n;
+  };
+  const filters = {
+    fromDate: c.req.query("from") ?? undefined,
+    toDate: c.req.query("to") ?? undefined,
+    asOfDate: c.req.query("asOfDate") ?? undefined,
+    partyId: c.req.query("partyId") ?? undefined,
+    accountId: c.req.query("accountId") ?? undefined,
+    type: c.req.query("type") ?? undefined,
+    year: num(c.req.query("year")),
+    month: num(c.req.query("month")),
+    showZeroStock: c.req.query("showZeroStock") === "true" || c.req.query("showZeroStock") === "1",
+    category: c.req.query("category") ?? undefined,
+  };
+
+  const bundle = await buildReportPdf(
+    db,
+    businessId,
+    type as (typeof REPORT_PDF_TYPES)[number],
+    filters,
+  );
+  if (!bundle) return c.json({ error: "Report could not be generated" }, 404);
+
+  return new Response(new Uint8Array(bundle.pdfBuffer), {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="${bundle.fileName}"`,
     },
   });
 });

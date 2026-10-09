@@ -71,4 +71,14 @@ packages/api/whatsapp-auth/
 # Scratch / one-off scripts
 tmp_*.cjs
 scripts/_tmp-*.cjs
+scripts/_*.mjs
+scripts/_*.cjs
 _tmp-*
+
+# Diagnostic / session output (never commit — may contain live tokens)
+_push-state.txt
+_login-*.json
+_login-*.txt
+_login-*.csv
+_probe-*.txt
+*.traineddata
